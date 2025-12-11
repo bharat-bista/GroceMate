@@ -69,7 +69,20 @@
 
 /* line 636, C:/Users/HP/Desktop/July-HTML/292 Health coach/assets/scss/_common.scss */
 .preloader .preloader-img img {
-  max-width:100px;
+      width: 70px; /* adjust as needed */
+    height: 66px; /* keep it square for centering */
+    object-fit: contain; /* ensures the logo scales properly */
+    display: block;
+    margin: 0 auto;
+}
+
+.preloader-inner {
+    position: relative;
+    width: 100px; /* adjust as needed */
+    height: 100px; /* adjust as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* line 639, C:/Users/HP/Desktop/July-HTML/292 Health coach/assets/scss/_common.scss */

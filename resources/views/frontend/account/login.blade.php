@@ -192,15 +192,13 @@
 
 </style>
 
-        {{-- <div class="options">
+        <div class="options">
             <label class="checkbox-container">
                 <input type="checkbox"> Remember Me
             </label>
-            <a href="{{ route('forgetpassword') }}">Forgot Password?</a>
-        </div> --}}
-    <label>
-        <input type="checkbox" name="remember"> Remember Me
-    </label>
+            <a href="{{route('showEmailForm')}}">Forgot Password?</a>
+        </div>
+    
         <button type="submit">Sign In</button>
 
         <div class="register">

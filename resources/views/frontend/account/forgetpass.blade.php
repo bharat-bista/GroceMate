@@ -104,7 +104,7 @@
         <button type="submit">Send OTP</button>
 
         <div class="back">
-            <a href="{{ route('login') }}">Back to Login</a>
+            <a href="{{ route('page-login') }}">Back to Login</a>
         </div>
     </form>
 

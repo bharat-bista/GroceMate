@@ -49,13 +49,19 @@ class ForgetPasswordController extends Controller
         // send OTP email (could be queued)
 
         Mail::to($user->email)->send(new PasswordOtpMail($rawOtp, $user->name));
-        return redirect()->route('password.otpForm')->with('status','OTP send to your email (check spam folder).');
+
+// ADD THIS LINE 
+session(['password_reset_email' => $user->email]);
+
+return redirect()->route('password.otpForm')
+       ->with('status','OTP sent to your email (check spam folder).');
+
 
     }
     // show OTP input form
     public function showOtpForm()
     {
-        return view('auth.verify-otp');
+        return view('frontend.account.otp');
     }
     //verify otp
     public function verifyOtp(Request $request)
@@ -109,7 +115,7 @@ class ForgetPasswordController extends Controller
         if (!session('password_reset_user_id')) {
             return redirect()->route('password.request')->withErrors(['otp' => 'Unauthorized or session expired.']);
         }
-        return view('auth.reset-password');
+        return view('frontend.account.resetpass');
     }
 
     //reset password

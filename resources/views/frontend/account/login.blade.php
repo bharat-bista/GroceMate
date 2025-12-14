@@ -196,7 +196,7 @@
             <label class="checkbox-container">
                 <input type="checkbox"> Remember Me
             </label>
-            <a href="{{route('showEmailForm')}}">Forgot Password?</a>
+            <a href="{{route('password.request')}}">Forgot Password?</a>
         </div>
     
         <button type="submit">Sign In</button>

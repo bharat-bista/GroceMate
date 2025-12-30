@@ -148,6 +148,12 @@
         <label for="password">Password</label>
         <input type="password" name="password" id="password" placeholder="Enter your password" required>
         <div id="errorPopup" class="popup">
+    <div class="popup-content">
+        <h3>Error</h3>
+        <p id="popupMessage"></p>
+        <button onclick="closePopup()">OK</button>
+    </div>
+
     
 </div>
 
@@ -189,6 +195,49 @@
     border-radius: 8px;
     cursor: pointer;
 }
+/* Google Login Button */
+.google-btn {
+    margin-top: 1rem;
+    width: 100%;
+    height: 50px;
+    border: 1.5px solid #ddd;
+    border-radius: 999px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #444;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.google-btn:hover {
+    background-color: #f7f7f7;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .google-btn {
+        font-size: 0.95rem;
+        height: 46px;
+    }
+
+    .google-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
 
 </style>
 
@@ -200,12 +249,33 @@
         </div>
     
         <button type="submit">Sign In</button>
+        <!-- Google Login Button -->
+<a href="{{ route('google.redirect') }}" class="google-btn">
+    <img 
+        src="https://developers.google.com/identity/images/g-logo.png" 
+        alt="Google logo"
+        class="google-icon"
+    >
+    <span>Sign in with Google</span>
+</a>
+
 
         <div class="register">
-            Don't have an account? <a href="#">Register Now</a>
+            Don't have an account? <a href="{{ route('register') }}">Register Now</a>
         </div>
     </form>
 </div>
+<script>
+    function closePopup() {
+        document.getElementById('errorPopup').style.display = 'none';
+    }
+
+    @if(session('popup_error'))
+        document.getElementById('errorPopup').style.display = 'flex';
+        document.getElementById('popupMessage').innerText =
+            "{{ session('popup_error') }}";
+    @endif
+</script>
 
 </body>
 </html>

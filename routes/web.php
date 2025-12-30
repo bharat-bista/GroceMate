@@ -35,3 +35,12 @@ Route::post('/verify-otp', [ForgetPasswordController::class, 'verifyOtp'])->name
 
 Route::get('/reset-password', [ForgetPasswordController::class, 'showResetForm'])->name('password.resetForm');
 Route::post('/reset-password', [ForgetPasswordController::class, 'resetPassword'])->name('password.reset');
+
+Route::get('/register', [AccountController::class, 'register'])->name('register');
+Route::post('/register', [AccountController::class, 'registerPost'])->name('register.sendOtp');
+
+Route::get('/register/verify-otp/{user}', [AccountController::class, 'showRegisterOtpForm'])->name('register.otpForm');
+Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyRegisterOtp'])->name('register.verifyOtp');
+
+Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');

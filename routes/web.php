@@ -7,6 +7,10 @@ use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
+use App\Http\Controllers\Inventory\DashboardController;
+use App\Http\Controllers\Inventory\ProductController;
+use App\Http\Controllers\Inventory\CategoryController;
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('page-login');
@@ -44,3 +48,32 @@ Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyReg
 
 Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');
+
+Route::middleware(['auth'])
+    ->prefix('inventory')
+    ->name('inventory.')
+    ->group(function () {
+
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/products', [ProductController::class, 'index'])
+            ->name('products.index');
+
+        Route::get('/products/create', [ProductController::class, 'create'])
+            ->name('products.create');
+
+        Route::post('/products', [ProductController::class, 'store'])
+            ->name('products.store');
+
+        Route::get('/products/{product}/edit', [ProductController::class, 'edit'])
+            ->name('products.edit');
+
+        Route::put('/products/{product}', [ProductController::class, 'update'])
+            ->name('products.update');
+
+        Route::post('/products/{product}/toggle-listed', [ProductController::class, 'toggleListed'])
+            ->name('products.toggle-listed');
+        Route::resource('categories', CategoryController::class)
+      ->except(['show']);
+    });

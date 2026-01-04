@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\frontend;
 
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,7 @@ class AccountController extends Controller
     // =========================
     public function login()
     {
-        return view('frontend.account.login');
+        return view('inventory.dashboard');
     }
 
     public function store(Request $request)
@@ -52,7 +53,7 @@ class AccountController extends Controller
     // Login user
     Auth::login($user, $request->remember);
 
-    return redirect()->route('home')->with('success', 'Login successful!');
+    return redirect()->route('dashboard')->with('success', 'Login successful!');
 }
 
 

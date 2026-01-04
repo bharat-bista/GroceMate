@@ -851,7 +851,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+  // Target the Top Sell horizontal scroller
+  const track = document.querySelector(".cart-scroll-inner"); 
+  // If you have multiple sliders, change querySelector -> querySelectorAll and loop.
 
+  if (!track) return;
+
+  let isPaused = false;
+  let rafId = null;
+
+  // Speed (pixels per frame). Adjust to your liking.
+  const speed = 0.6;
+
+  function step() {
+    if (!isPaused) {
+      // Auto scroll horizontally
+      track.scrollLeft += speed;
+
+      // If reached end, loop back
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= maxScroll - 1) {
+        track.scrollLeft = 0;
+      }
+    }
+    rafId = requestAnimationFrame(step);
+  }
+
+  // Pause on hover
+  track.addEventListener("mouseenter", () => (isPaused = true));
+  track.addEventListener("mouseleave", () => (isPaused = false));
+
+  // Also pause while user interacts (mobile / dragging)
+  track.addEventListener("touchstart", () => (isPaused = true), { passive: true });
+  track.addEventListener("touchend", () => (isPaused = false), { passive: true });
+
+  // Optional: pause while user scrolls with mouse wheel/trackpad
+  track.addEventListener("wheel", () => {
+    isPaused = true;
+    clearTimeout(track._resumeTimer);
+    track._resumeTimer = setTimeout(() => (isPaused = false), 800);
+  }, { passive: true });
+
+  // Start animation loop
+  step();
+
+  // Clean up if needed later:
+  // cancelAnimationFrame(rafId);
+});
+
+</script>
 
 
 @endsection

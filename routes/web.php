@@ -10,6 +10,9 @@ use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
+use App\Http\Controllers\Inventory\PurchaseController;
+
+use App\Http\Controllers\Inventory\SupplierController;
 
 
 // Redirect root URL to login page
@@ -76,4 +79,11 @@ Route::middleware(['auth'])
             ->name('products.toggle-listed');
         Route::resource('categories', CategoryController::class)
       ->except(['show']);
+      Route::get('/purchases', [PurchaseController::class,'index'])->name('purchases.index');
+    Route::get('/purchases/create', [PurchaseController::class,'create'])->name('purchases.create');
+    Route::post('/purchases', [PurchaseController::class,'store'])->name('purchases.store');
+    Route::get('/purchases/{purchase}', [PurchaseController::class,'show'])->name('purchases.show');
+
+    Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+    Route::resource('suppliers', SupplierController::class)->except(['show']);
     });

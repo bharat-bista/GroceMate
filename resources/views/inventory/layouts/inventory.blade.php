@@ -11,7 +11,12 @@
     <!-- Sidebar -->
     <aside class="w-72 bg-white border-r border-slate-200 hidden md:block">
       <div class="p-6">
-        <div class="text-xl font-bold">GroceMate</div>
+        <div class="flex items-center space-x-2">
+  <img src="{{ asset('assets/img/logo/logo.png') }}" alt="GroceMate Logo" class="h-10 w-auto">
+  <!-- Optional: Keep small text next to logo -->
+  <span class="text-lg font-bold text-slate-900">GroceMate</span>
+</div>
+
         <div class="text-xs text-slate-500 mt-1">Inventory Module</div>
       </div>
       <nav class="px-3 pb-6 space-y-1">
@@ -23,7 +28,15 @@
 
         <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
            href="{{ route('inventory.products.index') }}">Products</a>
-           
+          <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+            href="{{ route('inventory.suppliers.index') }}">Suppliers</a>
+
+        <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+           href="{{ route('inventory.purchases.index') }}">Purchases (Stock-In)</a>
+
+        <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+           href="{{ route('inventory.alerts.expiry') }}">Expiry Alerts</a>
+
 
         <!-- add categories/suppliers later -->
       </nav>

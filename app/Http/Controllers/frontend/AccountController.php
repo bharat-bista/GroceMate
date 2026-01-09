@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\frontend;
 
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +22,7 @@ class AccountController extends Controller
     // =========================
     public function login()
     {
-        return view('inventory.dashboard');
+        return view('frontend.account.login');
     }
 
     public function store(Request $request)

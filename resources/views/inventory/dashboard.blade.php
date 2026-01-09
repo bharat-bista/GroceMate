@@ -19,6 +19,18 @@
     <div class="text-sm text-slate-500">Low Stock</div>
     <div class="text-3xl font-bold mt-2">{{ $lowStockCount }}</div>
   </div>
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <div class="text-sm text-slate-500">Total Supplier</div>
+    <div class="text-3xl font-bold mt-2">{{ $supplierCount }}</div>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <div class="text-sm text-slate-500">Expiring Soon</div>
+    <div class="text-3xl font-bold mt-2">{{ $expiringSoonCount }}</div>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <div class="text-sm text-slate-500">Expired Product</div>
+    <div class="text-3xl font-bold mt-2">{{ $expiredCount }}</div>
+  </div>
 </div>
 
 <div class="mt-6 bg-white border border-slate-200 rounded-2xl shadow-sm">

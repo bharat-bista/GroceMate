@@ -43,7 +43,7 @@ class ProductController extends Controller
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
       'sku' => ['nullable','string','max:50','unique:products,sku'],
-      'unit' => ['required','in:kg,liter,pcs'],
+      'unit' => ['required','in:kg,liter,pcs, cartoon, peti, bori'],
       'selling_price' => ['required','numeric','min:0'],
       'description' => ['nullable','string'],
       'image_url' => ['nullable','string','max:2048'],

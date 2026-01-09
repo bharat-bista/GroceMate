@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Purchase extends Model
+{
+    protected $fillable = [
+        'supplier_id','created_by','purchase_date','invoice_no','total_cost'
+    ];
+
+    protected $casts = [
+        'purchase_date' => 'date',
+        'total_cost' => 'decimal:2',
+    ];
+
+    public function supplier() { return $this->belongsTo(Supplier::class); }
+    public function creator()  { return $this->belongsTo(User::class, 'created_by'); }
+    public function items()    { return $this->hasMany(PurchaseItem::class); }
+}

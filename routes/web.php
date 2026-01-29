@@ -11,22 +11,20 @@ use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\PurchaseController;
-
 use App\Http\Controllers\Inventory\SupplierController;
-
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('page-login');
 
 // Login routes
 Route::get('/login', [AccountController::class, 'login'])->name('page-login');
+Route::get('/auth/login', [AccountController::class, 'login'])->name('login');
 Route::post('/login', [AccountController::class, 'store'])->name('login.post');
 
 // home after login
 Route::get('/home', function() {
     return view('frontend.home.index');
 })->middleware('auth')->name('home');
-
 
 Route::get('/advanced', [AdvancedController::class, 'advanced'])->name('advanced');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
@@ -77,13 +75,23 @@ Route::middleware(['auth'])
 
         Route::post('/products/{product}/toggle-listed', [ProductController::class, 'toggleListed'])
             ->name('products.toggle-listed');
-        Route::resource('categories', CategoryController::class)
-      ->except(['show']);
-      Route::get('/purchases', [PurchaseController::class,'index'])->name('purchases.index');
-    Route::get('/purchases/create', [PurchaseController::class,'create'])->name('purchases.create');
-    Route::post('/purchases', [PurchaseController::class,'store'])->name('purchases.store');
-    Route::get('/purchases/{purchase}', [PurchaseController::class,'show'])->name('purchases.show');
+        
+        Route::resource('categories', CategoryController::class)->except(['show']);
+        
+        // Purchase routes
+        Route::get('/purchases', [PurchaseController::class,'index'])->name('purchases.index');
+        Route::get('/purchases/create', [PurchaseController::class,'create'])->name('purchases.create');
+        Route::post('/purchases', [PurchaseController::class,'store'])->name('purchases.store');
+        Route::get('/purchases/{purchase}', [PurchaseController::class,'show'])->name('purchases.show');
+        
+        Route::get('/purchases/search-products', [PurchaseController::class, 'searchProducts'])
+    ->name('purchases.search-products');
+    
+    // Test route without middleware for debugging
+    Route::get('/purchases/search-test', [PurchaseController::class, 'searchProducts']);
+    Route::resource('purchases', PurchaseController::class);
 
-    Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
-    Route::resource('suppliers', SupplierController::class)->except(['show']);
+        Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+        
+        Route::resource('suppliers', SupplierController::class)->except(['show']);
     });

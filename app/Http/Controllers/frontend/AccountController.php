@@ -52,7 +52,7 @@ class AccountController extends Controller
     // Login user
     Auth::login($user, $request->remember);
 
-    return redirect()->route('dashboard')->with('success', 'Login successful!');
+    return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
 }
 
 

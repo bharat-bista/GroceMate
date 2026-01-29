@@ -33,7 +33,7 @@ class ProductController extends Controller
   {
     return view('inventory.products.create', [
       'categories' => Category::orderBy('name')->get(),
-      'units' => ['kg','liter','pcs'],
+      'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
 
@@ -43,7 +43,7 @@ class ProductController extends Controller
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
       'sku' => ['nullable','string','max:50','unique:products,sku'],
-      'unit' => ['required','in:kg,liter,pcs, cartoon, peti, bori'],
+      'unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
       'description' => ['nullable','string'],
       'image_url' => ['nullable','string','max:2048'],
@@ -82,7 +82,7 @@ class ProductController extends Controller
     return view('inventory.products.edit', [
       'product' => $product,
       'categories' => Category::orderBy('name')->get(),
-      'units' => ['kg','liter','pcs'],
+      'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
 

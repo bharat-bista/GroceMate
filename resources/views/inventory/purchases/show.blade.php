@@ -25,6 +25,51 @@
     <div class="text-sm text-slate-500">Total Cost</div>
     <div class="text-2xl font-bold">Rs {{ number_format((float)$purchase->total_cost, 2) }}</div>
   </div>
+  
+  <!-- Export dropdown with same design as index page -->
+  <div x-data="{
+    open: false,
+    getExportUrl(type) {
+      return '{{ route('inventory.purchases.export-individual', ['purchase' => $purchase->id, 'type' => 'TYPE']) }}'.replace('TYPE', type);
+    }
+  }" class="relative mt-4">
+    <button
+      type="button"
+      @click="open = !open"
+      class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+      Export ▾
+    </button>
+
+    <div
+      x-cloak
+      x-show="open"
+      x-transition
+      @click.outside="open = false"
+      class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow z-50 p-3 space-y-3"
+    >
+      <div class="text-sm font-medium text-slate-700 mb-2">
+        Export Purchase #{{ $purchase->id }}
+      </div>
+
+      <!-- Export buttons -->
+      <div class="grid grid-cols-3 gap-2">
+        <a :href="getExportUrl('excel')"
+          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+          Excel
+        </a>
+
+        <a :href="getExportUrl('csv')"
+          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+          CSV
+        </a>
+
+        <a :href="getExportUrl('pdf')"
+          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+          PDF
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
@@ -55,4 +100,6 @@
 <div class="mt-4">
   <a href="{{ route('inventory.purchases.index') }}" class="underline">← Back to Purchases</a>
 </div>
+
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endsection

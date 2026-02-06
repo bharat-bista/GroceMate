@@ -20,6 +20,87 @@
   </a>
 </div>
 
+<div x-data="{
+  open: false,
+  mode: 'all',
+  fromDate: '',
+  toDate: '',
+  getExportUrl(type) {
+    if (this.mode === 'all' || !this.fromDate || !this.toDate) {
+      return '{{ route('inventory.purchases.export', 'TYPE') }}'.replace('TYPE', type);
+    }
+    return '{{ route('inventory.purchases.export', 'TYPE') }}'.replace('TYPE', type) + '?from=' + this.fromDate + '&to=' + this.toDate;
+  }
+}" class="relative">
+  <button
+    type="button"
+    @click="open = !open"
+    class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+    Export ▾
+  </button>
+
+  <div
+    x-cloak
+    x-show="open"
+    x-transition
+    @click.outside="open = false"
+    class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow z-50 p-3 space-y-3"
+  >
+
+    <!-- Mode selector -->
+    <div class="flex gap-2">
+      <button
+        @click="mode='all'"
+        :class="mode==='all' ? 'bg-slate-900 text-white' : 'bg-slate-100'"
+        class="flex-1 px-3 py-1 rounded-lg text-sm">
+        All
+      </button>
+
+      <button
+        @click="mode='range'"
+        :class="mode==='range' ? 'bg-slate-900 text-white' : 'bg-slate-100'"
+        class="flex-1 px-3 py-1 rounded-lg text-sm">
+        Date Range
+      </button>
+    </div>
+
+    <!-- Date range -->
+    <div x-show="mode==='range'" class="space-y-2">
+      <input type="date" x-model="fromDate"
+        class="w-full rounded-lg border-slate-200 text-sm"
+        placeholder="From date">
+      
+      <input type="date" x-model="toDate"
+        class="w-full rounded-lg border-slate-200 text-sm"
+        placeholder="To date">
+      
+      <div x-show="mode==='range' && (!fromDate || !toDate)" 
+           class="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+        Please select both "From" and "To" dates to filter exports
+      </div>
+    </div>
+
+    <!-- Export buttons -->
+    <div class="grid grid-cols-3 gap-2 pt-2 border-t">
+      <a :href="getExportUrl('excel')"
+        class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+        Excel
+      </a>
+
+      <a :href="getExportUrl('csv')"
+        class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+        CSV
+      </a>
+
+      <a :href="getExportUrl('pdf')"
+        class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
+        PDF
+      </a>
+    </div>
+
+  </div>
+</div>
+
 <div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="text-slate-500 bg-slate-50">
@@ -32,6 +113,7 @@
         <th class="text-right px-5 py-3">Action</th>
       </tr>
     </thead>
+
 
     <tbody class="divide-y">
       @forelse($purchases as $p)
@@ -48,11 +130,20 @@
       @empty
         <tr><td class="px-5 py-6 text-slate-500" colspan="6">No purchases found.</td></tr>
       @endforelse
+      
     </tbody>
   </table>
+  
 </div>
 
 <div class="mt-4">
   {{ $purchases->links() }}
+
+</div>
+
+
+
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 </div>
 @endsection

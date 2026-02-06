@@ -608,14 +608,15 @@ function createRow() {
                    required
                    class="qty-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
-                   type="number"
-                   step="0.01"
-                   min="0"
-                   value="0"
-                   required
-                   class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
+       type="number"
+       step="0.01"
+       min="0"
+       value="0"
+       required
+       class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+
         </td>
         <td class="px-4 py-3">
             <div class="text-slate-900 font-medium text-sm">

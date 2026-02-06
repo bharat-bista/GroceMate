@@ -259,5 +259,235 @@ public function searchProducts(Request $request)
 
     return response()->json($results);
 }
+public function export($type, Request $request)
+{
+    // Get date filters
+    $from = $request->get('from');
+    $to = $request->get('to');
+    
+    // Debug: Log the received parameters
+    \Log::info('Export parameters:', [
+        'type' => $type,
+        'from' => $from,
+        'to' => $to
+    ]);
+    
+    // Build query with date filtering
+    $query = Purchase::with(['supplier', 'creator']);
+    
+    if ($from && $to) {
+        try {
+            $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+            $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+            
+            // Debug: Log the parsed dates
+            \Log::info('Date filtering applied:', [
+                'from_date' => $fromDate->toDateTimeString(),
+                'to_date' => $toDate->toDateTimeString()
+            ]);
+            
+            $query->whereBetween('purchase_date', [$fromDate, $toDate]);
+        } catch (\Exception $e) {
+            // Debug: Log the error
+            \Log::error('Date parsing failed:', [
+                'error' => $e->getMessage(),
+                'from' => $from,
+                'to' => $to
+            ]);
+        }
+    }
+    
+    $purchases = $query->orderBy('purchase_date', 'desc')->get();
+    
+    // Debug: Log the results
+    \Log::info('Total purchases found: ' . $purchases->count());
+    
+    if ($type === 'csv') {
+        $filename = 'purchases_' . now()->format('Y-m-d') . '.csv';
+        
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"$filename\"",
+        ];
+        
+        $callback = function () use ($purchases) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Date', 'Supplier', 'Invoice', 'Total', 'Created By']);
+            
+            foreach ($purchases as $p) {
+                fputcsv($file, [
+                    $p->purchase_date->format('Y-m-d'),
+                    $p->supplier->name ?? '',
+                    $p->invoice_no ?? '',
+                    number_format($p->total_cost, 2),
+                    $p->creator->name ?? '',
+                ]);
+            }
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+    
+    if ($type === 'pdf') {
+        $filename = 'purchases_' . now()->format('Y-m-d') . '.pdf';
+        
+        $html = view('inventory.purchases.export-pdf', [
+            'purchases' => $purchases,
+            'from' => $from,
+            'to' => $to
+        ])->render();
+        
+        // Use simple PDF generation with DOMPDF style
+        $pdf = new \Dompdf\Dompdf();
+        $pdf->loadHtml($html);
+        $pdf->setPaper('A4', 'landscape');
+        $pdf->render();
+        
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+    
+    if ($type === 'excel') {
+        $filename = 'purchases_' . now()->format('Y-m-d') . '.xlsx';
+        
+        // Generate HTML table that Excel can open
+        $html = view('inventory.purchases.export-excel', [
+            'purchases' => $purchases,
+            'from' => $from,
+            'to' => $to
+        ])->render();
+        
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+    
+    abort(404);
+}
+
+// Test method for debugging date filtering
+public function testDateFilter(Request $request)
+{
+    $from = $request->get('from');
+    $to = $request->get('to');
+    
+    $query = Purchase::with(['supplier', 'creator']);
+    
+    if ($from && $to) {
+        try {
+            $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+            $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+            $query->whereBetween('purchase_date', [$fromDate, $toDate]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
+    
+    $purchases = $query->orderBy('purchase_date', 'desc')->get();
+    
+    return response()->json([
+        'from' => $from,
+        'to' => $to,
+        'total_count' => $purchases->count(),
+        'purchases' => $purchases->take(5)->map(function($p) {
+            return [
+                'id' => $p->id,
+                'purchase_date' => $p->purchase_date->format('Y-m-d'),
+                'supplier' => $p->supplier->name ?? 'N/A',
+                'total' => $p->total_cost
+            ];
+        })
+    ]);
+}
+
+// Individual purchase export method
+public function exportIndividual(Purchase $purchase, $type)
+{
+    // Debug: Log the purchase ID to verify correct purchase is being exported
+    \Log::info('Exporting purchase ID: ' . $purchase->id . ' of type: ' . $type);
+    
+    // Load purchase with relationships
+    $purchase->load(['supplier', 'creator', 'items.product', 'items.taxes']);
+    
+    if ($type === 'csv') {
+        $filename = 'purchase_' . $purchase->id . '_' . now()->format('Y-m-d') . '.csv';
+        
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"$filename\"",
+        ];
+        
+        $callback = function () use ($purchase) {
+            $file = fopen('php://output', 'w');
+            
+            // Header info
+            fputcsv($file, ['Purchase Details']);
+            fputcsv($file, ['Purchase ID', $purchase->id]);
+            fputcsv($file, ['Date', $purchase->purchase_date->format('Y-m-d')]);
+            fputcsv($file, ['Supplier', $purchase->supplier->name ?? 'N/A']);
+            fputcsv($file, ['Invoice No', $purchase->invoice_no ?? 'N/A']);
+            fputcsv($file, ['Created By', $purchase->creator->name ?? 'N/A']);
+            fputcsv($file, ['Total Cost', number_format($purchase->total_cost, 2)]);
+            fputcsv($file, []); // Empty row
+            
+            // Items header
+            fputcsv($file, ['Items']);
+            fputcsv($file, ['Product', 'Quantity', 'Unit Cost', 'Tax', 'Line Total', 'Expiry Date']);
+            
+            foreach ($purchase->items as $item) {
+                $taxAmount = $item->taxes->sum('pivot.tax_amount');
+                fputcsv($file, [
+                    $item->product_name,
+                    $item->qty,
+                    number_format($item->unit_cost, 2),
+                    number_format($taxAmount, 2),
+                    number_format($item->line_total, 2),
+                    $item->expiry_date?->format('Y-m-d') ?? 'N/A'
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+    
+    if ($type === 'pdf') {
+        $filename = 'purchase_' . $purchase->id . '_' . now()->format('Y-m-d') . '.pdf';
+        
+        $html = view('inventory.purchases.export-individual-pdf', [
+            'purchase' => $purchase
+        ])->render();
+        
+        $pdf = new \Dompdf\Dompdf();
+        $pdf->loadHtml($html);
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->render();
+        
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+    
+    if ($type === 'excel') {
+        $filename = 'purchase_' . $purchase->id . '_' . now()->format('Y-m-d') . '.xlsx';
+        
+        $html = view('inventory.purchases.export-individual-excel', [
+            'purchase' => $purchase
+        ])->render();
+        
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+    
+    abort(404);
+}
 
 }

@@ -94,4 +94,14 @@ Route::middleware(['auth'])
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
         
         Route::resource('suppliers', SupplierController::class)->except(['show']);
-    });
+    Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
+    
+    // Individual purchase export route
+    Route::get('/purchases/{purchase}/export/{type}',[PurchaseController::class, 'exportIndividual'])->name('purchases.export-individual');
+    
+    // Test route for debugging date filtering
+    Route::get('/purchases/test-date-filter', [PurchaseController::class, 'testDateFilter']);
+
+    }
+    
+);

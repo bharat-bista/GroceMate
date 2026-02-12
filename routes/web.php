@@ -12,6 +12,18 @@ use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
+use App\Http\Controllers\POS\CustomerController;
+use App\Http\Controllers\POS\InvoiceController;
+use App\Http\Controllers\BusinessController;
+
+Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
+Route::post('/business/store', [BusinessController::class, 'store'])->name('business.store');
+Route::get('/business', [BusinessController::class, 'index'])->name('business.index');
+Route::get('/business/{business}/edit', [BusinessController::class, 'edit'])->name('business.edit');
+Route::put('/business/{business}', [BusinessController::class, 'update'])->name('business.update');
+Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
+Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('page-login');
@@ -107,5 +119,8 @@ Route::middleware(['auth'])
         })->name('dashboard');
 
         Route::resource('customers', CustomerController::class)->except(['show']);
+        
+        Route::resource('invoices', InvoiceController::class);
 
     });
+

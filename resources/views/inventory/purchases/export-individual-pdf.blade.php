@@ -28,6 +28,8 @@
         <div><strong>Supplier:</strong> {{ $purchase->supplier->name ?? 'N/A' }}</div>
         <div><strong>Invoice No:</strong> {{ $purchase->invoice_no ?? 'N/A' }}</div>
         <div><strong>Created By:</strong> {{ $purchase->creator->name ?? 'N/A' }}</div>
+        <div><strong>Base Total:</strong> Rs {{ number_format($purchase->items->sum('base_cost'), 2) }}</div>
+        <div><strong>Tax Applied:</strong> Rs {{ number_format($purchase->total_cost - $purchase->items->sum('base_cost'), 2) }}</div>
         <div><strong>Total Cost:</strong> Rs {{ number_format($purchase->total_cost, 2) }}</div>
     </div>
     
@@ -37,7 +39,6 @@
                 <th>Product</th>
                 <th class="text-right">Quantity</th>
                 <th class="text-right">Unit Cost</th>
-                <th class="text-right">Tax</th>
                 <th class="text-right">Line Total</th>
                 <th>Expiry Date</th>
             </tr>
@@ -48,7 +49,6 @@
                     <td>{{ $item->product_name }}</td>
                     <td class="text-right">{{ $item->qty }}</td>
                     <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->taxes->sum('pivot.tax_amount'), 2) }}</td>
                     <td class="text-right">{{ number_format($item->line_total, 2) }}</td>
                     <td>{{ $item->expiry_date?->format('Y-m-d') ?? 'N/A' }}</td>
                 </tr>
@@ -56,7 +56,7 @@
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="4"><strong>Total</strong></td>
+                <td colspan="3"><strong>Total</strong></td>
                 <td class="text-right"><strong>Rs {{ number_format($purchase->total_cost, 2) }}</strong></td>
                 <td></td>
             </tr>

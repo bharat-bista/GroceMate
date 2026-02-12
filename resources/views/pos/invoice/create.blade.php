@@ -1,11 +1,11 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', 'New Purchase')
-@section('heading', 'New Purchase (Stock-In)')
-@section('subtitle', 'Add supplier, date and multiple products with taxes')
+@section('title', 'New Invoice')
+@section('heading', 'New Invoice (POS Sale)')
+@section('subtitle', 'Add customer, date and multiple products with taxes')
 
 @section('content')
-<form method="POST" action="{{ route('inventory.purchases.store') }}"
+<form method="POST" action="{{ route('pos.invoices.store') }}
       class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6" id="purchaseForm">
     @csrf
 
@@ -118,7 +118,7 @@
         <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
       Save
     </button>
-        <a href="{{ route('inventory.suppliers.index') }}"
+        <a href="{{ route('pos.invoices.index') }}"
        class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
       Cancel
     </a>

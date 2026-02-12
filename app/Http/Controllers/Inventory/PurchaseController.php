@@ -77,7 +77,8 @@ class PurchaseController extends Controller
         $data = $request->validate([
             'supplier_id' => ['required', 'exists:suppliers,id'],
             'purchase_date' => ['required', 'date'],
-            'invoice_no' => ['nullable', 'string', 'max:100'],
+            'invoice_no' => ['required', 'string', 'max:100'],
+            'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
@@ -85,8 +86,6 @@ class PurchaseController extends Controller
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
             'items.*.expiry_date' => ['nullable', 'date'],
-            'items.*.taxes' => ['nullable', 'array'],
-            'items.*.taxes.*' => ['nullable', 'integer', 'exists:taxes,id'],
         ]);
 
         DB::transaction(function () use ($data) {
@@ -99,13 +98,12 @@ class PurchaseController extends Controller
                 'total_cost' => 0,
             ]);
 
-            $purchaseTotal = 0;
+            $purchaseBaseTotal = 0;
 
             foreach ($data['items'] as $row) {
                 $qty = (float) $row['qty'];
                 $unitCost = (float) $row['unit_cost'];
                 $baseCost = $qty * $unitCost;
-                $taxTotal = 0;
 
                 // Check if product exists, if not create it
                 if (!empty($row['product_id'])) {
@@ -131,8 +129,8 @@ class PurchaseController extends Controller
                     $productId = $product->id;
                 }
 
-                // Create purchase item
-                $item = PurchaseItem::create([
+                // Create purchase item (no per-product taxes)
+                PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
                     'product_name' => $row['product_name'],         // snapshot
@@ -141,35 +139,12 @@ class PurchaseController extends Controller
                     'unit_cost' => $unitCost,
                     'base_cost' => $baseCost,
                     'tax_total' => 0,
-                    'line_total' => 0,
+                    'line_total' => $baseCost,
                     'expiry_date' => $row['expiry_date'] ?? null,
                 ]);
 
-                // Apply taxes if any
-                if (!empty($row['taxes'])) {
-                    $taxes = Tax::whereIn('id', $row['taxes'])->get();
-
-                    foreach ($taxes as $tax) {
-                        if ($tax->type === 'fixed') {
-                            $taxAmount = $tax->rate * $qty;
-                        } else {
-                            $taxAmount = ($baseCost * $tax->rate) / 100;
-                        }
-
-                        $taxTotal += $taxAmount;
-                        $item->taxes()->attach($tax->id, ['tax_amount' => $taxAmount]);
-                    }
-
-                    $item->update([
-                        'tax_total' => $taxTotal,
-                        'line_total' => $baseCost + $taxTotal
-                    ]);
-                } else {
-                    $item->update(['line_total' => $baseCost]);
-                }
-
-                // Add to purchase total
-                $purchaseTotal += $item->line_total;
+                // Add to purchase base total
+                $purchaseBaseTotal += $baseCost;
 
                 // Update stock
                 $stock = Stock::firstOrCreate(
@@ -179,7 +154,21 @@ class PurchaseController extends Controller
                 $stock->increment('quantity', $qty);
             }
 
-            // Update purchase total
+            // Calculate final tax if selected
+            $finalTaxAmount = 0;
+            if (!empty($data['final_tax_id'])) {
+                $tax = Tax::find($data['final_tax_id']);
+                if ($tax) {
+                    if ($tax->type === 'fixed') {
+                        $finalTaxAmount = $tax->rate;
+                    } else {
+                        $finalTaxAmount = ($purchaseBaseTotal * $tax->rate) / 100;
+                    }
+                }
+            }
+
+            // Update purchase total with final tax
+            $purchaseTotal = $purchaseBaseTotal + $finalTaxAmount;
             $purchase->update(['total_cost' => $purchaseTotal]);
         });
 
@@ -189,7 +178,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['supplier', 'creator', 'items.product', 'items.taxes']);
+        $purchase->load(['supplier', 'creator', 'items.product']);
         return view('inventory.purchases.show', compact('purchase'));
     }
 
@@ -411,7 +400,7 @@ public function exportIndividual(Purchase $purchase, $type)
     \Log::info('Exporting purchase ID: ' . $purchase->id . ' of type: ' . $type);
     
     // Load purchase with relationships
-    $purchase->load(['supplier', 'creator', 'items.product', 'items.taxes']);
+    $purchase->load(['supplier', 'creator', 'items.product']);
     
     if ($type === 'csv') {
         $filename = 'purchase_' . $purchase->id . '_' . now()->format('Y-m-d') . '.csv';
@@ -436,15 +425,13 @@ public function exportIndividual(Purchase $purchase, $type)
             
             // Items header
             fputcsv($file, ['Items']);
-            fputcsv($file, ['Product', 'Quantity', 'Unit Cost', 'Tax', 'Line Total', 'Expiry Date']);
+            fputcsv($file, ['Product', 'Quantity', 'Unit Cost', 'Line Total', 'Expiry Date']);
             
             foreach ($purchase->items as $item) {
-                $taxAmount = $item->taxes->sum('pivot.tax_amount');
                 fputcsv($file, [
                     $item->product_name,
                     $item->qty,
                     number_format($item->unit_cost, 2),
-                    number_format($taxAmount, 2),
                     number_format($item->line_total, 2),
                     $item->expiry_date?->format('Y-m-d') ?? 'N/A'
                 ]);

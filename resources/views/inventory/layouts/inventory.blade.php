@@ -116,6 +116,11 @@
 
     </div>
   </div>
+  <!-- Dashboard -->
+  <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+     href="{{ route('business.index') }}">
+     Profile
+  </a>
 
 </nav>
 

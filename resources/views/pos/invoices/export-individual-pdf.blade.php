@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Purchase Report of ID{{ $purchase->id }}</title>
+    <title>Invoice Report #{{ $invoice->id }}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
@@ -21,17 +21,18 @@
 <body>
     
     
-    <h1>Purchase Report of ID:{{ $purchase->id }}</h1>
-    <h1>Supplier ID:{{ $purchase->supplier_id }}</h1>
+    <h1>Invoice Report #{{ $invoice->id }}</h1>
+    <h1>Customer ID:{{ $invoice->customer_id }}</h1>
     <div class="header-info">
-        <div><strong>Date:</strong> {{ $purchase->purchase_date->setTimezone('Asia/Kathmandu')->format('M d, Y') }}</div>
-        <div><strong>Business:</strong> {{ $purchase->business->business_name ?? 'N/A' }}</div>
-        <div><strong>Supplier:</strong> {{ $purchase->supplier->name ?? 'N/A' }}</div>
-        <div><strong>Invoice No:</strong> {{ $purchase->invoice_no ?? 'N/A' }}</div>
-        <div><strong>Created By:</strong> {{ $purchase->creator->name ?? 'N/A' }}</div>
-        <div><strong>Base Total:</strong> Rs {{ number_format($purchase->items->sum('base_cost'), 2) }}</div>
-        <div><strong>Tax Applied:</strong> Rs {{ number_format($purchase->total_cost - $purchase->items->sum('base_cost'), 2) }}</div>
-        <div><strong>Total Cost:</strong> Rs {{ number_format($purchase->total_cost, 2) }}</div>
+        <div><strong>Date:</strong> {{ $invoice->purchase_date->setTimezone('Asia/Kathmandu')->format('M d, Y') }}</div>
+        <div><strong>Business:</strong> {{ $invoice->business->business_name ?? 'N/A' }}</div>
+        <div><strong>Customer:</strong> {{ $invoice->customer->name ?? 'N/A' }}</div>
+        <div><strong>Invoice No:</strong> {{ $invoice->invoice_no ?? 'N/A' }}</div>
+        <div><strong>Payment Method:</strong> {{ ucfirst($invoice->payment_method) }}</div>
+        <div><strong>Created By:</strong> {{ $invoice->creator->name ?? 'N/A' }}</div>
+        <div><strong>Base Total:</strong> Rs {{ number_format($invoice->items->sum('base_cost'), 2) }}</div>
+        <div><strong>Tax Applied:</strong> Rs {{ number_format($invoice->total_cost - $invoice->items->sum('base_cost'), 2) }}</div>
+        <div><strong>Total Cost:</strong> Rs {{ number_format($invoice->total_cost, 2) }}</div>
     </div>
     
     <table>
@@ -41,24 +42,24 @@
                 <th class="text-right">Quantity</th>
                 <th class="text-right">Unit Cost</th>
                 <th class="text-right">Line Total</th>
-                <th>Expiry Date</th>
+                <th>Unit</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($purchase->items as $item)
+            @foreach($invoice->items as $item)
                 <tr>
                     <td>{{ $item->product_name }}</td>
                     <td class="text-right">{{ $item->qty }}</td>
                     <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
                     <td class="text-right">{{ number_format($item->line_total, 2) }}</td>
-                    <td>{{ $item->expiry_date?->format('Y-m-d') ?? 'N/A' }}</td>
+                    <td>{{ $item->unit ?? 'N/A' }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr class="total-row">
                 <td colspan="3"><strong>Total</strong></td>
-                <td class="text-right"><strong>Rs {{ number_format($purchase->total_cost, 2) }}</strong></td>
+                <td class="text-right"><strong>Rs {{ number_format($invoice->total_cost, 2) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>
@@ -66,7 +67,7 @@
     
     <div class="footer">
         Generated on: {{ \Carbon\Carbon::now('Asia/Kathmandu')->format('F j, Y') }} at {{ \Carbon\Carbon::now('Asia/Kathmandu')->format('g:i A') }} (NPT)<br>
-        Purchase ID: #{{ $purchase->id }}
+        Invoice ID: #{{ $invoice->id }}
     </div>
 </body>
 </html>

@@ -73,8 +73,7 @@
                         <option value="">Select Type</option>
                         <option value="grocery">Grocery</option>
                         <option value="liquor">Liquor</option>
-                        <option value="wholesale">Wholesale</option>
-                        <option value="retail">Retail</option>
+                        
                     </select>
                 </div>
             </div>

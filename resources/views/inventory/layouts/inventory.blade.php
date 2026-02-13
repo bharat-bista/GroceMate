@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <style>[x-cloak]{display:none!important;}</style>
   <title>@yield('title', 'Inventory')</title>
   @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
@@ -95,7 +97,7 @@
       </a>
 
       <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
-         href="#">
+         href="{{ route('pos.invoices.index') }}">
          New Sale
       </a>
 

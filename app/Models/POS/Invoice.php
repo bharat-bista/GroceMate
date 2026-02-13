@@ -2,7 +2,7 @@
 
 namespace App\Models\POS;
 
-use App\Models\Customer;
+use App\Models\POS\Customer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,10 +10,12 @@ class Invoice extends Model
 {
     protected $fillable = [
         'customer_id',
+        'business_id',
         'created_by',
         'purchase_date',
         'invoice_no',
         'total_cost',
+        'payment_method',
     ];
 
     protected $casts = [
@@ -24,6 +26,11 @@ class Invoice extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function business()
+    {
+        return $this->belongsTo(\App\Models\Business::class);
     }
 
     public function creator()

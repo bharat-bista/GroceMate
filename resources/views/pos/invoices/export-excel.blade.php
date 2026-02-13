@@ -21,28 +21,28 @@
             <tr>
                 <th>Date</th>
                 <th>Business</th>
-                <th>Supplier</th>
+                <th>Customer</th>
                 <th>Invoice No</th>
                 <th>Total</th>
                 <th>Created By</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($purchases as $purchase)
+            @foreach($invoices as $invoice)
                 <tr>
-                    <td class="text">{{ $purchase->purchase_date->format('Y-m-d') }}</td>
-                    <td class="text">{{ $purchase->business->business_name ?? 'N/A' }}</td>
-                    <td class="text">{{ $purchase->supplier->name ?? 'N/A' }}</td>
-                    <td class="text">{{ $purchase->invoice_no ?? 'N/A' }}</td>
-                    <td class="number">{{ $purchase->total_cost }}</td>
-                    <td class="text">{{ $purchase->creator->name ?? 'N/A' }}</td>
+                    <td class="text">{{ $invoice->purchase_date->format('Y-m-d') }}</td>
+                    <td class="text">{{ $invoice->business->business_name ?? 'N/A' }}</td>
+                    <td class="text">{{ $invoice->customer->name ?? 'N/A' }}</td>
+                    <td class="text">{{ $invoice->invoice_no ?? 'N/A' }}</td>
+                    <td class="number">{{ $invoice->total_cost }}</td>
+                    <td class="text">{{ $invoice->creator->name ?? 'N/A' }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="4"><strong>Total</strong></td>
-                <td class="number"><strong>{{ $purchases->sum('total_cost') }}</strong></td>
+                <td class="number"><strong>{{ $invoices->sum('total_cost') }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

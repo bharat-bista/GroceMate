@@ -11,6 +11,16 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
+            <label class="text-sm text-slate-600">Business Account *</label>
+            <select name="business_id" required 
+                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
+                <option value="">Select Business Account</option>
+                @foreach($businesses as $b)
+                    <option value="{{ $b->id }}" @selected(old('business_id')==$b->id)>{{ $b->business_name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
             <label class="text-sm text-slate-600">Supplier *</label>
             <select name="supplier_id" required 
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">

@@ -6,7 +6,11 @@
 
 @section('content')
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+      <div class="text-sm text-slate-500">Business</div>
+      <div class="font-semibold">{{ $purchase->business->business_name ?? '—' }}</div>
+    </div>
     <div>
       <div class="text-sm text-slate-500">Supplier</div>
       <div class="font-semibold">{{ $purchase->supplier->name ?? '—' }}</div>

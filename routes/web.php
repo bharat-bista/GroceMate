@@ -96,6 +96,7 @@ Route::middleware(['auth'])
             ->name('purchases.search-products');
         
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+        Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
         Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
     
@@ -121,6 +122,10 @@ Route::middleware(['auth'])
         Route::resource('customers', CustomerController::class)->except(['show']);
         
         Route::resource('invoices', InvoiceController::class);
+        
+        Route::get('/invoices/bulk-export/{format}', [InvoiceController::class, 'bulkExport'])->name('invoices.bulk-export');
+        
+        Route::get('/invoices/{invoice}/export/{format}', [InvoiceController::class, 'export'])->name('invoices.export');
 
     });
 

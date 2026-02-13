@@ -81,8 +81,7 @@
                         <option value="">Select Type</option>
                         <option value="grocery" {{ $business->business_type == 'grocery' ? 'selected' : '' }}>Grocery</option>
                         <option value="liquor" {{ $business->business_type == 'liquor' ? 'selected' : '' }}>Liquor</option>
-                        <option value="wholesale" {{ $business->business_type == 'wholesale' ? 'selected' : '' }}>Wholesale</option>
-                        <option value="retail" {{ $business->business_type == 'retail' ? 'selected' : '' }}>Retail</option>
+                        
                     </select>
                 </div>
             </div>

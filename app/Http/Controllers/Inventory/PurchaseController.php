@@ -20,10 +20,11 @@ class PurchaseController extends Controller
         $q = $request->string('q')->toString();
 
         $purchases = Purchase::query()
-            ->with(['supplier','creator'])
+            ->with(['supplier','creator','business'])
             ->when($q, function ($qq) use ($q) {
                 $qq->where('invoice_no','like',"%{$q}%")
-                   ->orWhereHas('supplier', fn($s) => $s->where('name','like',"%{$q}%"));
+                   ->orWhereHas('supplier', fn($s) => $s->where('name','like',"%{$q}%"))
+                   ->orWhereHas('business', fn($b) => $b->where('business_name','like',"%{$q}%"));
             })
             ->orderByDesc('id')
             ->paginate(10)
@@ -66,6 +67,7 @@ class PurchaseController extends Controller
     });
 
     return view('inventory.purchases.create', [
+        'businesses' => \App\Models\Business::orderBy('business_name')->get(),
         'suppliers' => Supplier::orderBy('name')->get(),
         'products'  => $products,
         'taxes'     => Tax::orderBy('name')->get(),
@@ -75,6 +77,7 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'business_id' => ['required', 'exists:businesses,id'],
             'supplier_id' => ['required', 'exists:suppliers,id'],
             'purchase_date' => ['required', 'date'],
             'invoice_no' => ['required', 'string', 'max:100'],
@@ -91,6 +94,7 @@ class PurchaseController extends Controller
         DB::transaction(function () use ($data) {
             // Create purchase header
             $purchase = Purchase::create([
+                'business_id' => $data['business_id'],
                 'supplier_id' => $data['supplier_id'],
                 'created_by' => auth()->id(),
                 'purchase_date' => $data['purchase_date'],
@@ -178,7 +182,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['supplier', 'creator', 'items.product']);
+        $purchase->load(['supplier', 'creator', 'items.product', 'business']);
         return view('inventory.purchases.show', compact('purchase'));
     }
 

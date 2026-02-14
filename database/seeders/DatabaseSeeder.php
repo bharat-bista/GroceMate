@@ -13,5 +13,6 @@ class DatabaseSeeder extends Seeder
     {
         // Call your custom UserSeeder only
         $this->call(UserSeeder::class);
+        $this->call(TaxSeeder::class);
     }
 }

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Purchases Report</title>
+    <title>Invoices Report</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
@@ -15,7 +15,7 @@
     </style>
 </head>
 <body>
-    <h1>Purchases Report</h1>
+    <h1>Invoices Report</h1>
     
     @if($from && $to)
         <div class="date-range">
@@ -28,28 +28,28 @@
             <tr>
                 <th>Date</th>
                 <th>Business</th>
-                <th>Supplier</th>
+                <th>Customer</th>
                 <th>Invoice No</th>
                 <th class="text-right">Total</th>
                 <th>Created By</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($purchases as $purchase)
+            @foreach($invoices as $invoice)
                 <tr>
-                    <td>{{ $purchase->purchase_date->format('M d, Y') }}</td>
-                    <td>{{ $purchase->business->business_name ?? 'N/A' }}</td>
-                    <td>{{ $purchase->supplier->name ?? 'N/A' }}</td>
-                    <td>{{ $purchase->invoice_no ?? 'N/A' }}</td>
-                    <td class="text-right">{{ number_format($purchase->total_cost, 2) }}</td>
-                    <td>{{ $purchase->creator->name ?? 'N/A' }}</td>
+                    <td>{{ $invoice->purchase_date->format('M d, Y') }}</td>
+                    <td>{{ $invoice->business->business_name ?? 'N/A' }}</td>
+                    <td>{{ $invoice->customer->name ?? 'N/A' }}</td>
+                    <td>{{ $invoice->invoice_no ?? 'N/A' }}</td>
+                    <td class="text-right">{{ number_format($invoice->total_cost, 2) }}</td>
+                    <td>{{ $invoice->creator->name ?? 'N/A' }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr class="total-row">
                 <td colspan="4"><strong>Total</strong></td>
-                <td class="text-right"><strong>{{ number_format($purchases->sum('total_cost'), 2) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($invoices->sum('total_cost'), 2) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

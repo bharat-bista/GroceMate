@@ -20,12 +20,12 @@
     <table border="1" cellspacing="0" cellpadding="0">
         <thead>
             <tr>
-                <th colspan="6" class="header">Purchase Report #{{ $purchase->id }}</th>
+                <th colspan="6" class="header">Invoice Report #{{ $invoice->id }}</th>
             </tr>
             <tr>
-                <th colspan="2" class="header">Date: {{ $purchase->purchase_date->format('Y-m-d') }}</th>
-                <th colspan="2" class="header">Business: {{ $purchase->business->business_name ?? 'N/A' }}</th>
-                <th colspan="2" class="header">Supplier: {{ $purchase->supplier->name ?? 'N/A' }}</th>
+                <th colspan="2" class="header">Date: {{ $invoice->purchase_date->format('Y-m-d') }}</th>
+                <th colspan="2" class="header">Business: {{ $invoice->business->business_name ?? 'N/A' }}</th>
+                <th colspan="2" class="header">Customer: {{ $invoice->customer->name ?? 'N/A' }}</th>
             </tr>
             <tr class="header">
                 <th>Product</th>
@@ -33,31 +33,31 @@
                 <th>Unit Cost</th>
                 <th>Tax</th>
                 <th>Line Total</th>
-                <th>Expiry Date</th>
+                <th>Unit</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($purchase->items as $item)
+            @foreach($invoice->items as $item)
                 <tr>
                     <td class="text">{{ $item->product_name }}</td>
                     <td class="number">{{ $item->qty }}</td>
                     <td class="number">{{ $item->unit_cost }}</td>
-                    <td class="number">{{ $item->taxes->sum('pivot.tax_amount') }}</td>
+                    <td class="number">{{ $item->tax_total }}</td>
                     <td class="number">{{ $item->line_total }}</td>
-                    <td class="text">{{ $item->expiry_date?->format('Y-m-d') ?? 'N/A' }}</td>
+                    <td class="text">{{ $item->unit ?? 'N/A' }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="4"><strong>Total</strong></td>
-                <td class="number"><strong>{{ $purchase->total_cost }}</strong></td>
+                <td class="number"><strong>{{ $invoice->total_cost }}</strong></td>
                 <td></td>
             </tr>
             <tr>
                 <td colspan="6" class="text">
-                    Invoice No: {{ $purchase->invoice_no ?? 'N/A' }} | 
-                    Created By: {{ $purchase->creator->name ?? 'N/A' }} | 
+                    Invoice No: {{ $invoice->invoice_no ?? 'N/A' }} | 
+                    Created By: {{ $invoice->creator->name ?? 'N/A' }} | 
                     Generated: {{ now()->format('Y-m-d H:i') }}
                 </td>
             </tr>

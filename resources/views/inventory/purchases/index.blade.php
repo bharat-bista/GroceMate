@@ -106,6 +106,7 @@
     <thead class="text-slate-500 bg-slate-50">
       <tr>
         <th class="text-left px-5 py-3">Date</th>
+        <th class="text-left px-5 py-3">Business</th>
         <th class="text-left px-5 py-3">Supplier</th>
         <th class="text-left px-5 py-3">Invoice No</th>
         <th class="text-left px-5 py-3">Total Cost</th>
@@ -119,6 +120,7 @@
       @forelse($purchases as $p)
         <tr>
           <td class="px-5 py-4">{{ $p->purchase_date->format('Y-m-d') }}</td>
+          <td class="px-5 py-4 font-semibold">{{ $p->business->business_name ?? '—' }}</td>
           <td class="px-5 py-4 font-semibold">{{ $p->supplier->name ?? '—' }}</td>
           <td class="px-5 py-4">{{ $p->invoice_no ?? '—' }}</td>
           <td class="px-5 py-4">Rs {{ number_format((float)$p->total_cost, 2) }}</td>
@@ -128,7 +130,7 @@
           </td>
         </tr>
       @empty
-        <tr><td class="px-5 py-6 text-slate-500" colspan="6">No purchases found.</td></tr>
+        <tr><td class="px-5 py-6 text-slate-500" colspan="7">No purchases found.</td></tr>
       @endforelse
       
     </tbody>

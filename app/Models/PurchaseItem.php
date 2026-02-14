@@ -38,62 +38,15 @@ class PurchaseItem extends Model
         return $this->belongsTo(Product::class); 
     }
     
-    public function taxes()
-    {
-        return $this->belongsToMany(Tax::class, 'purchase_item_taxes')
-                    ->withPivot('tax_amount')
-                    ->withTimestamps();
-    }
-    
     /**
-     * Calculate and update totals
+     * Calculate and update totals (no taxes)
      */
     public function calculateTotals()
     {
         $this->base_cost = $this->qty * $this->unit_cost;
-        $this->tax_total = $this->taxes->sum('pivot.tax_amount');
-        $this->line_total = $this->base_cost + $this->tax_total;
+        $this->tax_total = 0;
+        $this->line_total = $this->base_cost;
         
         return $this;
-    }
-    
-    /**
-     * Scope for items with taxes
-     */
-    public function scopeWithTaxes($query)
-    {
-        return $query->with('taxes');
-    }
-    
-    /**
-     * Get formatted line total
-     */
-    public function getFormattedLineTotalAttribute()
-    {
-        return number_format($this->line_total, 2);
-    }
-    
-    /**
-     * Get formatted tax total
-     */
-    public function getFormattedTaxTotalAttribute()
-    {
-        return number_format($this->tax_total, 2);
-    }
-    
-    /**
-     * Get applied taxes as string
-     */
-    public function getAppliedTaxesStringAttribute()
-    {
-        if ($this->taxes->isEmpty()) {
-            return 'No Taxes';
-        }
-        
-        return $this->taxes->map(function($tax) {
-            return $tax->name . ' (' . 
-                   ($tax->type === 'percentage' ? $tax->rate . '%' : $tax->rate) . 
-                   ')';
-        })->implode(', ');
     }
 }

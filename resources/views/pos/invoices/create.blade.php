@@ -1,52 +1,111 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', 'New Purchase')
-@section('heading', 'New Purchase (Stock-In)')
-@section('subtitle', 'Add supplier, date and multiple products with taxes')
+@section('title', 'New Invoice')
+@section('heading', 'New Invoice (POS Sale)')
+@section('subtitle', 'Add customer, date and multiple products with taxes')
 
 @section('content')
-<form method="POST" action="{{ route('inventory.purchases.store') }}"
+<form method="POST" action="{{ route('pos.invoices.store') }}"
       class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6" id="purchaseForm">
     @csrf
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-            <label class="text-sm text-slate-600">Business Account *</label>
+            <label class="text-sm text-slate-600">Business *</label>
             <select name="business_id" required 
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                <option value="">Select Business Account</option>
+                <option value="">Select Business</option>
                 @foreach($businesses as $b)
                     <option value="{{ $b->id }}" @selected(old('business_id')==$b->id)>{{ $b->business_name }}</option>
                 @endforeach
             </select>
         </div>
+
         <div>
-            <label class="text-sm text-slate-600">Supplier *</label>
-            <select name="supplier_id" required 
+            <label class="text-sm text-slate-600">Customer *</label>
+            <select name="customer_id" required 
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                <option value="">Select Supplier</option>
-                @foreach($suppliers as $s)
-                    <option value="{{ $s->id }}" @selected(old('supplier_id')==$s->id)>{{ $s->name }}</option>
+                <option value="">Select Customer</option>
+                @foreach($customers as $c)
+                    <option value="{{ $c->id }}" @selected(old('customer_id')==$c->id)>{{ $c->name }}</option>
                 @endforeach
             </select>
         </div>
 
         <div>
-            <label class="text-sm text-slate-600">Purchase Date *</label>
+            <label class="text-sm text-slate-600">Invoice Date *</label>
             <input type="date" name="purchase_date" value="{{ old('purchase_date', now()->toDateString()) }}" required
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400" />
         </div>
 
         <div>
             <label class="text-sm text-slate-600">Invoice No *</label>
-            <input name="invoice_no" value="{{ old('invoice_no') }}" required
+            <input name="invoice_no" value="{{ old('invoice_no', $nextInvoiceNumber) }}" readonly
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400" />
+            
+        </div>
+    </div>
+
+    <!-- Payment Method Section -->
+    <div class="border-t border-slate-200 pt-5">
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Payment Method *</h3>
+            <p class="text-sm text-slate-600">Select how the customer will pay for this invoice</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="relative">
+                <input type="radio" name="payment_method" value="cash" id="payment_cash" 
+                       @checked(old('payment_method', 'cash') == 'cash') required
+                       class="peer sr-only">
+                <label for="payment_cash" 
+                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 hover:border-slate-300 border-slate-200">
+                    <div class="text-center">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <div class="font-medium">Cash</div>
+                        <div class="text-xs opacity-75">Paid in cash</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="relative">
+                <input type="radio" name="payment_method" value="credit" id="payment_credit" 
+                       @checked(old('payment_method') == 'credit') required
+                       class="peer sr-only">
+                <label for="payment_credit" 
+                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 hover:border-slate-300 border-slate-200">
+                    <div class="text-center">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        <div class="font-medium">Credit</div>
+                        <div class="text-xs opacity-75">Pay later</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="relative">
+                <input type="radio" name="payment_method" value="bank" id="payment_bank" 
+                       @checked(old('payment_method') == 'bank') required
+                       class="peer sr-only">
+                <label for="payment_bank" 
+                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 hover:border-slate-300 border-slate-200">
+                    <div class="text-center">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <div class="font-medium">Bank</div>
+                        <div class="text-xs opacity-75">Bank transfer</div>
+                    </div>
+                </label>
+            </div>
         </div>
     </div>
 
     <div class="border-t border-slate-200 pt-5">
         <div class="flex items-center justify-between mb-4">
-            <div class="font-semibold text-lg">Purchase Items</div>
+            <div class="font-semibold text-lg">Invoice Items</div>
             <button type="button" id="addRow"
                     class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +125,6 @@
                         <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
                         <th class="text-left px-4 py-3 font-medium">Base Cost</th>
                         <th class="text-left px-4 py-3 font-medium">Subtotal</th>
-                        <th class="text-left px-4 py-3 font-medium">Expiry Date</th>
                         <th class="text-center px-4 py-3 font-medium">Action</th>
                     </tr>
                 </thead>
@@ -118,20 +176,20 @@
         </div>
         
         <p class="text-xs text-slate-500 mt-2">
-            <strong>Tip:</strong> Start typing product name to see suggestions from purchase history.
+            <strong>Tip:</strong> Start typing product name to see suggestions from inventory.
             New products will be created automatically.
         </p>
     </div>
 
-    <!-- Save Purchase Button Section -->
+    <!-- Save Invoice Button Section -->
     <div class="flex gap-3 pt-4 border-t border-slate-200 mt-6">
-        <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-      Save
-    </button>
-        <a href="{{ route('inventory.suppliers.index') }}"
-       class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
-      Cancel
-    </a>
+        <button type="submit" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+            Save Invoice
+        </button>
+        <a href="{{ route('pos.invoices.index') }}"
+           class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+            Cancel
+        </a>
     </div>
 </form>
 
@@ -166,7 +224,7 @@ const taxes = [
     name: "{{ addslashes($tax->name) }}",
     rate: {{ $tax->rate }},
     type: "{{ $tax->type }}",
-    formatted: "{{ $tax->type === 'percentage' ? $tax->rate . '%' : $tax->rate . ' per unit' }}",
+    formatted: "{{ $tax->type === 'percentage' ? $tax->rate . '%' : $tax->rate . ' fixed' }}",
 },
 @endforeach
 ];
@@ -174,6 +232,7 @@ const taxes = [
 let rowCounter = 0;
 let activeAutocomplete = null;
 let searchTimeout = null;
+
 async function searchProductsApi(query) {
     try {
         console.log('🔍 Searching:', query);
@@ -193,7 +252,6 @@ async function searchProductsApi(query) {
         });
         
         console.log('📡 Status:', response.status);
-        console.log('📡 Headers:', response.headers);
         
         if (!response.ok) {
             const errorText = await response.text();
@@ -224,7 +282,6 @@ async function searchProductsApi(query) {
         return fallbackResults;
     }
 }
-
 
 // ---------- Totals ----------
 function calculateRowTotal(rowId) {
@@ -292,8 +349,7 @@ function applyFinalTax(totalBase) {
     grandTotalElement.textContent = formatCurrency(grandTotal);
 }
 
-
-// ---------- Product selection (IMPORTANT FIX) ----------
+// ---------- Product selection ----------
 function updateProductFromInput(rowId, payload) {
     const row = document.getElementById(`row-${rowId}`);
     if (!row) return;
@@ -328,7 +384,6 @@ function updateProductFromInput(rowId, payload) {
     updateAllTotals();
 }
 
-
 // ---------- Autocomplete UI ----------
 function removeAutocomplete() {
     if (activeAutocomplete) {
@@ -336,6 +391,7 @@ function removeAutocomplete() {
         activeAutocomplete = null;
     }
 }
+
 function createAutocompleteDropdown(rowId, inputElement, results) {
     // remove old dropdown
     if (activeAutocomplete) {
@@ -355,10 +411,7 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
     if (old) old.remove();
 
     const dropdown = document.createElement('div');
-dropdown.className =
-    'autocomplete-dropdown absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-sm z-50 max-h-60 overflow-y-auto text-sm';
-dropdown.style.transition = 'all 0.2s';
-dropdown.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+    dropdown.className = 'autocomplete-dropdown absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-sm z-50 max-h-60 overflow-y-auto text-sm';
 
     // Better UI container
     const list = document.createElement('div');
@@ -373,9 +426,8 @@ dropdown.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
         results.slice(0, 10).forEach((p) => {
             const item = document.createElement('button');
             item.type = 'button';
-            item.className =
-    'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate';
-item.style.transition = 'background 0.2s';
+            item.className = 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate';
+            
             // highlight matching text
             const name = p.name || '';
             const idx = name.toLowerCase().indexOf(qLower);
@@ -387,19 +439,19 @@ item.style.transition = 'background 0.2s';
                     : name;
 
             item.innerHTML = `
-    <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0 flex-1">
-            <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
-            <div class="text-[11px] text-slate-500 leading-tight">
-                ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'}
-            </div>
-        </div>
-        <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
-            Last: ${formatCurrency(p.last_cost ?? 0)}
-        </div>
-    </div>
-`;
-dropdown.className = 'autocomplete-dropdown absolute left-0 min-w-[220px] mt-1 bg-white border border-slate-300 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto';
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
+                        <div class="text-[11px] text-slate-500 leading-tight">
+                            ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'}
+                        </div>
+                    </div>
+                    <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
+                        Last: ${formatCurrency(p.last_cost ?? 0)}
+                    </div>
+                </div>
+            `;
+
             item.addEventListener('click', () => {
                 updateProductFromInput(rowId, {
                     id: p.id,
@@ -423,8 +475,7 @@ dropdown.className = 'autocomplete-dropdown absolute left-0 min-w-[220px] mt-1 b
     if (!hasExact) {
         const createBtn = document.createElement('button');
         createBtn.type = 'button';
-        createBtn.className =
-            'w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 outline-none';
+        createBtn.className = 'w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 outline-none';
 
         createBtn.innerHTML = `
             <div class="flex items-center gap-2">
@@ -498,7 +549,6 @@ async function handleProductSearch(rowId, inputElement) {
     }, 300);
 }
 
-
 // ---------- Row creation ----------
 function createRow() {
     const rowId = rowCounter++;
@@ -537,13 +587,12 @@ function createRow() {
         </td>
         <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
-       type="number"
-       step="0.01"
-       min="0"
-       value="0"
-       required
-       class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
-
+                   type="number"
+                   step="0.01"
+                   min="0"
+                   value="0"
+                   required
+                   class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
         </td>
         <td class="px-4 py-3">
             <div class="text-slate-900 font-medium text-sm">
@@ -557,11 +606,6 @@ function createRow() {
                 <input type="hidden" name="items[${rowId}][line_total]" class="subtotal-input" value="0">
             </div>
         </td>
-        <td class="px-4 py-3">
-            <input name="items[${rowId}][expiry_date]"
-                   type="date"
-                   class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
-        </td>
         <td class="px-4 py-3 text-center">
             <button type="button"
                     class="remove-btn px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium border border-red-200">
@@ -571,28 +615,26 @@ function createRow() {
     `;
 
     // bind events (better than inline HTML)
- // bind events (better than inline HTML)
-const productInput = row.querySelector('.product-name-input');
+    const productInput = row.querySelector('.product-name-input');
 
-// AUTO CAPITALIZE INPUT and trigger search
-productInput.addEventListener('input', () => {
-    // auto capitalize each word
-    productInput.value = productInput.value.replace(/\b\w/g, l => l.toUpperCase());
-    handleProductSearch(rowId, productInput); // call your autocomplete search
-});
+    // AUTO CAPITALIZE INPUT and trigger search
+    productInput.addEventListener('input', () => {
+        // auto capitalize each word
+        productInput.value = productInput.value.replace(/\b\w/g, l => l.toUpperCase());
+        handleProductSearch(rowId, productInput); // call your autocomplete search
+    });
 
-// also trigger search on focus
-productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
+    // also trigger search on focus
+    productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
 
-// update totals when qty or cost changes
-row.querySelector('.qty-input').addEventListener('input', updateAllTotals);
-row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
+    // update totals when qty or cost changes
+    row.querySelector('.qty-input').addEventListener('input', updateAllTotals);
+    row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
 
-// remove row
-row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
+    // remove row
+    row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
 
-return row;
-
+    return row;
 }
 
 function removeRow(rowId) {
@@ -636,10 +678,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // form validation (keep simple)
     document.getElementById('purchaseForm').addEventListener('submit', function(e) {
-        const supplier = document.querySelector('select[name="supplier_id"]').value;
-        if (!supplier) {
+        const customer = document.querySelector('select[name="customer_id"]').value;
+        if (!customer) {
             e.preventDefault();
-            alert('Please select a supplier');
+            alert('Please select a customer');
             return;
         }
 

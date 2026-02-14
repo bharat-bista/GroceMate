@@ -12,6 +12,18 @@ use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
+use App\Http\Controllers\POS\CustomerController;
+use App\Http\Controllers\POS\InvoiceController;
+use App\Http\Controllers\BusinessController;
+
+Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
+Route::post('/business/store', [BusinessController::class, 'store'])->name('business.store');
+Route::get('/business', [BusinessController::class, 'index'])->name('business.index');
+Route::get('/business/{business}/edit', [BusinessController::class, 'edit'])->name('business.edit');
+Route::put('/business/{business}', [BusinessController::class, 'update'])->name('business.update');
+Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
+Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('page-login');
@@ -78,30 +90,42 @@ Route::middleware(['auth'])
         
         Route::resource('categories', CategoryController::class)->except(['show']);
         
-        // Purchase routes
-        Route::get('/purchases', [PurchaseController::class,'index'])->name('purchases.index');
-        Route::get('/purchases/create', [PurchaseController::class,'create'])->name('purchases.create');
-        Route::post('/purchases', [PurchaseController::class,'store'])->name('purchases.store');
-        Route::get('/purchases/{purchase}', [PurchaseController::class,'show'])->name('purchases.show');
-        
+        // Purchase routes - using resource route with custom additional routes
+        Route::resource('purchases', PurchaseController::class);
         Route::get('/purchases/search-products', [PurchaseController::class, 'searchProducts'])
-    ->name('purchases.search-products');
-    
-    // Test route without middleware for debugging
-    Route::get('/purchases/search-test', [PurchaseController::class, 'searchProducts']);
-    Route::resource('purchases', PurchaseController::class);
-
-        Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+            ->name('purchases.search-products');
         
+        Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+        Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
-    Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
+        Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
     
-    // Individual purchase export route
-    Route::get('/purchases/{purchase}/export/{type}',[PurchaseController::class, 'exportIndividual'])->name('purchases.export-individual');
+        // Individual purchase export route
+        Route::get('/purchases/{purchase}/export/{type}',[PurchaseController::class, 'exportIndividual'])->name('purchases.export-individual');
     
-    // Test route for debugging date filtering
-    Route::get('/purchases/test-date-filter', [PurchaseController::class, 'testDateFilter']);
+        // Test route for debugging date filtering
+        Route::get('/purchases/test-date-filter', [PurchaseController::class, 'testDateFilter']);
 
     }
     
 );
+
+Route::middleware(['auth'])
+    ->prefix('pos')
+    ->name('pos.')
+    ->group(function () {
+
+        Route::get('/dashboard', function () {
+            return view('pos.dashboard');
+        })->name('dashboard');
+
+        Route::resource('customers', CustomerController::class)->except(['show']);
+        
+        Route::resource('invoices', InvoiceController::class);
+        
+        Route::get('/invoices/bulk-export/{format}', [InvoiceController::class, 'bulkExport'])->name('invoices.bulk-export');
+        
+        Route::get('/invoices/{invoice}/export/{format}', [InvoiceController::class, 'export'])->name('invoices.export');
+
+    });
+

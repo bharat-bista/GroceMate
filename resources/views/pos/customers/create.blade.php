@@ -54,6 +54,14 @@
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm px-4 py-2.5" />
                 </div>
 
+                <!-- VAT Number -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">VAT Number (optional)</label>
+                    <input name="vat_number" value="{{ old('vat_number') }}"
+                           placeholder="Enter VAT number"
+                           class="mt-1 w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm px-4 py-2.5" />
+                </div>
+
                 <!-- Customer Type -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Customer Type <span class="text-red-500">*</span></label>

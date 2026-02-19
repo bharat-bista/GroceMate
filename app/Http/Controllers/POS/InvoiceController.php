@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
+use App\Mail\InvoiceMail;
 use App\Models\POS\Customer;
 use App\Models\Product;
 use App\Models\POS\Invoice;
@@ -13,6 +14,8 @@ use App\Services\InvoiceNumberService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
@@ -54,6 +57,7 @@ class InvoiceController extends Controller
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
             'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'send_email' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
@@ -62,7 +66,10 @@ class InvoiceController extends Controller
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
         ]);
 
-        DB::transaction(function () use ($data) {
+        $sendEmail = $data['send_email'] ?? false;
+        $invoiceId = null;
+
+        DB::transaction(function () use ($data, &$invoiceId) {
             // Create invoice header
             $invoice = Invoice::create([
                 'business_id' => $data['business_id'],
@@ -73,6 +80,8 @@ class InvoiceController extends Controller
                 'total_cost' => 0,
                 'payment_method' => $data['payment_method'],
             ]);
+
+            $invoiceId = $invoice->id;
 
             $purchaseBaseTotal = 0;
 
@@ -147,8 +156,14 @@ class InvoiceController extends Controller
             $invoice->update(['total_cost' => $invoiceTotal]);
         });
 
+        // Send email if requested
+        if ($sendEmail && $invoiceId) {
+            $this->sendInvoiceEmail($invoiceId);
+        }
+
+        $message = $sendEmail ? 'Invoice saved successfully and email sent to customer.' : 'Invoice saved successfully.';
         return redirect()->route('pos.invoices.index')
-            ->with('success', 'Invoice saved successfully.');
+            ->with('success', $message);
     }
 
     public function export(Invoice $invoice, Request $request, $format)
@@ -393,6 +408,71 @@ class InvoiceController extends Controller
         ];
         
         return response($html, 200, $headers);
+    }
+
+    private function sendInvoiceEmail($invoiceId)
+    {
+        try {
+            $invoice = Invoice::with(['customer', 'creator', 'items.product', 'business'])->find($invoiceId);
+            
+            if (!$invoice || !$invoice->customer->email) {
+                return false;
+            }
+
+            // Generate PDF
+            $filename = 'invoice_' . $invoice->id . '_' . now()->format('Y-m-d') . '.pdf';
+            $html = view('pos.invoices.export-individual-pdf', [
+                'invoice' => $invoice
+            ])->render();
+            
+            $pdf = new \Dompdf\Dompdf();
+            $pdf->loadHtml($html);
+            $pdf->setPaper('A4', 'portrait');
+            $pdf->render();
+            $pdfContent = $pdf->output();
+
+            // Send email using mailable class
+            Mail::to($invoice->customer->email)->send(new InvoiceMail($invoice, $pdfContent, $filename));
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to send invoice email: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendEmail(Invoice $invoice)
+    {
+        try {
+            // Check if customer has email
+            if (!$invoice->customer || !$invoice->customer->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer does not have an email address.'
+                ], 400);
+            }
+
+            // Send email
+            $result = $this->sendInvoiceEmail($invoice->id);
+            
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Invoice sent successfully to ' . $invoice->customer->email
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send invoice. Please check your email configuration.'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error sending invoice email: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while sending the invoice.'
+            ], 500);
+        }
     }
 
 }

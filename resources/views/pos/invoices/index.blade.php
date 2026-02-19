@@ -79,7 +79,7 @@
                         x-cloak
                         @click.away="open = false"
                         x-transition
-                        class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-slate-200 z-10 p-3 space-y-3">
+                        class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-slate-200 z-50 p-3 space-y-3">
 
                         <!-- Mode selector -->
                         <div class="flex gap-2">
@@ -234,7 +234,7 @@
                                                     x-cloak
                                                     @click.away="open = false"
                                                     x-transition
-                                                    class="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+                                                    class="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
                                                     <div class="py-1">
                                                         <a :href="getExportUrl('pdf')"
                                                                 class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">

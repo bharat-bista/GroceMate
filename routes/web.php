@@ -126,6 +126,8 @@ Route::middleware(['auth'])
         Route::get('/invoices/bulk-export/{format}', [InvoiceController::class, 'bulkExport'])->name('invoices.bulk-export');
         
         Route::get('/invoices/{invoice}/export/{format}', [InvoiceController::class, 'export'])->name('invoices.export');
+        
+        Route::post('/invoices/{invoice}/send-email', [InvoiceController::class, 'sendEmail'])->name('invoices.send-email');
 
     });
 

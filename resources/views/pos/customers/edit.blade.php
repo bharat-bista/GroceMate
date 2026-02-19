@@ -48,6 +48,15 @@
              class="mt-1 w-full rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm px-3 py-2" />
     </div>
 
+    <!-- VAT Number -->
+    <div>
+      <label class="text-sm text-gray-800 font-medium">VAT Number</label>
+      <input name="vat_number"
+             value="{{ old('vat_number', $customer->vat_number) }}"
+             placeholder="Enter VAT number"
+             class="mt-1 w-full rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm px-3 py-2" />
+    </div>
+
     <!-- Customer Type -->
     <div>
       <label class="text-sm text-gray-800 font-medium">Customer Type <span class="text-red-500">*</span></label>

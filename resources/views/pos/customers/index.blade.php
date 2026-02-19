@@ -27,6 +27,7 @@
         <th class="text-left px-5 py-3">Customer</th>
         <th class="text-left px-5 py-3">Type</th>
         <th class="text-left px-5 py-3">Phone</th>
+        <th class="text-left px-5 py-3">VAT Number</th>
         <th class="text-left px-5 py-3">Total Due</th>
         <th class="text-right px-5 py-3">Actions</th>
       </tr>
@@ -41,6 +42,7 @@
           </td>
           <td class="px-5 py-4 capitalize">{{ $c->customer_type }}</td>
           <td class="px-5 py-4">{{ $c->phone }}</td>
+          <td class="px-5 py-4">{{ $c->vat_number ?? '-' }}</td>
           <td class="px-5 py-4">
             @if($c->total_due > 0)
               <span class="text-red-600 font-semibold">
@@ -66,7 +68,7 @@
         </tr>
       @empty
         <tr>
-          <td class="px-5 py-6 text-slate-500" colspan="5">
+          <td class="px-5 py-6 text-slate-500" colspan="6">
             No customers found.
           </td>
         </tr>

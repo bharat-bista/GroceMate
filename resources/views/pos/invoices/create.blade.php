@@ -183,7 +183,7 @@
 
     <!-- Save Invoice Button Section -->
     <div class="flex gap-3 pt-4 border-t border-slate-200 mt-6">
-        <button type="submit" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+        <button type="button" id="saveInvoiceBtn" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
             Save Invoice
         </button>
         <a href="{{ route('pos.invoices.index') }}"
@@ -192,6 +192,51 @@
         </a>
     </div>
 </form>
+
+<!-- Email Confirmation Modal -->
+<div id="emailModal" 
+     class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+     style="display: none; align-items: center; justify-content: center; padding: 1rem;">
+
+    <!-- Modal Box -->
+    <div class="bg-white rounded-2xl shadow-2xl p-6 animate-scaleIn"
+         style="width: 100%; max-width: 448px; margin: 0 auto; border: 1px solid #666768ff;">
+
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">
+            Send Invoice to Customer?
+        </h3>
+
+        <p class="text-gray-600 text-sm mb-6">
+            Would you like to send this invoice to the customer's email address?
+        </p>
+
+        <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Customer Email
+            </label>
+            <input type="email"
+                   id="customerEmailInput"
+                   class="w-full rounded-xl border border-gray-300 px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                   readonly>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button"
+                    id="sendEmailYes"
+                    class="flex-1 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700 transition">
+                Yes, Send Email
+            </button>
+
+            <button type="button"
+                    id="sendEmailNo"
+                    class="flex-1 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 transition">
+                No, Just Save
+            </button>
+        </div>
+
+    </div>
+</div>
+
 
 <script>
 // ---------- Helpers ----------
@@ -676,15 +721,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // form validation (keep simple)
-    document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+    // Email modal functionality
+    const emailModal = document.getElementById('emailModal');
+    const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
+    const sendEmailYes = document.getElementById('sendEmailYes');
+    const sendEmailNo = document.getElementById('sendEmailNo');
+    const customerEmailInput = document.getElementById('customerEmailInput');
+    let sendEmail = false;
+
+    // Get customer email when customer is selected
+    function getCustomerEmail(customerId) {
+        const customers = @json($customers->toArray());
+        const customer = customers.find(c => c.id == customerId);
+        return customer ? customer.email : '';
+    }
+
+    // Show email modal when save button is clicked
+    saveInvoiceBtn.addEventListener('click', function() {
         const customer = document.querySelector('select[name="customer_id"]').value;
         if (!customer) {
-            e.preventDefault();
             alert('Please select a customer');
             return;
         }
 
+        const customerEmail = getCustomerEmail(customer);
+        customerEmailInput.value = customerEmail || 'No email on file';
+        
+        if (customerEmail) {
+            emailModal.style.display = 'flex'; // Show modal
+        } else {
+            // No email, just submit the form
+            submitForm(false);
+        }
+    });
+
+    // Handle Yes button - send email
+    sendEmailYes.addEventListener('click', function() {
+        emailModal.style.display = 'none'; // Hide modal
+        submitForm(true);
+    });
+
+    // Handle No button - don't send email
+    sendEmailNo.addEventListener('click', function() {
+        emailModal.style.display = 'none'; // Hide modal
+        submitForm(false);
+    });
+
+    // Submit form with email flag
+    function submitForm(withEmail) {
+        // Add hidden input for email flag
+        let emailInput = document.querySelector('input[name="send_email"]');
+        if (!emailInput) {
+            emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'send_email';
+            document.getElementById('purchaseForm').appendChild(emailInput);
+        }
+        emailInput.value = withEmail ? '1' : '0';
+
+        // Validate and submit form
         const rows = document.querySelectorAll('.purchase-row');
         for (let i = 0; i < rows.length; i++) {
             const productName = rows[i].querySelector('.product-name-input').value.trim();
@@ -692,22 +787,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const cost = parseFloat(rows[i].querySelector('.cost-input').value);
 
             if (!productName) {
-                e.preventDefault();
                 alert(`Row ${i + 1}: Please enter a product name`);
                 return;
             }
             if (!(qty > 0)) {
-                e.preventDefault();
                 alert(`Row ${i + 1}: Quantity must be greater than 0`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {
-                e.preventDefault();
                 alert(`Row ${i + 1}: Unit cost cannot be negative`);
                 return;
             }
         }
-    });
+        
+        document.getElementById('purchaseForm').submit();
+    }
 });
 </script>
 

@@ -112,7 +112,7 @@
       </a>
 
       <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
-         href="#">
+         href="{{ route('pos.income.index') }}">
          Income
       </a>
 

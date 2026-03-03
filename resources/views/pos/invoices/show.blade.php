@@ -19,7 +19,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-bold">Invoice #{{ $invoice->invoice_no }}</h2>
-                    <p class="text-sm opacity-90">Sales Invoice - {{ $invoice->purchase_date->format('M d, Y') }}</p>
+                    <p class="text-sm opacity-90">Sales Invoice - {{ $invoice->invoice_date->format('M d, Y') }}</p>
                 </div>
                 <div class="text-right">
                     <a href="{{ route('pos.invoices.index') }}" 
@@ -84,7 +84,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-slate-600">Invoice Date:</span>
-                        <span class="text-sm font-medium text-slate-900">{{ $invoice->purchase_date->format('M d, Y') }}</span>
+                        <span class="text-sm font-medium text-slate-900">{{ $invoice->invoice_date->format('M d, Y') }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-slate-600">Payment Method:</span>
@@ -182,6 +182,16 @@
                 Back to Invoices
             </a>
             
+            @if($invoice->customer && $invoice->customer->email)
+                <button type="button" id="sendInvoiceBtn" 
+                        class="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    Send to Customer
+                </button>
+            @endif
+            
             @if(auth()->user()->can('delete-invoices'))
                 <form method="POST" action="{{ route('pos.invoices.destroy', $invoice->id) }}" 
                       class="inline"
@@ -197,4 +207,115 @@
         </div>
     </div>
 </div>
+
+<!-- Email Confirmation Modal -->
+<div id="emailModal" 
+     class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+     style="display: none; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 animate-scaleIn"
+         style="width: 100%; max-width: 448px; margin: 0 auto;">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Send Invoice to Customer?</h3>
+        <p class="text-gray-600 text-sm mb-6">Would you like to send this invoice to the customer's email address?</p>
+        
+        <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
+            <input type="email" id="customerEmailInput" class="w-full rounded-xl border border-gray-300 px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none" readonly>
+        </div>
+        
+        <div class="flex gap-3">
+            <button type="button" id="sendEmailYes" class="flex-1 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700 transition">
+                Yes, Send Email
+            </button>
+            <button type="button" id="sendEmailNo" class="flex-1 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Email modal functionality
+const emailModal = document.getElementById('emailModal');
+const sendInvoiceBtn = document.getElementById('sendInvoiceBtn');
+const sendEmailYes = document.getElementById('sendEmailYes');
+const sendEmailNo = document.getElementById('sendEmailNo');
+const customerEmailInput = document.getElementById('customerEmailInput');
+
+// Show email modal when send button is clicked
+if (sendInvoiceBtn) {
+    sendInvoiceBtn.addEventListener('click', function() {
+        const customerEmail = "{{ $invoice->customer->email ?? '' }}";
+        customerEmailInput.value = customerEmail;
+        emailModal.style.display = 'flex'; // Show modal
+    });
+}
+
+// Handle Yes button - send email
+sendEmailYes.addEventListener('click', function() {
+    emailModal.style.display = 'none'; // Hide modal
+    
+    // Show loading state
+    sendInvoiceBtn.disabled = true;
+    sendInvoiceBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Sending...';
+    
+    // Send AJAX request to send email
+    fetch('{{ route("pos.invoices.send-email", $invoice->id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm';
+            successDiv.textContent = 'Invoice sent successfully to customer!';
+            document.querySelector('.max-w-4xl').insertBefore(successDiv, document.querySelector('.bg-white'));
+            
+            // Remove after 5 seconds
+            setTimeout(() => successDiv.remove(), 5000);
+        } else {
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'mb-4 p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm';
+            errorDiv.textContent = data.message || 'Failed to send invoice. Please try again.';
+            document.querySelector('.max-w-4xl').insertBefore(errorDiv, document.querySelector('.bg-white'));
+            
+            // Remove after 5 seconds
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Show error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'mb-4 p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm';
+        errorDiv.textContent = 'Failed to send invoice. Please try again.';
+        document.querySelector('.max-w-4xl').insertBefore(errorDiv, document.querySelector('.bg-white'));
+        
+        // Remove after 5 seconds
+        setTimeout(() => errorDiv.remove(), 5000);
+    })
+    .finally(() => {
+        // Reset button state
+        sendInvoiceBtn.disabled = false;
+        sendInvoiceBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg> Send to Customer';
+    });
+});
+
+// Handle No button - close modal
+sendEmailNo.addEventListener('click', function() {
+    emailModal.style.display = 'none'; // Hide modal
+});
+
+// Close modal when clicking outside
+emailModal.addEventListener('click', function(e) {
+    if (e.target === emailModal) {
+        emailModal.style.display = 'none'; // Hide modal
+    }
+});
+</script>
 @endsection

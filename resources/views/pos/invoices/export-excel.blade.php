@@ -30,7 +30,7 @@
         <tbody>
             @foreach($invoices as $invoice)
                 <tr>
-                    <td class="text">{{ $invoice->purchase_date->format('Y-m-d') }}</td>
+                    <td class="text">{{ $invoice->invoice_date->format('Y-m-d') }}</td>
                     <td class="text">{{ $invoice->business->business_name ?? 'N/A' }}</td>
                     <td class="text">{{ $invoice->customer->name ?? 'N/A' }}</td>
                     <td class="text">{{ $invoice->invoice_no ?? 'N/A' }}</td>

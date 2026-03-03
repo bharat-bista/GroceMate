@@ -14,6 +14,7 @@ use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
+use App\Http\Controllers\POS\IncomeController;
 use App\Http\Controllers\BusinessController;
 
 Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
@@ -26,7 +27,7 @@ Route::get('/business/{business}/image', [BusinessController::class, 'getImage']
 
 
 // Redirect root URL to login page
-Route::get('/', [AccountController::class, 'login'])->name('page-login');
+Route::get('/', [AccountController::class, 'login'])->name('root');
 
 // Login routes
 Route::get('/login', [AccountController::class, 'login'])->name('page-login');
@@ -121,11 +122,23 @@ Route::middleware(['auth'])
 
         Route::resource('customers', CustomerController::class)->except(['show']);
         
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        
         Route::resource('invoices', InvoiceController::class);
         
         Route::get('/invoices/bulk-export/{format}', [InvoiceController::class, 'bulkExport'])->name('invoices.bulk-export');
         
         Route::get('/invoices/{invoice}/export/{format}', [InvoiceController::class, 'export'])->name('invoices.export');
+        
+        Route::post('/invoices/{invoice}/send-email', [InvoiceController::class, 'sendEmail'])->name('invoices.send-email');
+
+        // Income routes
+        Route::get('/income', [IncomeController::class, 'index'])->name('income.index');
+        Route::get('/income/create', [IncomeController::class, 'create'])->name('income.create');
+        Route::post('/income', [IncomeController::class, 'store'])->name('income.store');
+        Route::get('/income/{income}/edit', [IncomeController::class, 'edit'])->name('income.edit');
+        Route::put('/income/{income}', [IncomeController::class, 'update'])->name('income.update');
+        Route::delete('/income/{income}', [IncomeController::class, 'destroy'])->name('income.destroy');
 
     });
 

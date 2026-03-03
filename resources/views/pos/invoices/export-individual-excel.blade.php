@@ -23,7 +23,7 @@
                 <th colspan="6" class="header">Invoice Report #{{ $invoice->id }}</th>
             </tr>
             <tr>
-                <th colspan="2" class="header">Date: {{ $invoice->purchase_date->format('Y-m-d') }}</th>
+                <th colspan="2" class="header">Date: {{ $invoice->invoice_date->format('Y-m-d') }}</th>
                 <th colspan="2" class="header">Business: {{ $invoice->business->business_name ?? 'N/A' }}</th>
                 <th colspan="2" class="header">Customer: {{ $invoice->customer->name ?? 'N/A' }}</th>
             </tr>

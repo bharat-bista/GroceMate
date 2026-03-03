@@ -28,6 +28,7 @@
         <th class="text-left px-5 py-3">Type</th>
         <th class="text-left px-5 py-3">Phone</th>
         <th class="text-left px-5 py-3">VAT Number</th>
+        <th class="text-left px-5 py-3">PAN Number</th>
         <th class="text-left px-5 py-3">Total Due</th>
         <th class="text-right px-5 py-3">Actions</th>
       </tr>
@@ -43,10 +44,11 @@
           <td class="px-5 py-4 capitalize">{{ $c->customer_type }}</td>
           <td class="px-5 py-4">{{ $c->phone }}</td>
           <td class="px-5 py-4">{{ $c->vat_number ?? '-' }}</td>
+          <td class="px-5 py-4">{{ $c->pan_number ?? '-' }}</td>
           <td class="px-5 py-4">
-            @if($c->total_due > 0)
+            @if($c->calculated_total_due > 0)
               <span class="text-red-600 font-semibold">
-                Rs {{ number_format($c->total_due,2) }}
+                Rs {{ number_format($c->calculated_total_due,2) }}
               </span>
             @else
               <span class="text-emerald-600 font-semibold">0.00</span>
@@ -54,6 +56,9 @@
           </td>
           <td class="px-5 py-4 text-right">
             <div class="inline-flex items-center gap-3">
+              <a class="underline text-slate-800"
+                 href="{{ route('pos.customers.show',$c) }}">View</a>
+              
               <a class="underline text-slate-800"
                  href="{{ route('pos.customers.edit',$c) }}">Edit</a>
 
@@ -68,7 +73,7 @@
         </tr>
       @empty
         <tr>
-          <td class="px-5 py-6 text-slate-500" colspan="6">
+          <td class="px-5 py-6 text-slate-500" colspan="7">
             No customers found.
           </td>
         </tr>

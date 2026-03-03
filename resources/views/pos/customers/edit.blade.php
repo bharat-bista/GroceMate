@@ -57,6 +57,15 @@
              class="mt-1 w-full rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm px-3 py-2" />
     </div>
 
+    <!-- PAN Number -->
+    <div>
+      <label class="text-sm text-gray-800 font-medium">PAN Number</label>
+      <input name="pan_number"
+             value="{{ old('pan_number', $customer->pan_number) }}"
+             placeholder="Enter PAN number"
+             class="mt-1 w-full rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm px-3 py-2" />
+    </div>
+
     <!-- Customer Type -->
     <div>
       <label class="text-sm text-gray-800 font-medium">Customer Type <span class="text-red-500">*</span></label>

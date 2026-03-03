@@ -19,7 +19,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-bold">Invoice #{{ $invoice->invoice_no }}</h2>
-                    <p class="text-sm opacity-90">Sales Invoice - {{ $invoice->purchase_date->format('M d, Y') }}</p>
+                    <p class="text-sm opacity-90">Sales Invoice - {{ $invoice->invoice_date->format('M d, Y') }}</p>
                 </div>
                 <div class="text-right">
                     <a href="{{ route('pos.invoices.index') }}" 
@@ -84,7 +84,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-slate-600">Invoice Date:</span>
-                        <span class="text-sm font-medium text-slate-900">{{ $invoice->purchase_date->format('M d, Y') }}</span>
+                        <span class="text-sm font-medium text-slate-900">{{ $invoice->invoice_date->format('M d, Y') }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-slate-600">Payment Method:</span>

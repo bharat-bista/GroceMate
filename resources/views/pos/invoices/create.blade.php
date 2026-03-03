@@ -34,7 +34,7 @@
 
         <div>
             <label class="text-sm text-slate-600">Invoice Date *</label>
-            <input type="date" name="purchase_date" value="{{ old('purchase_date', now()->toDateString()) }}" required
+            <input type="date" name="invoice_date" value="{{ old('invoice_date', now()->toDateString()) }}" required
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400" />
         </div>
 
@@ -200,7 +200,7 @@
 
     <!-- Modal Box -->
     <div class="bg-white rounded-2xl shadow-2xl p-6 animate-scaleIn"
-         style="width: 100%; max-width: 448px; margin: 0 auto; border: 1px solid #666768ff;">
+         style="width: 100%; max-width: 600px; margin: 0 auto; border: 1px solid #666768ff;">
 
         <h3 class="text-lg font-semibold text-gray-800 mb-3">
             Send Invoice to Customer?
@@ -220,17 +220,26 @@
                    readonly>
         </div>
 
-        <div class="flex gap-3">
+        <div class="flex gap-2" style="flex-wrap: wrap;">
             <button type="button"
                     id="sendEmailYes"
-                    class="flex-1 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700 transition">
+                    class="flex-1 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700 transition"
+                    style="min-width: 150px;">
                 Yes, Send Email
             </button>
 
             <button type="button"
                     id="sendEmailNo"
-                    class="flex-1 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 transition">
+                    class="flex-1 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 transition"
+                    style="min-width: 150px;">
                 No, Just Save
+            </button>
+            
+            <button type="button"
+                    id="sendEmailCancel"
+                    class="flex-1 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
+                    style="min-width: 150px;">
+                Cancel
             </button>
         </div>
 
@@ -726,6 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
     const sendEmailYes = document.getElementById('sendEmailYes');
     const sendEmailNo = document.getElementById('sendEmailNo');
+    const sendEmailCancel = document.getElementById('sendEmailCancel');
     const customerEmailInput = document.getElementById('customerEmailInput');
     let sendEmail = false;
 
@@ -765,6 +775,12 @@ document.addEventListener('DOMContentLoaded', function() {
     sendEmailNo.addEventListener('click', function() {
         emailModal.style.display = 'none'; // Hide modal
         submitForm(false);
+    });
+
+    // Handle Cancel button - close modal without saving
+    sendEmailCancel.addEventListener('click', function() {
+        emailModal.style.display = 'none'; // Hide modal
+        // Don't submit the form, just close the modal
     });
 
     // Submit form with email flag

@@ -14,16 +14,38 @@ use App\Services\InvoiceNumberService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $invoices = Invoice::with(['customer', 'creator', 'business'])
-            ->orderByDesc('id')
-            ->paginate(10);
+        // Start with base query
+        $query = Invoice::select('invoices.*', 'customers.name as customer_name', 'customers.total_due as customer_total_due')
+                   ->join('customers', 'invoices.customer_id', '=', 'customers.id')
+                   ->with(['creator', 'business']);
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            \Log::info('Search term: ' . $search);
+            
+            $query->where('invoices.invoice_no', 'like', '%'.$search.'%')
+                   ->orWhere('customers.name', 'like', '%'.$search.'%');
+        }
+
+        // Date filtering
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->whereDate('invoices.invoice_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->whereDate('invoices.invoice_date', '<=', $request->date_to);
+        }
+
+        $invoices = $query->orderByDesc('invoices.id')->paginate(10);
 
         return view('pos.invoices.index', compact('invoices'));
     }
@@ -53,7 +75,7 @@ class InvoiceController extends Controller
         $data = $request->validate([
             'business_id' => ['required', 'exists:businesses,id'],
             'customer_id' => ['required', 'exists:customers,id'],
-            'purchase_date' => ['required', 'date'],
+            'invoice_date' => ['required', 'date'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
             'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
@@ -75,7 +97,7 @@ class InvoiceController extends Controller
                 'business_id' => $data['business_id'],
                 'customer_id' => $data['customer_id'],
                 'created_by' => auth()->id(),
-                'purchase_date' => $data['purchase_date'],
+                'invoice_date' => $data['invoice_date'],
                 'invoice_no' => InvoiceNumberService::generateInvoiceNumber(),
                 'total_cost' => 0,
                 'payment_method' => $data['payment_method'],
@@ -154,6 +176,14 @@ class InvoiceController extends Controller
             // Update invoice total with final tax
             $invoiceTotal = $purchaseBaseTotal + $finalTaxAmount;
             $invoice->update(['total_cost' => $invoiceTotal]);
+            
+            // Update customer's total_due if payment method is credit
+            if ($data['payment_method'] === 'credit') {
+                $customer = Customer::find($data['customer_id']);
+                if ($customer) {
+                    $customer->increment('total_due', $invoiceTotal);
+                }
+            }
         });
 
         // Send email if requested
@@ -210,7 +240,7 @@ class InvoiceController extends Controller
         $query = Invoice::with(['customer', 'creator', 'items.product', 'business']);
         
         if ($from && $to) {
-            $query->whereBetween('purchase_date', [$from, $to]);
+            $query->whereBetween('invoice_date', [$from, $to]);
         }
         
         $invoices = $query->get();
@@ -268,7 +298,7 @@ class InvoiceController extends Controller
                 foreach ($invoice->items as $item) {
                     fputcsv($file, [
                         $invoice->invoice_no,
-                        $invoice->purchase_date->format('Y-m-d'),
+                        $invoice->invoice_date->format('Y-m-d'),
                         $invoice->business->business_name ?? 'N/A',
                         $invoice->customer->name ?? 'N/A',
                         $item->product_name,
@@ -297,7 +327,7 @@ class InvoiceController extends Controller
         $query = Invoice::with(['customer', 'creator', 'items.product', 'business']);
         
         if ($from && $to) {
-            $query->whereBetween('purchase_date', [$from, $to]);
+            $query->whereBetween('invoice_date', [$from, $to]);
         }
         
         $invoices = $query->get();
@@ -373,7 +403,7 @@ class InvoiceController extends Controller
             foreach ($invoice->items as $item) {
                 fputcsv($file, [
                     $invoice->invoice_no,
-                    $invoice->purchase_date->format('Y-m-d'),
+                    $invoice->invoice_date->format('Y-m-d'),
                     $invoice->business->business_name ?? 'N/A',
                     $invoice->customer->name ?? 'N/A',
                     $item->product_name,
@@ -439,6 +469,33 @@ class InvoiceController extends Controller
             \Log::error('Failed to send invoice email: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function destroy(Invoice $invoice)
+    {
+        DB::transaction(function () use ($invoice) {
+            // Restore stock quantities
+            foreach ($invoice->items as $item) {
+                $stock = Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    $stock->increment('quantity', $item->qty);
+                }
+            }
+            
+            // Reduce customer's total_due if this was a credit invoice
+            if ($invoice->payment_method === 'credit') {
+                $customer = Customer::find($invoice->customer_id);
+                if ($customer && $customer->total_due >= $invoice->total_cost) {
+                    $customer->decrement('total_due', $invoice->total_cost);
+                }
+            }
+            
+            // Delete the invoice (this will also delete related items due to foreign key constraints)
+            $invoice->delete();
+        });
+        
+        return redirect()->route('pos.invoices.index')
+            ->with('success', 'Invoice deleted successfully.');
     }
 
     public function sendEmail(Invoice $invoice)

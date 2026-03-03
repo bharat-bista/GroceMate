@@ -11,6 +11,7 @@ class Customer extends Model
         'phone',
         'email',
         'vat_number',
+        'pan_number',
         'customer_type',
         'opening_due',
         'total_due',

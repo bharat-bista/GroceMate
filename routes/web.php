@@ -12,6 +12,7 @@ use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
+use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
 use App\Http\Controllers\POS\IncomeController;
@@ -139,6 +140,9 @@ Route::middleware(['auth'])
         Route::get('/income/{income}/edit', [IncomeController::class, 'edit'])->name('income.edit');
         Route::put('/income/{income}', [IncomeController::class, 'update'])->name('income.update');
         Route::delete('/income/{income}', [IncomeController::class, 'destroy'])->name('income.destroy');
+
+        // Supplier Payment routes
+        Route::resource('supplier-payments', SupplierPaymentController::class)->except(['show']);
 
     });
 

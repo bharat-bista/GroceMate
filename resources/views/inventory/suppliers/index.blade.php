@@ -26,9 +26,11 @@
     <thead class="text-slate-500 bg-slate-50">
       <tr>
         <th class="text-left px-5 py-3">Supplier</th>
+        <th class="text-left px-5 py-3">Type</th>
         <th class="text-left px-5 py-3">Phone</th>
-        <th class="text-left px-5 py-3">Email</th>
-        <th class="text-left px-5 py-3">Address</th>
+        <th class="text-left px-5 py-3">VAT Number</th>
+        <th class="text-left px-5 py-3">PAN Number</th>
+        <th class="text-left px-5 py-3">Total Due</th>
         <th class="text-right px-5 py-3">Actions</th>
       </tr>
     </thead>
@@ -40,12 +42,18 @@
             <div class="font-semibold">{{ $s->name }}</div>
             <div class="text-xs text-slate-500">ID: {{ $s->id }}</div>
           </td>
+          <td class="px-5 py-4 capitalize">{{ $s->supplier_type }}</td>
           <td class="px-5 py-4">{{ $s->phone ?? '—' }}</td>
-          <td class="px-5 py-4">{{ $s->email ?? '—' }}</td>
+          <td class="px-5 py-4">{{ $s->vat_number ?? '-' }}</td>
+          <td class="px-5 py-4">{{ $s->pan_number ?? '-' }}</td>
           <td class="px-5 py-4">
-            <div class="max-w-xs truncate" title="{{ $s->address }}">
-              {{ $s->address ?? '—' }}
-            </div>
+            @if($s->calculated_total_due > 0)
+              <span class="text-red-600 font-semibold">
+                Rs {{ number_format($s->calculated_total_due,2) }}
+              </span>
+            @else
+              <span class="text-emerald-600 font-semibold">0.00</span>
+            @endif
           </td>
           <td class="px-5 py-4 text-right">
             <div class="inline-flex items-center gap-3">
@@ -62,7 +70,7 @@
         </tr>
       @empty
         <tr>
-          <td class="px-5 py-6 text-slate-500" colspan="5">No suppliers found.</td>
+          <td class="px-5 py-6 text-slate-500" colspan="7">No suppliers found.</td>
         </tr>
       @endforelse
     </tbody>

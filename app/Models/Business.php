@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\POS\Income;
 
 class Business extends Model
 {
@@ -14,6 +16,19 @@ class Business extends Model
         'phone',
         'address',
         'owner_name',
-        'profile_image'
+        'profile_image',
+        'balance'
     ];
+
+    protected $casts = [
+        'balance' => 'decimal:2',
+    ];
+
+    /**
+     * Get the incomes for the business.
+     */
+    public function incomes(): HasMany
+    {
+        return $this->hasMany(Income::class);
+    }
 }

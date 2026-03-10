@@ -5,6 +5,7 @@ namespace App\Http\Controllers\POS;
 use App\Http\Controllers\Controller;
 use App\Models\POS\Income;
 use App\Models\POS\Customer;
+use App\Models\Business;
 use Illuminate\Http\Request;
 
 class IncomeController extends Controller
@@ -14,15 +15,65 @@ class IncomeController extends Controller
      */
     public function index(Request $request)
     {
-        $incomes = Income::with(['customer'])
+        $incomes = Income::with(['customer', 'business'])
             ->when($request->q, function ($query, $search) {
                 $query->where('reference_no', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%");
             })
             ->orderBy('transaction_date', 'desc')
-            ->paginate(2);
+            ->paginate(15);
 
-        return view('pos.incomes.index', compact('incomes'));
+        // Dashboard Statistics
+        $totalIncome = Income::sum('amount_received');
+        $thisMonthIncome = Income::whereMonth('transaction_date', now()->month)
+                                  ->whereYear('transaction_date', now()->year)
+                                  ->sum('amount_received');
+        $todayIncome = Income::whereDate('transaction_date', today())->sum('amount_received');
+        
+        // Business Income Statistics with Current Balances
+        $businessIncomeStats = Business::withCount(['incomes' => function($query) {
+                $query->whereMonth('transaction_date', now()->month)
+                      ->whereYear('transaction_date', now()->year);
+            }])
+            ->withSum(['incomes' => function($query) {
+                $query->whereMonth('transaction_date', now()->month)
+                      ->whereYear('transaction_date', now()->year);
+            }], 'amount_received')
+            ->whereHas('incomes')
+            ->orderBy('incomes_sum_amount_received', 'desc')
+            ->get();
+
+        // Add current balance to each business
+        $businessIncomeStats->each(function($business) {
+            $totalIncome = \App\Models\POS\Income::where('business_id', $business->id)->sum('amount_received');
+            $totalPayments = \App\Models\SupplierPayment::where('business_account', $business->id)->sum('amount');
+            $business->current_balance = $totalIncome - $totalPayments;
+        });
+
+        // Recent Transactions (last 5)
+        $recentIncomes = Income::with(['customer', 'business'])
+                              ->orderBy('transaction_date', 'desc')
+                              ->limit(5)
+                              ->get();
+
+        // Payment Method Statistics
+        $paymentStats = Income::select('payment_method', 
+                                \DB::raw('COUNT(*) as count'),
+                                \DB::raw('SUM(amount_received) as total'))
+                            ->whereMonth('transaction_date', now()->month)
+                            ->whereYear('transaction_date', now()->year)
+                            ->groupBy('payment_method')
+                            ->get();
+
+        return view('pos.incomes.index', compact(
+            'incomes', 
+            'totalIncome', 
+            'thisMonthIncome', 
+            'todayIncome',
+            'businessIncomeStats',
+            'recentIncomes',
+            'paymentStats'
+        ));
     }
 
     /**
@@ -31,12 +82,13 @@ class IncomeController extends Controller
     public function create(Request $request)
     {
         $customers = Customer::all();
+        $businesses = Business::all();
         $paymentMethods = ['cash', 'bank', 'Esewa', 'Khalti'];
         
         // Pre-select customer if coming from customer detail page
         $selectedCustomerId = $request->get('customer_id');
         
-        return view('pos.incomes.create', compact('customers', 'paymentMethods', 'selectedCustomerId'));
+        return view('pos.incomes.create', compact('customers', 'businesses', 'paymentMethods', 'selectedCustomerId'));
     }
 
     /**
@@ -47,6 +99,7 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no' => 'nullable|string|max:100',
             'customer_id' => 'nullable|exists:customers,id',
+            'business_id' => 'nullable|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount_received' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,bank,Esewa,Khalti',
@@ -120,8 +173,9 @@ class IncomeController extends Controller
     public function edit(Income $income)
     {
         $customers = Customer::all();
+        $businesses = Business::all();
         $paymentMethods = ['cash', 'bank', 'Esewa', 'Khalti'];
-        return view('pos.incomes.edit', compact('income', 'customers', 'paymentMethods'));
+        return view('pos.incomes.edit', compact('income', 'customers', 'businesses', 'paymentMethods'));
     }
 
     /**
@@ -132,6 +186,7 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no' => 'nullable|string|max:100',
             'customer_id' => 'nullable|exists:customers,id',
+            'business_id' => 'nullable|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount_received' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,bank,Esewa,Khalti',

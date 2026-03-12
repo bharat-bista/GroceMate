@@ -18,7 +18,7 @@ class SupplierPaymentController extends Controller
     public function index()
     {
         $payments = SupplierPayment::with('supplier')
-            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         return view('pos.payments.index', compact('payments'));
@@ -31,7 +31,7 @@ class SupplierPaymentController extends Controller
     {
         $suppliers = Supplier::all();
         $businesses = Business::all();
-        $paymentMethods = ['cash', 'bank', 'Esewa', 'Khalti'];
+        $paymentMethods = ['cash', 'bank', 'Khalti'];
         
         return view('pos.payments.create', compact('suppliers', 'businesses', 'paymentMethods'));
     }
@@ -46,7 +46,9 @@ class SupplierPaymentController extends Controller
             'business_account' => 'nullable|exists:businesses,id',
             'supplier_id' => 'required|exists:suppliers,id',
             'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,bank,Esewa,Khalti',
+            'payment_type' => 'required|in:external,integrated',
+            'payment_method_external' => 'required_if:payment_type,external|in:cash,bank,esewa_external,khalti_external',
+            'payment_method_integrated' => 'required_if:payment_type,integrated|in:khalti_integrated',
             'payment_reference' => 'nullable|string|max:255',
             'bank_charge' => 'nullable|numeric|min:0',
             'tds_applicable' => 'boolean',
@@ -56,8 +58,18 @@ class SupplierPaymentController extends Controller
         $validated['bank_charge'] = $validated['bank_charge'] ?? 0;
         $validated['tds_applicable'] = $request->has('tds_applicable');
 
+        // Determine the actual payment method based on payment type
+        if ($validated['payment_type'] === 'external') {
+            $paymentMethod = $validated['payment_method_external'];
+        } else {
+            $paymentMethod = $validated['payment_method_integrated'];
+        }
+
+        // Add the payment_method to validated data for database storage
+        $validated['payment_method'] = $paymentMethod;
+
         // Use database transaction to ensure data integrity
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $paymentMethod) {
             // Create the supplier payment
             $supplierPayment = SupplierPayment::create($validated);
 
@@ -81,7 +93,7 @@ class SupplierPaymentController extends Controller
                 'customer_id' => null, // Not applicable for supplier payments
                 'business_id' => $validated['business_account'],
                 'amount_received' => -$validated['amount'], // Negative amount for expense
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $paymentMethod,
                 'reference_no' => 'PAY-' . $supplierPayment->id,
                 'notes' => 'Supplier payment to ' . $supplier->name . ': ' . ($validated['note'] ?? '')
             ]);
@@ -106,7 +118,7 @@ class SupplierPaymentController extends Controller
     {
         $suppliers = Supplier::all();
         $businesses = Business::all();
-        $paymentMethods = ['cash', 'bank', 'Esewa', 'Khalti'];
+        $paymentMethods = ['cash', 'bank', 'Khalti'];
         
         return view('pos.payments.edit', compact('supplierPayment', 'suppliers', 'businesses', 'paymentMethods'));
     }
@@ -121,7 +133,7 @@ class SupplierPaymentController extends Controller
             'business_account' => 'nullable|exists:businesses,id',
             'supplier_id' => 'required|exists:suppliers,id',
             'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,bank,Esewa,Khalti',
+            'payment_method' => 'required|in:cash,bank,Khalti',
             'payment_reference' => 'nullable|string|max:255',
             'bank_charge' => 'nullable|numeric|min:0',
             'tds_applicable' => 'boolean',

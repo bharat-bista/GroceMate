@@ -26,6 +26,9 @@ Route::put('/business/{business}', [BusinessController::class, 'update'])->name(
 Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
 Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
 
+// Khalti Payment Verification Route
+Route::post('/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('root');
@@ -143,6 +146,20 @@ Route::middleware(['auth'])
 
         // Supplier Payment routes
         Route::resource('supplier-payments', SupplierPaymentController::class)->except(['show']);
+        // Supplier Payment routes
+        Route::resource('supplier-payments', SupplierPaymentController::class)->except(['show']);
+
+        // ✅ ADD THESE HERE
+        Route::post('/khalti/initiate', [SupplierPaymentController::class, 'initiateKhalti'])
+            ->name('khalti.initiate');
+
+        Route::get('/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
+            ->name('khalti.callback');
+        
+            Route::post('/esewa/initiate', [SupplierPaymentController::class, 'initiateEsewa'])
+    ->name('esewa.initiate');
+
+Route::get('/esewa/callback', [SupplierPaymentController::class, 'esewaCallback'])
+    ->name('esewa.callback');
 
     });
-

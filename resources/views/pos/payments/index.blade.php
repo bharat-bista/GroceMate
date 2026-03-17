@@ -23,13 +23,13 @@
   </a>
 </div>
 
-<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
+<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto overflow-y-hidden max-w-full">
   @if($payments->count() > 0)
     <div class="text-xs text-slate-500 p-4 pb-2">
         Showing {{ $payments->firstItem() }} to {{ $payments->lastItem() }} of {{ $payments->total() }} results
     </div>
   @endif
-  <table class="w-full text-sm">
+  <table class="w-full text-sm min-w-max">
     <thead class="text-slate-500 bg-slate-50">
       <tr>
         <th class="text-left px-5 py-3">#</th>
@@ -38,6 +38,8 @@
         <th class="text-left px-5 py-3">Business Account</th>
         <th class="text-left px-5 py-3">Amount</th>
         <th class="text-left px-5 py-3">Payment Method</th>
+        <th class="text-left px-5 py-3">Payment Type</th>
+        <th class="text-left px-5 py-3">Status</th>
         <th class="text-left px-5 py-3">Reference</th>
         <th class="text-left px-5 py-3">Bank Charge</th>
         <th class="text-left px-5 py-3">TDS</th>
@@ -70,11 +72,31 @@
             <span class="px-2 py-1 text-xs rounded-full
               @if($payment->payment_method == 'cash') bg-green-100 text-green-700
               @elseif($payment->payment_method == 'bank') bg-blue-100 text-blue-700
-              @elseif($payment->payment_method == 'Esewa') bg-purple-100 text-purple-700
-              @elseif($payment->payment_method == 'Khalti') bg-orange-100 text-orange-700
+              @elseif($payment->payment_method == 'esewa') bg-purple-100 text-purple-700
+              @elseif($payment->payment_method == 'khalti') bg-orange-100 text-orange-700
               @else bg-slate-100 text-slate-700
               @endif">
               {{ ucfirst($payment->payment_method) }}
+            </span>
+          </td>
+          <td class="px-5 py-4">
+            <span class="px-2 py-1 text-xs rounded-full
+              @if($payment->payment_type == 'external') bg-amber-100 text-amber-700
+              @elseif($payment->payment_type == 'integrated') bg-emerald-100 text-emerald-700
+              @else bg-slate-100 text-slate-700
+              @endif">
+              {{ ucfirst($payment->payment_type ?? 'external') }}
+            </span>
+          </td>
+          <td class="px-5 py-4">
+            <span class="px-2 py-1 text-xs rounded-full
+              @if($payment->status == 'completed') bg-green-100 text-green-700
+              @elseif($payment->status == 'processing') bg-blue-100 text-blue-700
+              @elseif($payment->status == 'pending_confirmation') bg-amber-100 text-amber-700
+              @elseif($payment->status == 'failed') bg-red-100 text-red-700
+              @else bg-green-100 text-green-700
+              @endif">
+              {{ ucfirst($payment->status ?? 'completed') }}
             </span>
           </td>
           <td class="px-5 py-4">
@@ -107,7 +129,7 @@
         </tr>
       @empty
         <tr>
-          <td class="px-5 py-6 text-slate-500" colspan="10">
+          <td class="px-5 py-6 text-slate-500" colspan="12">
             No payment records found.
           </td>
         </tr>

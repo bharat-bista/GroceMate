@@ -8,16 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SupplierPayment extends Model
 {
     protected $fillable = [
-        'date',
-        'business_account',
-        'supplier_id',
-        'amount',
-        'payment_method',
-        'payment_reference',
-        'bank_charge',
-        'tds_applicable',
-        'note',
-    ];
+    'date',
+    'business_account',
+    'supplier_id',
+    'amount',
+    'payment_method',
+    'payment_reference',
+    'payment_type',        // ← ADD THIS
+    'bank_charge',
+    'tds_applicable',
+    'note',
+];
 
     protected $casts = [
         'date' => 'date',

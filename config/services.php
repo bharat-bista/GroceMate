@@ -39,6 +39,16 @@ return [
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),
 ],
-
+ // ✅ ADD THIS
+    'khalti' => [
+        'public_key' => env('KHALTI_PUBLIC_KEY'),
+        'secret_key' => env('KHALTI_SECRET_KEY'),
+    ],
+    'esewa' => [
+    'product_code' => env('ESEWA_PRODUCT_CODE', 'EPAYTEST'),
+    'secret_key'   => env('ESEWA_SECRET_KEY'),
+    'payment_url'  => env('ESEWA_PAYMENT_URL'),
+    'status_url'   => env('ESEWA_STATUS_URL'),
+],
 
 ];

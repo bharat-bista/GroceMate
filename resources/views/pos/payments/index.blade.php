@@ -23,13 +23,13 @@
   </a>
 </div>
 
-<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
+<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto overflow-y-hidden max-w-full">
   @if($payments->count() > 0)
     <div class="text-xs text-slate-500 p-4 pb-2">
         Showing {{ $payments->firstItem() }} to {{ $payments->lastItem() }} of {{ $payments->total() }} results
     </div>
   @endif
-  <table class="w-full text-sm">
+  <table class="w-full text-sm min-w-max">
     <thead class="text-slate-500 bg-slate-50">
       <tr>
         <th class="text-left px-5 py-3">#</th>

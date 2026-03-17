@@ -12,7 +12,7 @@
 <body class="bg-slate-50 text-slate-900">
   <div class="min-h-screen flex">
     <!-- Sidebar -->
-    <aside class="w-72 bg-white border-r border-slate-200 hidden md:block">
+    <aside class="w-72 min-w-72 flex-shrink-0 bg-white border-r border-slate-200 hidden md:block">
       <div class="p-6">
         <div class="flex items-center space-x-2">
   <img src="{{ asset('assets/img/logo/logo.png') }}" alt="GroceMate Logo" class="h-10 w-auto">
@@ -130,7 +130,7 @@
     </aside>
 
     <!-- Main -->
-    <main class="flex-1">
+    <main class="flex-1 min-w-0 overflow-hidden">
       <!-- Topbar -->
       <header class="bg-white border-b border-slate-200">
         <div class="px-6 py-4 flex items-center justify-between">

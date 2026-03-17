@@ -153,13 +153,18 @@ Route::middleware(['auth'])
         Route::post('/khalti/initiate', [SupplierPaymentController::class, 'initiateKhalti'])
             ->name('khalti.initiate');
 
-        Route::get('/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
-            ->name('khalti.callback');
-        
-            Route::post('/esewa/initiate', [SupplierPaymentController::class, 'initiateEsewa'])
-    ->name('esewa.initiate');
+        Route::post('/esewa/initiate', [SupplierPaymentController::class, 'initiateEsewa'])
+            ->name('esewa.initiate');
 
-Route::get('/esewa/callback', [SupplierPaymentController::class, 'esewaCallback'])
-    ->name('esewa.callback');
+        
+        
+       
 
     });
+Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
+    ->name('pos.khalti.callback');  // ✅ added 'pos.' prefix
+    Route::post('/pos/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
+
+// ✅ ADD HERE — outside auth middleware
+Route::get('/pos/esewa/callback', [SupplierPaymentController::class, 'esewaCallback'])
+    ->name('pos.esewa.callback');

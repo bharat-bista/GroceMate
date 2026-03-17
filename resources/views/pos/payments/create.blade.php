@@ -80,6 +80,7 @@
                            required>
                 </div>
 
+<<<<<<< HEAD
                 <!-- Payment Method -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-slate-600 mb-3">
@@ -95,11 +96,24 @@
                                        id="type_external"
                                        class="mt-1 mr-3 text-emerald-600 focus:ring-emerald-500"
                                        checked>
+=======
+                <!-- Payment Method Type Selection -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-3">Payment Method <span class="text-red-500">*</span></label>
+                    
+                    <div class="space-y-3">
+                        <!-- External Payment Option -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <label class="flex items-start cursor-pointer p-4 bg-slate-50 hover:bg-slate-100 transition-colors">
+                                <input type="radio" name="payment_type" value="external" 
+                                       class="mt-1 mr-3 text-emerald-600 focus:ring-emerald-500" onchange="togglePaymentFields('external')" checked>
+>>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
                                 <div class="flex-1">
                                     <div class="font-medium text-sm">Customer pays externally</div>
                                     <div class="text-xs text-slate-500">Cash, Bank, or customer's own Khalti</div>
                                 </div>
                             </label>
+<<<<<<< HEAD
 
                             <div id="external-fields" class="p-4 bg-white border-t border-slate-200">
                                 <select name="payment_method" id="external-payment-method"
@@ -120,11 +134,33 @@
                                     <div class="text-sm text-amber-700">
                                         <strong>External Payment:</strong> Record this payment and mark as "paid"
                                         after customer confirms transaction.
+=======
+                            
+                            <!-- External Payment Dropdown -->
+                            <div id="external-fields" class="p-4 bg-white border-t border-slate-200">
+                                <select name="payment_method_external"
+                                        class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="cash" @selected(old('payment_method_external') == 'cash')>💵 Cash (Customer will pay)</option>
+                                    <option value="bank" @selected(old('payment_method_external') == 'bank')>🏦 Bank Transfer (Customer will transfer)</option>
+                                    <option value="khalti_external" @selected(old('payment_method_external') == 'khalti_external')>📱 Khalti (Customer's phone)</option>
+                                </select>
+                                
+                                <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg mt-3">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0-1 .975 1.925C5.025 1 2.25 2.25a1 1 0 0 0-2 2v12.5a1 1 0 0 0 2-2V5a1 1 0 0 0-2 2H6a1 1 0 0 0-2 2v12.5a1 1 0 0 0 2-2V5a1 1 0 0 0-2 2h12a1 1 0 0 0 2 2z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div class="text-sm text-amber-700">
+                                            <strong>External Payment:</strong> Record this payment and mark as "paid" after customer confirms they've completed the transaction.
+                                        </div>
+>>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+<<<<<<< HEAD
                         <!-- Integrated Payment (Khalti) -->
                         <div class="border border-slate-200 rounded-lg overflow-hidden">
                             <label class="flex items-start cursor-pointer p-4 bg-slate-50 hover:bg-slate-100 transition-colors">
@@ -195,6 +231,40 @@
                             </div>
                         </div>
 
+=======
+                        <!-- System Integrated Payment Option -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <label class="flex items-start cursor-pointer p-4 bg-slate-50 hover:bg-slate-100 transition-colors">
+                                <input type="radio" name="payment_type" value="integrated" 
+                                       class="mt-1 mr-3 text-emerald-600 focus:ring-emerald-500" onchange="togglePaymentFields('integrated')">
+                                <div class="flex-1">
+                                    <div class="font-medium text-sm">System Integrated Payment</div>
+                                    <div class="text-xs text-slate-500">Process payment through system's eSewa integration</div>
+                                </div>
+                            </label>
+                            
+                            <!-- Integrated Payment Fields -->
+                            <div id="integrated-fields" class="p-4 bg-white border-t border-slate-200 hidden">
+                                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg mb-3">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-emerald-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div class="text-sm text-emerald-700">
+                                            <strong>Integrated Payment:</strong> Payment will be processed immediately through eSewa gateway.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <input type="hidden" name="payment_method_integrated" value="esewa">
+                                
+                                <div class="flex items-center space-x-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <div class="text-purple-700 font-medium">eSewa Payment</div>
+                                    <div class="text-xs text-purple-600">System will redirect to eSewa for payment processing</div>
+                                </div>
+                            </div>
+                        </div>
+>>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
                     </div>
                 </div>
 

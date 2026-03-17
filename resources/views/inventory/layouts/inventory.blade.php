@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <style>[x-cloak]{display:none!important;}</style>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Inventory')</title>
   @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
@@ -172,5 +173,6 @@
       </div>
     </main>
   </div>
+   @stack('scripts')  {{-- ✅ THIS LINE --}}
 </body>
 </html>

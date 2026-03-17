@@ -17,7 +17,8 @@ class CustomerController extends Controller
 
         $customers = Customer::where('name', 'like', "%$q%")
             ->orWhere('phone', 'like', "%$q%")
-            ->orderBy('id', 'desc')
+            ->orderBy('created_at', 'desc')  // Latest creation first
+            ->orderBy('id', 'desc')  // Then by ID as fallback
             ->paginate(10);
 
         // Calculate correct total due for each customer

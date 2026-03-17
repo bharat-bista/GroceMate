@@ -20,7 +20,9 @@ class IncomeController extends Controller
                 $query->where('reference_no', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%");
             })
-            ->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')  // Latest creation first
+            ->orderBy('transaction_date', 'desc')  // Then by transaction date
+            ->orderBy('id', 'desc')  // Finally by ID as fallback
             ->paginate(15);
 
         // Dashboard Statistics

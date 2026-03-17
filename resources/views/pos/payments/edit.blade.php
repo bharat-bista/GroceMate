@@ -76,9 +76,10 @@
                     <select name="payment_method" required
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5">
                         <option value="">Select Method</option>
-                        @foreach($paymentMethods as $method)
-                            <option value="{{ $method }}" @selected(old('payment_method', $supplierPayment->payment_method) == $method)>{{ ucfirst($method) }}</option>
-                        @endforeach
+                        <option value="cash" @selected(old('payment_method', $supplierPayment->payment_method) == 'cash')>Cash</option>
+                        <option value="bank" @selected(old('payment_method', $supplierPayment->payment_method) == 'bank')>Bank</option>
+                        <option value="khalti_external" @selected(old('payment_method', $supplierPayment->payment_method) == 'khalti_external')>Khalti (External)</option>
+                        <option value="esewa" @selected(old('payment_method', $supplierPayment->payment_method) == 'esewa')>eSewa</option>
                     </select>
                 </div>
 

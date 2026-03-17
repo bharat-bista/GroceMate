@@ -13,12 +13,6 @@ class Income extends Model
 {
     use HasFactory;
 
-    /**
-     * Set this to TRUE before creating/updating/deleting an Income record
-     * from SupplierPaymentController so the model event does NOT
-     * auto-adjust the business balance (the controller does it manually).
-     * Always reset to FALSE immediately after.
-     */
     public static bool $skipBalanceUpdate = false;
 
     protected $fillable = [
@@ -41,14 +35,8 @@ class Income extends Model
 
     protected static function booted()
     {
-        // ── CREATED ──────────────────────────────────────────────────────────
         static::created(function ($income) {
-            // Skip when called from SupplierPaymentController
-            // (controller updates business balance manually to avoid double deduction)
-            if (static::$skipBalanceUpdate) {
-                return;
-            }
-
+            if (static::$skipBalanceUpdate) return;
             if ($income->business_id) {
                 $business = Business::find($income->business_id);
                 if ($business) {
@@ -57,34 +45,24 @@ class Income extends Model
             }
         });
 
-        // ── UPDATED ──────────────────────────────────────────────────────────
         static::updated(function ($income) {
-            if (static::$skipBalanceUpdate) {
-                return;
-            }
-
+            if (static::$skipBalanceUpdate) return;
             if ($income->wasChanged(['business_id', 'amount_received'])) {
-
-                // Business changed → reverse old, apply new
                 if ($income->wasChanged('business_id')) {
                     $oldBusinessId = $income->getOriginal('business_id');
                     $newBusinessId = $income->business_id;
-
                     if ($oldBusinessId) {
                         $oldBusiness = Business::find($oldBusinessId);
                         if ($oldBusiness) {
                             $oldBusiness->decrement('balance', $income->getOriginal('amount_received'));
                         }
                     }
-
                     if ($newBusinessId) {
                         $newBusiness = Business::find($newBusinessId);
                         if ($newBusiness) {
                             $newBusiness->increment('balance', $income->amount_received);
                         }
                     }
-
-                // Only amount changed → apply the difference
                 } elseif ($income->wasChanged('amount_received') && $income->business_id) {
                     $business = Business::find($income->business_id);
                     if ($business) {
@@ -95,24 +73,16 @@ class Income extends Model
             }
         });
 
-        // ── DELETED ──────────────────────────────────────────────────────────
         static::deleted(function ($income) {
-            if (static::$skipBalanceUpdate) {
-                return;
-            }
-
+            if (static::$skipBalanceUpdate) return;
             if ($income->business_id) {
                 $business = Business::find($income->business_id);
                 if ($business) {
-                    // decrement by a negative number = addition, which correctly
-                    // reverses a negative amount_received (supplier payment expense)
                     $business->decrement('balance', $income->amount_received);
                 }
             }
         });
     }
-
-    // ── Relationships ─────────────────────────────────────────────────────────
 
     public function customer(): BelongsTo
     {
@@ -128,8 +98,6 @@ class Income extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
-    // ── Accessors ─────────────────────────────────────────────────────────────
 
     public function getFormattedAmountAttribute(): string
     {

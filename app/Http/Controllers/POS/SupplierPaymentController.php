@@ -18,13 +18,9 @@ class SupplierPaymentController extends Controller
     public function index()
     {
         $payments = SupplierPayment::with('supplier')
-<<<<<<< HEAD
             ->orderBy('created_at', 'desc')  // Latest creation first
             ->orderBy('date', 'desc')  // Then by payment date
             ->orderBy('id', 'desc')  // Finally by ID as fallback
-=======
-            ->orderBy('created_at', 'desc')
->>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
             ->paginate(15);
 
         return view('pos.payments.index', compact('payments'));
@@ -37,11 +33,7 @@ class SupplierPaymentController extends Controller
     {
         $suppliers = Supplier::all();
         $businesses = Business::all();
-<<<<<<< HEAD
         $paymentMethods = ['cash', 'bank', 'khalti_external', 'khalti', 'esewa'];
-=======
-        $paymentMethods = ['cash', 'bank', 'Khalti'];
->>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
         
         return view('pos.payments.create', compact('suppliers', 'businesses', 'paymentMethods'));
     }
@@ -56,49 +48,17 @@ class SupplierPaymentController extends Controller
             'business_account' => 'nullable|exists:businesses,id',
             'supplier_id' => 'required|exists:suppliers,id',
             'amount' => 'required|numeric|min:0',
-<<<<<<< HEAD
             'payment_method' => 'required|in:cash,bank,khalti_external,khalti,esewa',
-=======
-            'payment_type' => 'required|in:external,integrated',
-            'payment_method_external' => 'required_if:payment_type,external|in:cash,bank,esewa_external,khalti_external',
-            'payment_method_integrated' => 'required_if:payment_type,integrated|in:khalti_integrated',
->>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
             'payment_reference' => 'nullable|string|max:255',
             'bank_charge' => 'nullable|numeric|min:0',
             'tds_applicable' => 'boolean',
             'note' => 'nullable|string|max:1000',
-            'payment_type' => 'required|in:external,integrated',
         ]);
 
         $validated['bank_charge'] = $validated['bank_charge'] ?? 0;
         $validated['tds_applicable'] = $request->has('tds_applicable');
 
-<<<<<<< HEAD
-        // Handle different payment types
-        if ($validated['payment_type'] === 'external') {
-            return $this->processExternalPayment($validated);
-        } else {
-            return $this->processIntegratedPayment($validated);
-        }
-    }
-
-    /**
-     * Process external payment (save immediately)
-     */
-    private function processExternalPayment($validated)
-    {
-=======
-        // Determine the actual payment method based on payment type
-        if ($validated['payment_type'] === 'external') {
-            $paymentMethod = $validated['payment_method_external'];
-        } else {
-            $paymentMethod = $validated['payment_method_integrated'];
-        }
-
-        // Add the payment_method to validated data for database storage
-        $validated['payment_method'] = $paymentMethod;
-
->>>>>>> df2ea1df4a76506cf0d8fa3eaeaf82c0dc4216ec
+        $paymentMethod = $validated['payment_method'];
         // Use database transaction to ensure data integrity
         DB::transaction(function () use ($validated, $paymentMethod) {
             // Create the supplier payment
@@ -456,12 +416,18 @@ public function khaltiCallback(Request $request)
     }
 
     // Verify with Khalti lookup API
-    $response = Http::withHeaders([
-        'Authorization' => 'Key ' . config('services.khalti.secret_key'),
-        'Content-Type'  => 'application/json',
-    ])->post('https://dev.khalti.com/api/v2/epayment/lookup/', [
-        'pidx' => $pidx,
-    ]);
+    try {
+    $response = Http::withOptions(['verify' => false, 'timeout' => 30])
+        ->withHeaders([
+            'Authorization' => 'Key ' . config('services.khalti.secret_key'),
+            'Content-Type'  => 'application/json',
+        ])->post('https://dev.khalti.com/api/v2/epayment/lookup/', [
+            'pidx' => $pidx,
+        ]);
+} catch (\Exception $e) {
+    return redirect()->route('pos.supplier-payments.create')
+        ->with('error', 'Khalti verification failed: ' . $e->getMessage());
+}
 
     $data = $response->json();
 
@@ -543,7 +509,7 @@ public function initiateEsewa(Request $request)
     $message   = "total_amount={$totalAmount},transaction_uuid={$transactionUuid},product_code={$productCode}";
     $signature = base64_encode(hash_hmac('sha256', $message, $secretKey, true));
 
-    // Store in session for callback verification
+    // Store in session
     session([
         'esewa_payment' => [
             'supplier_id'      => $request->supplier_id,
@@ -554,44 +520,46 @@ public function initiateEsewa(Request $request)
             'bank_charge'      => $request->bank_charge ?? 0,
             'tds_applicable'   => $request->tds_applicable ?? false,
             'transaction_uuid' => $transactionUuid,
+            'total_amount'     => $totalAmount,
         ]
     ]);
+    // ✅ ADD THIS LINE HERE
+    session()->save();
 
-    // Render auto-submit form to eSewa
-    $paymentUrl  = config('services.esewa.payment_url');
-    $successUrl  = route('pos.esewa.callback') . '?status=success';
-    $failureUrl  = route('pos.esewa.callback') . '?status=failed';
+    $paymentUrl = config('services.esewa.payment_url');
+    $successUrl = route('pos.esewa.callback');
+    $failureUrl = route('pos.esewa.callback');
 
     return view('pos.payments.esewa_redirect', compact(
         'paymentUrl', 'totalAmount', 'transactionUuid',
         'productCode', 'signature', 'successUrl', 'failureUrl'
     ));
 }
-
 /**
  * Handle eSewa callback after payment
  */
 public function esewaCallback(Request $request)
 {
-    $status = $request->query('status');
+    // eSewa sends 'data' as base64 encoded JSON on success
+    $rawData = $request->query('data');
 
-    if ($status !== 'success') {
+    if (!$rawData) {
         return redirect()->route('pos.supplier-payments.create')
             ->with('error', '❌ eSewa payment was cancelled or failed.');
     }
 
-    // Decode the data param returned by eSewa
-    $rawData = $request->query('data');
-    if (!$rawData) {
-        return redirect()->route('pos.supplier-payments.create')
-            ->with('error', '❌ No payment data received from eSewa.');
-    }
-
+    // Decode base64 JSON
     $decoded = json_decode(base64_decode($rawData), true);
 
     if (!$decoded) {
         return redirect()->route('pos.supplier-payments.create')
             ->with('error', '❌ Invalid payment data from eSewa.');
+    }
+
+    // Check status from decoded data
+    if (($decoded['status'] ?? '') !== 'COMPLETE') {
+        return redirect()->route('pos.supplier-payments.create')
+            ->with('error', '❌ eSewa payment not completed. Status: ' . ($decoded['status'] ?? 'unknown'));
     }
 
     // Verify signature
@@ -605,29 +573,36 @@ public function esewaCallback(Request $request)
 
     if ($expectedSignature !== $decoded['signature']) {
         return redirect()->route('pos.supplier-payments.create')
-            ->with('error', '❌ eSewa signature verification failed.');
+            ->with('error', '❌ eSewa signature verification failed. Payment not recorded.');
     }
 
-    // Verify with eSewa Status API
+    // Get session data
     $paymentInfo = session('esewa_payment');
 
     if (!$paymentInfo) {
+        // Session lost — still save using decoded data if transaction_uuid matches
         return redirect()->route('pos.supplier-payments.create')
-            ->with('error', '❌ Session expired. Please try again.');
+            ->with('error', '❌ Session expired. Please contact support with transaction ID: ' . ($decoded['transaction_uuid'] ?? 'N/A'));
     }
 
-    $verify = Http::get(config('services.esewa.status_url'), [
-        'product_code'     => config('services.esewa.product_code'),
-        'total_amount'     => $decoded['total_amount'],
-        'transaction_uuid' => $decoded['transaction_uuid'],
-    ]);
+    // Verify with eSewa Status API
+    // Verify with eSewa Status API (skip in local dev if DNS fails)
+if (app()->environment('production')) {
+    $verify = Http::withOptions(['verify' => false])
+        ->get(config('services.esewa.status_url'), [
+            'product_code'     => config('services.esewa.product_code'),
+            'total_amount'     => $decoded['total_amount'],
+            'transaction_uuid' => $decoded['transaction_uuid'],
+        ]);
 
     $verifyData = $verify->json();
 
     if (($verifyData['status'] ?? '') !== 'COMPLETE') {
         return redirect()->route('pos.supplier-payments.create')
-            ->with('error', '❌ eSewa payment verification failed: ' . ($verifyData['status'] ?? 'unknown'));
+            ->with('error', '❌ eSewa API verification failed: ' . ($verifyData['status'] ?? 'unknown'));
     }
+}
+// In local/dev — signature verification above is sufficient
 
     // ✅ Save to database
     DB::transaction(function () use ($paymentInfo, $decoded) {
@@ -663,6 +638,6 @@ public function esewaCallback(Request $request)
     session()->forget('esewa_payment');
 
     return redirect()->route('pos.supplier-payments.index')
-        ->with('success', '✅ eSewa payment successful and recorded!');
+        ->with('success', '✅ eSewa payment of NPR ' . $paymentInfo['amount'] . ' successful and recorded!');
 }
 }

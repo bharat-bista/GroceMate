@@ -19,22 +19,6 @@
         </div>
     @endif
 
-    {{-- Search and Actions --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <form class="flex gap-2" method="GET" action="{{ route('pos.income.index') }}">
-            <input name="q" value="{{ request('q') }}"
-                   placeholder="Search reference/description..."
-                   class="w-full md:w-80 rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200" />
-            <button class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
-                Search
-            </button>
-        </form>
-        <a href="{{ route('pos.income.create') }}"
-           class="px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-center">
-            + Add Income
-        </a>
-    </div>
-
     {{-- Summary Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -162,71 +146,169 @@
 
     </div>
 
-    {{-- Transactions Table --}}
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    {{-- ── Income Transactions Table ── --}}
+    <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
 
-        <div class="p-6 border-b border-slate-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-slate-800">All Transactions</h3>
-            {{-- Legend --}}
-            <div class="flex items-center gap-4 text-xs text-slate-500">
-                <span class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-                    Income
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span>
-                    Supplier Payment
-                </span>
+        {{-- Header --}}
+        <div class="p-6 border-b border-slate-200">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">💰 Income Transactions</h2>
+                    <p class="text-sm text-slate-600 mt-1">Sales, due collections & other income records</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('pos.income.create') }}"
+                       class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Income
+                    </a>
+                    
+                    <!-- Bulk Export Dropdown -->
+                    <div class="relative inline-block text-left">
+                        <button type="button" id="incomeExportDropdown" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 2v6m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Export All
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div id="incomeExportMenu" class="hidden origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200">
+                            <div class="py-2">
+                                <!-- Date Range Inputs -->
+                                <div class="px-4 py-2 border-b border-gray-200">
+                                    <div class="space-y-2">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">From Date</label>
+                                            <input type="date" id="exportFromDate" value="{{ request('date_from') }}" 
+                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">To Date</label>
+                                            <input type="date" id="exportToDate" value="{{ request('date_to') }}" 
+                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Export Options -->
+                                <div class="py-1">
+                                    <button onclick="exportIncome('pdf')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                        Export as PDF
+                                    </button>
+                                    <button onclick="exportIncome('excel')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                        Export as Excel
+                                    </button>
+                                    <button onclick="exportIncome('csv')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                        Export as CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
+        {{-- Search and Filters --}}
+        <div class="p-6 bg-slate-50 border-b border-slate-200">
+            <form method="GET" action="{{ route('pos.income.index') }}" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+                        <input type="text" name="q" value="{{ request('q') }}"
+                               placeholder="Customer name, reference, notes..."
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">From Date</label>
+                        <input type="date" name="date_from" value="{{ request('date_from') }}"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">To Date</label>
+                        <input type="date" name="date_to" value="{{ request('date_to') }}"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Income Type</label>
+                        <select name="income_type"
+                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <option value="">All Types</option>
+                            <option value="Sale"           @selected(request('income_type') == 'Sale')>Sale</option>
+                            <option value="Due Collection" @selected(request('income_type') == 'Due Collection')>Due Collection</option>
+                            <option value="Other"          @selected(request('income_type') == 'Other')>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit"
+                            class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                        Search
+                    </button>
+                    <a href="{{ route('pos.income.index') }}"
+                       class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm font-medium">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {{-- Results count --}}
         @if($incomes->count() > 0)
             <div class="text-xs text-slate-500 px-6 pt-4 pb-2">
                 Showing {{ $incomes->firstItem() }} to {{ $incomes->lastItem() }} of {{ $incomes->total() }} results
             </div>
         @endif
 
+        {{-- Table --}}
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="text-slate-500 bg-slate-50">
+            <table class="w-full">
+                <thead class="bg-slate-100 border-b border-slate-200">
                     <tr>
-                        <th class="text-left px-5 py-3">#</th>
-                        <th class="text-left px-5 py-3">Reference</th>
-                        <th class="text-left px-5 py-3">Date</th>
-                        <th class="text-left px-5 py-3">Customer / Note</th>
-                        <th class="text-left px-5 py-3">Business</th>
-                        <th class="text-left px-5 py-3">Amount</th>
-                        <th class="text-left px-5 py-3">Payment Method</th>
-                        <th class="text-left px-5 py-3">Type</th>
-                        <th class="text-right px-5 py-3">Actions</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">#</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Reference</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Date</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Customer</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Amount</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Payment Method</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Type</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Notes</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="bg-white divide-y divide-slate-200">
                     @forelse($incomes as $index => $income)
+                        <tr class="hover:bg-slate-50">
 
-                        {{-- Red tint for supplier payment expenses, normal for income --}}
-                        <tr class="{{ $income->amount_received < 0 ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50' }} transition-colors">
-
-                            <td class="px-5 py-4 font-medium text-slate-500">
-                                {{ ($incomes->currentPage() - 1) * $incomes->perPage() + $index + 1 }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-slate-500">
+                                    {{ ($incomes->currentPage() - 1) * $incomes->perPage() + $index + 1 }}
+                                </div>
                             </td>
 
-                            <td class="px-5 py-4">
-                                <div class="font-semibold text-slate-800">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-slate-900">
                                     {{ $income->reference_no ?? 'INC-' . str_pad($income->id, 4, '0', STR_PAD_LEFT) }}
                                 </div>
                                 <div class="text-xs text-slate-400">ID: {{ $income->id }}</div>
                             </td>
 
-                            <td class="px-5 py-4 text-slate-600">
-                                {{ \Carbon\Carbon::parse($income->transaction_date ?? $income->created_at)->format('M d, Y') }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-slate-900">
+                                    {{ \Carbon\Carbon::parse($income->transaction_date ?? $income->created_at)->format('M d, Y') }}
+                                </div>
                             </td>
 
-                            <td class="px-5 py-4">
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 @if($income->customer)
-                                    <div class="font-medium text-slate-800">{{ $income->customer->name }}</div>
-                                    <div class="text-xs text-slate-500">{{ $income->customer->phone ?? '' }}</div>
+                                    <div class="text-sm font-medium text-slate-900">{{ $income->customer->name }}</div>
+                                    <div class="text-xs text-slate-400">{{ $income->customer->phone ?? '' }}</div>
                                     @if($income->customer->total_due > 0)
                                         <div class="text-xs text-amber-600 font-semibold">
                                             Due: Rs {{ number_format($income->customer->total_due, 2) }}
@@ -234,90 +316,70 @@
                                     @else
                                         <div class="text-xs text-emerald-600">No Due</div>
                                     @endif
-                                @elseif($income->notes)
-                                    {{-- Show notes for supplier payments --}}
-                                    <div class="text-xs text-slate-500 max-w-xs truncate">
-                                        {{ $income->notes }}
-                                    </div>
                                 @else
-                                    <span class="text-slate-400">—</span>
+                                    <div class="text-sm text-slate-400">N/A</div>
                                 @endif
                             </td>
 
-                            <td class="px-5 py-4">
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 @if($income->business)
-                                    <div class="font-medium text-slate-800">{{ $income->business->business_name }}</div>
-                                    <div class="text-xs text-slate-500">{{ $income->business->business_type ?? '' }}</div>
+                                    <div class="text-sm text-slate-900">{{ $income->business->business_name }}</div>
+                                    <div class="text-xs text-slate-400">{{ $income->business->business_type ?? '' }}</div>
                                 @else
-                                    <span class="text-slate-400">—</span>
+                                    <div class="text-sm text-slate-400">N/A</div>
                                 @endif
                             </td>
 
-                            {{-- Amount: green + for income, red − for expense --}}
-                            <td class="px-5 py-4">
-                                @if($income->amount_received < 0)
-                                    <span class="text-red-600 font-bold">
-                                        − Rs {{ number_format(abs($income->amount_received), 2) }}
-                                    </span>
-                                @else
-                                    <span class="text-emerald-600 font-bold">
-                                        + Rs {{ number_format($income->amount_received, 2) }}
-                                    </span>
-                                @endif
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-emerald-600">
+                                    + Rs {{ number_format($income->amount_received, 2) }}
+                                </div>
                             </td>
 
-                            {{-- Payment Method --}}
-                            <td class="px-5 py-4">
-                                <span class="px-2 py-1 text-xs rounded-full font-medium
-                                    @if($income->payment_method == 'cash') bg-green-100 text-green-700
-                                    @elseif($income->payment_method == 'bank') bg-blue-100 text-blue-700
-                                    @elseif(in_array($income->payment_method, ['Esewa','esewa'])) bg-purple-100 text-purple-700
-                                    @elseif(in_array($income->payment_method, ['Khalti','khalti','khalti_external'])) bg-orange-100 text-orange-700
-                                    @else bg-slate-100 text-slate-700
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    @if($income->payment_method == 'cash') bg-green-100 text-green-800
+                                    @elseif($income->payment_method == 'bank') bg-purple-100 text-purple-800
+                                    @elseif(in_array($income->payment_method, ['Esewa','esewa'])) bg-indigo-100 text-indigo-800
+                                    @elseif(in_array($income->payment_method, ['Khalti','khalti','khalti_external'])) bg-orange-100 text-orange-800
+                                    @else bg-gray-100 text-gray-800
                                     @endif">
                                     {{ ucfirst($income->payment_method) }}
                                 </span>
                             </td>
 
-                            {{-- Type --}}
-                            <td class="px-5 py-4">
-                                @if($income->amount_received < 0)
-                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">
-                                        Supplier Payment
-                                    </span>
-                                @elseif($income->income_type == 'Sale')
-                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">
-                                        Sale
-                                    </span>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($income->income_type == 'Sale')
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Sale</span>
                                 @elseif($income->income_type == 'Due Collection')
-                                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">
-                                        Due Collection
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Due Collection</span>
                                 @else
-                                    <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">
-                                        {{ $income->income_type ?? 'Other' }}
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ $income->income_type ?? 'Other' }}</span>
                                 @endif
                             </td>
 
-                            {{-- Actions --}}
-                            <td class="px-5 py-4 text-right">
-                                <div class="inline-flex items-center gap-3">
-                                    @if($income->amount_received >= 0)
-                                        <a class="underline text-slate-700 hover:text-slate-900"
-                                           href="{{ route('pos.income.edit', $income) }}">
-                                            Edit
-                                        </a>
-                                    @else
-                                        <span class="text-xs text-slate-400 italic">Auto</span>
-                                    @endif
+                            <td class="px-6 py-4">
+                                @if($income->notes || $income->description)
+                                    <div class="text-xs text-slate-500 max-w-xs truncate"
+                                         title="{{ $income->notes ?? $income->description }}">
+                                        {{ $income->notes ?? $income->description }}
+                                    </div>
+                                @else
+                                    <div class="text-sm text-slate-400">-</div>
+                                @endif
+                            </td>
 
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex space-x-3">
+                                    <a href="{{ route('pos.income.edit', $income) }}"
+                                       class="text-blue-600 hover:text-blue-900 font-medium">Edit</a>
                                     <form method="POST"
                                           action="{{ route('pos.income.destroy', $income) }}"
-                                          onsubmit="return confirm('Delete this record? Business balance will be restored.');">
+                                          class="inline"
+                                          onsubmit="return confirm('Delete this income record?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="text-red-600 underline hover:text-red-800">
+                                        <button class="text-red-600 hover:text-red-900 font-medium">
                                             Delete
                                         </button>
                                     </form>
@@ -327,25 +389,81 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="px-5 py-10 text-center text-slate-400" colspan="9">
-                                <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                No transactions found.
+                            <td colspan="10" class="px-6 py-12 text-center">
+                                <div class="text-slate-500">
+                                    <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <p class="text-lg font-medium">No income records found</p>
+                                    <p class="text-sm mt-1">Try adjusting your filters or add a new income record.</p>
+                                    <div class="mt-6">
+                                        <a href="{{ route('pos.income.create') }}"
+                                           class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                            </svg>
+                                            Add Income
+                                        </a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
+        {{-- Pagination --}}
+        @if($incomes->hasPages())
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                {{ $incomes->appends(request()->query())->links() }}
+            </div>
+        @endif
+
     </div>
 
-    {{-- Pagination --}}
-    @if($incomes->hasPages())
-        <div class="mt-4">
-            {{ $incomes->links('pagination::tailwind') }}
-        </div>
-    @endif
-
 </div>
+
+<script>
+// Export dropdown functionality
+const incomeExportDropdown = document.getElementById('incomeExportDropdown');
+const incomeExportMenu = document.getElementById('incomeExportMenu');
+
+incomeExportDropdown.addEventListener('click', function() {
+    incomeExportMenu.classList.toggle('hidden');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!incomeExportDropdown.contains(e.target) && !incomeExportMenu.contains(e.target)) {
+        incomeExportMenu.classList.add('hidden');
+    }
+});
+
+// Export function with date range
+function exportIncome(type) {
+    const fromDate = document.getElementById('exportFromDate').value;
+    const toDate = document.getElementById('exportToDate').value;
+    
+    // Get current filter parameters
+    const currentParams = new URLSearchParams(window.location.search);
+    
+    // Build export URL with all parameters
+    const exportParams = new URLSearchParams();
+    
+    // Add current filters
+    if (currentParams.get('q')) exportParams.set('q', currentParams.get('q'));
+    if (currentParams.get('income_type')) exportParams.set('income_type', currentParams.get('income_type'));
+    
+    // Add date range from export inputs
+    if (fromDate) exportParams.set('from', fromDate);
+    if (toDate) exportParams.set('to', toDate);
+    
+    // Build the export URL
+    const exportUrl = `/pos/income/export/${type}?${exportParams.toString()}`;
+    
+    // Navigate to export URL
+    window.location.href = exportUrl;
+}
+</script>
 @endsection

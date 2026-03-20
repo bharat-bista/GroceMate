@@ -13,15 +13,79 @@ use Illuminate\Support\Facades\Http;
 
 class SupplierPaymentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // ── Filters ──────────────────────────────────────────────────────────
+        $q             = $request->input('q');
+        $dateFrom      = $request->input('date_from');
+        $dateTo        = $request->input('date_to');
+        $paymentMethod = $request->input('payment_method');
+
+        // ── Paginated payments (with search/filter) ───────────────────────────
         $payments = SupplierPayment::with('supplier')
-            ->orderBy('created_at', 'desc')
+            ->when($q, function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->whereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$q}%"))
+                        ->orWhere('payment_reference', 'like', "%{$q}%");
+                });
+            })
+            ->when($dateFrom, fn($query) => $query->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo,   fn($query) => $query->whereDate('date', '<=', $dateTo))
+            ->when($paymentMethod, fn($query) => $query->where('payment_method', $paymentMethod))
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(15);
 
-        return view('pos.payments.index', compact('payments'));
+        // ── Summary cards ─────────────────────────────────────────────────────
+        $totalPaid           = SupplierPayment::sum('amount');
+        $thisMonthPaid       = SupplierPayment::whereYear('date', now()->year)
+                                              ->whereMonth('date', now()->month)
+                                              ->sum('amount');
+        $totalOutstandingDue = Supplier::sum('total_due');
+
+        // ── Top 5 suppliers by total paid ─────────────────────────────────────
+        $topSuppliers = SupplierPayment::join('suppliers', 'supplier_payments.supplier_id', '=', 'suppliers.id')
+            ->selectRaw('suppliers.id, suppliers.name as supplier_name, suppliers.supplier_type,
+                         SUM(supplier_payments.amount) as total_paid,
+                         COUNT(supplier_payments.id) as payment_count')
+            ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.supplier_type')
+            ->orderByDesc('total_paid')
+            ->limit(5)
+            ->get();
+
+        // ── Payment method breakdown ──────────────────────────────────────────
+        $paymentMethodStats = SupplierPayment::selectRaw('payment_method, SUM(amount) as total, COUNT(*) as count')
+            ->groupBy('payment_method')
+            ->orderByDesc('total')
+            ->get();
+
+        // ── Suppliers with outstanding due (highest first) ────────────────────
+        $suppliersWithDue = Supplier::where('total_due', '>', 0)
+            ->orderByDesc('total_due')
+            ->get()
+            ->each(function ($supplier) {
+                $supplier->lastPayment = SupplierPayment::where('supplier_id', $supplier->id)
+                    ->orderByDesc('date')
+                    ->first();
+            });
+
+        // ── Monthly trend (last 8 months) ─────────────────────────────────────
+        $monthlyTrend = SupplierPayment::selectRaw("DATE_FORMAT(date, '%Y-%m') as month, SUM(amount) as total")
+            ->where('date', '>=', now()->subMonths(7)->startOfMonth())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        return view('pos.payments.index', compact(
+            'payments',
+            'totalPaid',
+            'thisMonthPaid',
+            'totalOutstandingDue',
+            'topSuppliers',
+            'paymentMethodStats',
+            'suppliersWithDue',
+            'monthlyTrend'
+        ));
     }
 
     public function create()
@@ -166,10 +230,11 @@ class SupplierPaymentController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // KHALTI
+    // EXPORT METHODS
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
+     * Export supplier payment records to PDF, Excel, or CSV
      * Verify Khalti payment (legacy widget flow)
      */
     public function verifyKhalti(Request $request)
@@ -547,5 +612,130 @@ class SupplierPaymentController extends Controller
 
         return redirect()->route('pos.supplier-payments.index')
             ->with('success', '✅ eSewa payment of NPR ' . $paymentInfo['amount'] . ' successful and recorded!');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // EXPORT METHODS
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Export supplier payment records to PDF, Excel, or CSV
+     */
+    public function export($type, Request $request)
+    {
+        // Get date filters (using 'from' and 'to' like purchase export)
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        // Build query with same filters as index
+        $query = SupplierPayment::with('supplier');
+
+        // Apply search filter
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function ($sub) use ($search) {
+                $sub->whereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
+                    ->orWhere('payment_reference', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply date filters (using from/to like purchase export)
+        if ($from && $to) {
+            try {
+                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+                $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+                $query->whereBetween('date', [$fromDate, $toDate]);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        } elseif ($from) {
+            try {
+                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+                $query->whereDate('date', '>=', $fromDate);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        } elseif ($to) {
+            try {
+                $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+                $query->whereDate('date', '<=', $toDate);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        }
+
+        // Apply payment method filter
+        if ($request->has('payment_method') && !empty($request->payment_method)) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        // Get filtered results
+        $payments = $query->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        if ($type === 'pdf') {
+            $filename = 'supplier_payments_report_' . now()->format('Y-m-d') . '.pdf';
+            
+            $html = view('pos.payments.export-pdf', [
+                'payments' => $payments,
+                'from' => $from,
+                'to' => $to
+            ])->render();
+            
+            // Use simple PDF generation with DOMPDF style (same as purchase export)
+            $pdf = new \Dompdf\Dompdf();
+            $pdf->loadHtml($html);
+            $pdf->setPaper('A4', 'landscape');
+            $pdf->render();
+            
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        if ($type === 'excel') {
+            $filename = 'supplier_payments_report_' . now()->format('Y-m-d') . '.xlsx';
+            
+            // Generate HTML table that Excel can open (same as purchase export)
+            $html = view('pos.payments.export-excel', [
+                'payments' => $payments,
+                'from' => $from,
+                'to' => $to
+            ])->render();
+            
+            return response($html, 200, [
+                'Content-Type' => 'application/vnd.ms-excel',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        if ($type === 'csv') {
+            $filename = 'supplier_payments_report_' . now()->format('Y-m-d') . '.csv';
+            
+            // Generate CSV content
+            $csv = "Date,Reference,Supplier,Business Account,Payment Method,Payment Type,Amount,Bank Charge,TDS Applicable,Notes\n";
+            
+            foreach ($payments as $payment) {
+                $csv .= '"' . \Carbon\Carbon::parse($payment->date)->format('Y-m-d') . '",';
+                $csv .= '"PAY-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT) . '",';
+                $csv .= '"' . ($payment->supplier->name ?? 'N/A') . '",';
+                $csv .= '"' . ($payment->business_account ?? 'N/A') . '",';
+                $csv .= '"' . ucfirst($payment->payment_method) . '",';
+                $csv .= '"' . ucfirst($payment->payment_type ?? 'external') . '",';
+                $csv .= $payment->amount . ',';
+                $csv .= $payment->bank_charge . ',';
+                $csv .= '"' . ($payment->tds_applicable ? 'Yes' : 'No') . '",';
+                $csv .= '"' . ($payment->note ?? '-') . '"' . "\n";
+            }
+            
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        return redirect()->back()->with('error', 'Invalid export type');
     }
 }

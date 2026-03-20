@@ -16,86 +16,92 @@ class IncomeController extends Controller
      */
     public function index(Request $request)
     {
-        $incomes = Income::with(['customer', 'business'])
-    ->when($request->q, function ($query, $search) {
-        $query->where('reference_no', 'like', "%{$search}%")
-              ->orWhere('description', 'like', "%{$search}%")
-              ->orWhere('notes', 'like', "%{$search}%");
-    })
-    ->orderBy('created_at', 'desc')
-    ->orderBy('transaction_date', 'desc')
-    ->orderBy('id', 'desc')
-    ->paginate(15);
+        // ── All Income records (both positive and negative) ──────────────────────────────────
+        $query = Income::with(['customer', 'business']);
 
-        // ── Dashboard Statistics ──────────────────────────────────────────────
+        // Search functionality
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference_no', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%")
+                         ->orWhere('phone', 'like', "%{$search}%");
+                  });
+            });
+        }
 
-        // Total income = sum of all positive amount_received only
-        $totalIncome = Income::where('amount_received', '>', 0)
-                             ->sum('amount_received');
+        // Date filtering
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
 
-        // This month income (positive only)
-        $thisMonthIncome = Income::where('amount_received', '>', 0)
-                                 ->whereMonth('transaction_date', now()->month)
-                                 ->whereYear('transaction_date', now()->year)
-                                 ->sum('amount_received');
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
 
-        // Today income (positive only)
-        $todayIncome = Income::where('amount_received', '>', 0)
-                             ->whereDate('transaction_date', today())
-                             ->sum('amount_received');
+        // Income type filtering
+        if ($request->has('income_type') && !empty($request->income_type)) {
+            $query->where('income_type', $request->income_type);
+        }
 
-        // ── Business Income Statistics ────────────────────────────────────────
+        $incomes = $query->orderBy('created_at', 'desc')
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate(15);
 
-        $businessIncomeStats = Business::withCount(['incomes' => function ($query) {
-                $query->whereMonth('transaction_date', now()->month)
-                      ->whereYear('transaction_date', now()->year);
-            }])
-            ->withSum(['incomes' => function ($query) {
-                $query->whereMonth('transaction_date', now()->month)
-                      ->whereYear('transaction_date', now()->year);
-            }], 'amount_received')
-            ->whereHas('incomes')
-            ->orderBy('incomes_sum_amount_received', 'desc')
-            ->get();
+    // ── Dashboard Statistics (all transactions) ──────────────────────────────
+    $totalIncome = Income::sum('amount_received');
 
-        // ✅ FIXED: Use businesses.balance column as single source of truth
-        // Income model events (created/updated/deleted) keep this column accurate
-        // Old formula was: totalIncome - totalPayments which double-counted
-        // supplier payments (they are already stored as negative amount_received)
-        $businessIncomeStats->each(function ($business) {
-            $fresh = Business::find($business->id);
-            $business->current_balance = $fresh->balance ?? 0;
-        });
+    $thisMonthIncome = Income::where('amount_received', '>', 0)
+        ->whereMonth('transaction_date', now()->month)
+        ->whereYear('transaction_date', now()->year)
+        ->sum('amount_received');
 
-        // ── Recent Transactions ───────────────────────────────────────────────
+    $todayIncome = Income::where('amount_received', '>', 0)
+        ->whereDate('transaction_date', today())
+        ->sum('amount_received');
 
-        $recentIncomes = Income::with(['customer', 'business'])
-                               ->orderBy('transaction_date', 'desc')
-                               ->limit(5)
-                               ->get();
+    // ── Business Stats ───────────────────────────────────────────────────
+    $businessIncomeStats = Business::withCount(['incomes' => function ($query) {
+            $query->whereMonth('transaction_date', now()->month)
+                  ->whereYear('transaction_date', now()->year);
+        }])
+        ->withSum(['incomes' => function ($query) {
+            $query->whereMonth('transaction_date', now()->month)
+                  ->whereYear('transaction_date', now()->year);
+        }], 'amount_received')
+        ->whereHas('incomes')
+        ->orderBy('incomes_sum_amount_received', 'desc')
+        ->get();
 
-        // ── Payment Method Statistics ─────────────────────────────────────────
+    $businessIncomeStats->each(function ($business) {
+        $fresh = Business::find($business->id);
+        $business->current_balance = $fresh->balance ?? 0;
+    });
 
-        $paymentStats = Income::select(
-                                'payment_method',
-                                DB::raw('COUNT(*) as count'),
-                                DB::raw('SUM(amount_received) as total')
-                            )
-                            ->whereMonth('transaction_date', now()->month)
-                            ->whereYear('transaction_date', now()->year)
-                            ->groupBy('payment_method')
-                            ->get();
+    // ── Payment Stats ────────────────────────────────────────────────────
+    $paymentStats = Income::select(
+            'payment_method',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(amount_received) as total')
+        )
+        ->whereMonth('transaction_date', now()->month)
+        ->whereYear('transaction_date', now()->year)
+        ->groupBy('payment_method')
+        ->get();
 
-        return view('pos.incomes.index', compact(
-            'incomes',
-            'totalIncome',
-            'thisMonthIncome',
-            'todayIncome',
-            'businessIncomeStats',
-            'recentIncomes',
-            'paymentStats'
-        ));
-    }
+    return view('pos.incomes.index', compact(
+        'incomes',
+        'totalIncome',
+        'thisMonthIncome',
+        'todayIncome',
+        'businessIncomeStats',
+        'paymentStats'
+    ));
+}
 
     /**
      * Show the form for creating a new income record.
@@ -147,13 +153,17 @@ class IncomeController extends Controller
         $income = Income::create($validated);
         // Income model created event automatically updates business balance ✅
 
-        // Reduce customer due if Due Collection
-        if ($income->income_type === 'Due Collection' && $income->customer_id) {
+        // Reduce customer due for any payment from customer
+        if ($income->customer_id && $income->amount_received > 0) {
             $customer = Customer::find($income->customer_id);
             if ($customer && $customer->total_due > 0) {
                 $newDue = max(0, $customer->total_due - $income->amount_received);
                 $customer->update(['total_due' => $newDue]);
             }
+        }
+
+        // Handle Due Collection specific logic (for invoice status updates)
+        if ($income->income_type === 'Due Collection') {
 
             // Update invoice status
             if (!empty($income->description)) {
@@ -239,16 +249,16 @@ class IncomeController extends Controller
         $newAmount     = $income->amount_received;
         $newCustomerId = $income->customer_id;
 
-        // Restore old due if it was Due Collection
-        if ($oldIncomeType === 'Due Collection' && $oldCustomerId) {
+        // Restore old due for any payment type (not just Due Collection)
+        if ($oldCustomerId && $oldAmount > 0) {
             $oldCustomer = Customer::find($oldCustomerId);
             if ($oldCustomer) {
                 $oldCustomer->increment('total_due', $oldAmount);
             }
         }
 
-        // Apply new due deduction if Due Collection
-        if ($newIncomeType === 'Due Collection' && $newCustomerId) {
+        // Apply new due deduction for any payment from customer
+        if ($newCustomerId && $newAmount > 0) {
             $newCustomer = Customer::find($newCustomerId);
             if ($newCustomer && $newCustomer->total_due > 0) {
                 $newDue = max(0, $newCustomer->total_due - $newAmount);
@@ -275,5 +285,134 @@ class IncomeController extends Controller
 
         return redirect()->route('pos.income.index')
             ->with('success', '✅ Income record deleted successfully.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // EXPORT METHODS
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Export income records to PDF, Excel, or CSV
+     */
+    public function export($type, Request $request)
+    {
+        // Get date filters (using 'from' and 'to' like purchase export)
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        // Build query with same filters as index
+        $query = Income::with(['customer', 'business']);
+
+        // Apply search filter
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference_no', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%")
+                         ->orWhere('phone', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Apply date filters (using from/to like purchase export)
+        if ($from && $to) {
+            try {
+                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+                $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+                $query->whereBetween('transaction_date', [$fromDate, $toDate]);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        } elseif ($from) {
+            try {
+                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+                $query->whereDate('transaction_date', '>=', $fromDate);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        } elseif ($to) {
+            try {
+                $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+                $query->whereDate('transaction_date', '<=', $toDate);
+            } catch (\Exception $e) {
+                // Invalid date format, skip date filtering
+            }
+        }
+
+        // Apply income type filter
+        if ($request->has('income_type') && !empty($request->income_type)) {
+            $query->where('income_type', $request->income_type);
+        }
+
+        // Get filtered results
+        $incomes = $query->orderBy('created_at', 'desc')
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        if ($type === 'pdf') {
+            $filename = 'income_report_' . now()->format('Y-m-d') . '.pdf';
+            
+            $html = view('pos.incomes.export-pdf', [
+                'incomes' => $incomes,
+                'from' => $from,
+                'to' => $to
+            ])->render();
+            
+            // Use simple PDF generation with DOMPDF style (same as purchase export)
+            $pdf = new \Dompdf\Dompdf();
+            $pdf->loadHtml($html);
+            $pdf->setPaper('A4', 'landscape');
+            $pdf->render();
+            
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        if ($type === 'excel') {
+            $filename = 'income_report_' . now()->format('Y-m-d') . '.xlsx';
+            
+            // Generate HTML table that Excel can open (same as purchase export)
+            $html = view('pos.incomes.export-excel', [
+                'incomes' => $incomes,
+                'from' => $from,
+                'to' => $to
+            ])->render();
+            
+            return response($html, 200, [
+                'Content-Type' => 'application/vnd.ms-excel',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        if ($type === 'csv') {
+            $filename = 'income_report_' . now()->format('Y-m-d') . '.csv';
+            
+            // Generate CSV content
+            $csv = "Date,Reference,Customer,Business,Payment Method,Type,Amount,Notes\n";
+            
+            foreach ($incomes as $income) {
+                $csv .= '"' . \Carbon\Carbon::parse($income->transaction_date ?? $income->created_at)->format('Y-m-d') . '",';
+                $csv .= '"' . ($income->reference_no ?? 'INC-' . str_pad($income->id, 4, '0', STR_PAD_LEFT)) . '",';
+                $csv .= '"' . ($income->customer->name ?? 'N/A') . '",';
+                $csv .= '"' . ($income->business->business_name ?? 'N/A') . '",';
+                $csv .= '"' . ucfirst($income->payment_method) . '",';
+                $csv .= '"' . ($income->income_type ?? 'Other') . '",';
+                $csv .= $income->amount_received . ',';
+                $csv .= '"' . ($income->notes ?? $income->description ?? '-') . '"' . "\n";
+            }
+            
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        return redirect()->back()->with('error', 'Invalid export type');
     }
 }

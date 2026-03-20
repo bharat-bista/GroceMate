@@ -16,6 +16,7 @@ use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
 use App\Http\Controllers\POS\IncomeController;
+use App\Http\Controllers\POS\DashboardController as POSDashboardController;
 use App\Http\Controllers\BusinessController;
 
 Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
@@ -103,6 +104,8 @@ Route::middleware(['auth'])
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
         Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
+        
+        Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
         Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
     
         // Individual purchase export route
@@ -120,9 +123,8 @@ Route::middleware(['auth'])
     ->name('pos.')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return view('pos.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [POSDashboardController::class, 'index'])
+            ->name('dashboard');
 
         Route::resource('customers', CustomerController::class)->except(['show']);
         
@@ -144,10 +146,19 @@ Route::middleware(['auth'])
         Route::put('/income/{income}', [IncomeController::class, 'update'])->name('income.update');
         Route::delete('/income/{income}', [IncomeController::class, 'destroy'])->name('income.destroy');
 
+        
+        // Income export routes
+        Route::get('/income/export/{type}', [IncomeController::class, 'export'])->name('income.export');
+        Route::get('/income/{income}/export/{type}', [IncomeController::class, 'exportIndividual'])->name('income.export-individual');
+        
+
         // Supplier Payment routes
         Route::resource('supplier-payments', SupplierPaymentController::class)->except(['show']);
         // Supplier Payment routes
         Route::resource('supplier-payments', SupplierPaymentController::class)->except(['show']);
+        
+        // Supplier Payment export routes (bulk only)
+        Route::get('/supplier-payments/export/{type}', [SupplierPaymentController::class, 'export'])->name('supplier-payments.export');
 
         // ✅ ADD THESE HERE
         Route::post('/khalti/initiate', [SupplierPaymentController::class, 'initiateKhalti'])
@@ -156,11 +167,9 @@ Route::middleware(['auth'])
         Route::post('/esewa/initiate', [SupplierPaymentController::class, 'initiateEsewa'])
             ->name('esewa.initiate');
 
-        
-        
-       
-
+    
     });
+
 Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
     ->name('pos.khalti.callback');  // ✅ added 'pos.' prefix
     Route::post('/pos/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);

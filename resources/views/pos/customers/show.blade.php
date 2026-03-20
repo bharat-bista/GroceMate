@@ -48,8 +48,8 @@
             </div>
             <div>
                 <label class="text-sm text-slate-500">Total Due</label>
-                <p class="font-medium @if($ledgerTransactions->first()['balance'] > 0) text-red-600 @else text-emerald-600 @endif">
-                    Rs {{ number_format($ledgerTransactions->first()['balance'] ?? 0, 2) }}
+                <p class="font-medium @if($customer->total_due > 0) text-red-600 @else text-emerald-600 @endif">
+                    Rs {{ number_format($customer->total_due, 2) }}
                 </p>
             </div>
             <div class="md:col-span-2 lg:col-span-3">
@@ -99,8 +99,8 @@
             </div>
             <div class="text-sm">
                 <span class="text-slate-500">Current Balance:</span>
-                <span class="font-semibold ml-2 {{ $ledgerTransactions->first()['balance'] > 0 ? 'text-red-600' : 'text-green-600' }}">
-                    Rs {{ number_format($ledgerTransactions->first()['balance'] ?? 0, 2) }}
+                <span class="font-semibold ml-2 {{ $customer->total_due > 0 ? 'text-red-600' : 'text-green-600' }}">
+                    Rs {{ number_format($customer->total_due, 2) }}
                 </span>
             </div>
         </div>
@@ -114,14 +114,19 @@
                         <th class="text-left px-4 py-3">Date</th>
                         <th class="text-left px-4 py-3">Reference</th>
                         <th class="text-left px-4 py-3">Description</th>
-                        <th class="text-right px-4 py-3">Debit</th>
-                        <th class="text-right px-4 py-3">Credit</th>
-                        <th class="text-right px-4 py-3">Balance</th>
+                        <th class="text-right px-4 py-3">Dr. Amount</th>
+                        <th class="text-right px-4 py-3">Cr. Amount</th>
+                        <th class="text-right px-4 py-3">Balance Amount</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
                     @foreach($ledgerTransactions as $index => $transaction)
-                        <tr class="{{ $transaction['type'] == 'sale' ? 'bg-red-50' : 'bg-green-50' }}">
+                        <tr class="
+    @if($transaction['type'] == 'sale') bg-red-50
+    @elseif($transaction['type'] == 'income') bg-green-50
+    @else bg-gray-100
+    @endif
+">
                             <td class="px-4 py-3">
                                 {{ date('M d, Y', strtotime($transaction['date'])) }}
                             </td>
@@ -134,7 +139,7 @@
                             <td class="px-4 py-3 text-right">
                                 @if($transaction['debit'] > 0)
                                     <span class="text-red-600 font-semibold">
-                                        Rs {{ number_format($transaction['debit'], 2) }}
+                                        Dr {{ number_format($transaction['debit'], 2) }}
                                     </span>
                                 @else
                                     -
@@ -143,7 +148,7 @@
                             <td class="px-4 py-3 text-right">
                                 @if($transaction['credit'] > 0)
                                     <span class="text-green-600 font-semibold">
-                                        Rs {{ number_format($transaction['credit'], 2) }}
+                                        Cr {{ number_format($transaction['credit'], 2) }}
                                     </span>
                                 @else
                                     -
@@ -151,7 +156,15 @@
                             </td>
                             <td class="px-4 py-3 text-right font-semibold">
                                 <span class="{{ $transaction['balance'] > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                    Rs {{ number_format($transaction['balance'], 2) }}
+                                    @if($transaction['balance'] > 0)
+    <span class="text-red-600">
+        Dr {{ number_format($transaction['balance'], 2) }}
+    </span>
+@else
+    <span class="text-green-600">
+        Cr {{ number_format(abs($transaction['balance']), 2) }}
+    </span>
+@endif
                                 </span>
                             </td>
                         </tr>

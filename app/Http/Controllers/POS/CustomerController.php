@@ -13,12 +13,40 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        $q = $request->input('q', '');
+        // Build query with filters
+        $query = Customer::query();
 
-        $customers = Customer::where('name', 'like', "%$q%")
-            ->orWhere('phone', 'like', "%$q%")
-            ->orderBy('created_at', 'desc')  // Latest creation first
-            ->orderBy('id', 'desc')  // Then by ID as fallback
+        // Search filter
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Customer type filter
+        if ($request->has('customer_type') && !empty($request->customer_type)) {
+            $query->where('customer_type', $request->customer_type);
+        }
+
+        // Due status filter
+        if ($request->has('due_status') && !empty($request->due_status)) {
+            if ($request->due_status === 'with_due') {
+                $query->whereHas('invoices', function ($invoiceQuery) {
+                    $invoiceQuery->havingRaw('SUM(total_cost) > COALESCE(SUM(paid_amount), 0)');
+                });
+            } elseif ($request->due_status === 'no_due') {
+                $query->whereDoesntHave('invoices')
+                    ->orWhereHas('invoices', function ($invoiceQuery) {
+                        $invoiceQuery->havingRaw('SUM(total_cost) <= COALESCE(SUM(paid_amount), 0)');
+                    });
+            }
+        }
+
+        $customers = $query->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate(10);
 
         // Calculate correct total due for each customer
@@ -29,7 +57,13 @@ class CustomerController extends Controller
             return $customer;
         });
 
-        return view('pos.customers.index', compact('customers', 'q'));
+        // Get total due from all customers (using the total_due field directly)
+        $grandTotalDue = Customer::sum('total_due');
+        
+        // Get customers with due count
+        $customersWithDue = Customer::where('total_due', '>', 0)->count();
+
+        return view('pos.customers.index', compact('customers', 'grandTotalDue', 'customersWithDue'));
     }
 
     /**
@@ -115,63 +149,71 @@ class CustomerController extends Controller
      * Get all ledger transactions for customer
      */
     private function getLedgerTransactions($customer)
-    {
-        $transactions = collect();
+{
+    $transactions = collect();
 
-        // Get all sales (debit entries)
-        $sales = \App\Models\POS\Invoice::where('customer_id', $customer->id)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($sale) {
-                return [
-                    'id' => $sale->id,
-                    'date' => $sale->created_at->format('Y-m-d'),
-                    'datetime' => $sale->created_at->format('Y-m-d H:i:s'),
-                    'reference' => $sale->invoice_no,
-                    'description' => 'Sale - Invoice #' . $sale->invoice_no,
-                    'debit' => $sale->total_cost,
-                    'credit' => 0,
-                    'type' => 'sale',
-                    'balance' => 0 // Will be calculated
-                ];
-            });
+    // ✅ Opening Balance Entry
+    if (($customer->opening_due ?? 0) > 0) {
+        $transactions->push([
+            'id' => 'opening',
+            'date' => now()->format('Y-m-d'),
+            'datetime' => now()->format('Y-m-d H:i:s'),
+            'reference' => 'OPENING',
+            'description' => 'Opening Balance',
+            'debit' => $customer->opening_due,
+            'credit' => 0,
+            'type' => 'opening',
+            'balance' => 0
+        ]);
+    }
 
-        // Get all incomes (credit entries)
-        $incomes = \App\Models\POS\Income::where('customer_id', $customer->id)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($income) {
-                return [
-                    'id' => $income->id,
-                    'date' => $income->transaction_date,
-                    'datetime' => $income->created_at->format('Y-m-d H:i:s'),
-                    'reference' => $income->reference_no ?? 'INC-' . str_pad($income->id, 4, '0', STR_PAD_LEFT),
-                    'description' => $income->income_type . ' - ' . ($income->description ?? 'Payment received'),
-                    'debit' => 0,
-                    'credit' => $income->amount_received,
-                    'type' => 'income',
-                    'balance' => 0 // Will be calculated
-                ];
-            });
-
-        // Merge and sort all transactions by date and time (oldest first for calculation)
-        $allTransactions = $sales->merge($incomes)
-            ->sortBy('datetime')
-            ->values();
-
-        // Calculate running balance (Nepali accounting style - positive balance means customer owes money)
-        $runningBalance = $customer->opening_due ?? 0;
-        $transactionsWithBalance = $allTransactions->map(function ($transaction) use (&$runningBalance) {
-            $runningBalance = $runningBalance + $transaction['debit'] - $transaction['credit'];
-            $transaction['balance'] = $runningBalance;
-            return $transaction;
+    $sales = \App\Models\POS\Invoice::where('customer_id', $customer->id)->get()
+        ->map(function ($sale) {
+            return [
+                'id' => $sale->id,
+                'date' => $sale->created_at->format('Y-m-d'),
+                'datetime' => $sale->created_at->format('Y-m-d H:i:s'),
+                'reference' => $sale->invoice_no,
+                'description' => 'Sale - Invoice #' . $sale->invoice_no,
+                'debit' => $sale->total_cost,
+                'credit' => 0,
+                'type' => 'sale',
+                'balance' => 0
+            ];
         });
 
-        // Sort back to newest first for display
-        $transactionsWithBalance = $transactionsWithBalance->sortByDesc('datetime')->values();
+    $incomes = \App\Models\POS\Income::where('customer_id', $customer->id)->get()
+        ->map(function ($income) {
+            return [
+                'id' => $income->id,
+                'date' => $income->transaction_date,
+                'datetime' => $income->created_at->format('Y-m-d H:i:s'),
+                'reference' => $income->reference_no ?? 'INC-' . str_pad($income->id, 4, '0', STR_PAD_LEFT),
+                'description' => 'Payment Received',
+                'debit' => 0,
+                'credit' => $income->amount_received,
+                'type' => 'income',
+                'balance' => 0
+            ];
+        });
 
-        return $transactionsWithBalance;
-    }
+    $allTransactions = $transactions
+        ->merge($sales)
+        ->merge($incomes)
+        ->sortBy('datetime')
+        ->values();
+
+    // ✅ Correct Calculation
+    $runningBalance = 0;
+
+    $allTransactions = $allTransactions->map(function ($txn) use (&$runningBalance) {
+        $runningBalance = $runningBalance + $txn['debit'] - $txn['credit'];
+        $txn['balance'] = $runningBalance;
+        return $txn;
+    });
+
+    return $allTransactions->sortByDesc('datetime')->values();
+}
 
     /**
      * Prepare chart data for customer income and sales for all time periods

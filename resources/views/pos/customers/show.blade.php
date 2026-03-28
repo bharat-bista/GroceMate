@@ -18,7 +18,7 @@
                    class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition duration-200">
                     Edit Customer
                 </a>
-                <a href="{{ route('pos.customers.index') }}" 
+                <a href="{{ route('pos.customers.index') }}" data-back-button
                    class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition duration-200">
                     Back to List
                 </a>

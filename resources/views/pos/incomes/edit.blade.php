@@ -93,7 +93,7 @@
     </div>
 
     <div class="flex justify-between pt-4">
-        <a href="{{ route('pos.income.index') }}" 
+        <a href="{{ route('pos.income.index') }}" data-back-button
            class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition duration-200">
             Back
         </a>

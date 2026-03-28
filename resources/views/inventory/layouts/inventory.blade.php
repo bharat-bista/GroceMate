@@ -22,20 +22,56 @@
 
         <div class="text-xs text-slate-500 mt-1">Inventory Module</div>
       </div>
+      @php
+        $isInventoryDashboard = request()->routeIs('inventory.dashboard');
+        $isInventoryGroup = request()->routeIs(
+            'inventory.categories.*',
+            'inventory.products.*',
+            'inventory.suppliers.*',
+            'inventory.purchases.*',
+            'inventory.alerts.*'
+        );
+        $isPosGroup = request()->routeIs(
+            'pos.dashboard',
+            'pos.invoices.*',
+            'pos.customers.*',
+            'pos.supplier-payments.*',
+            'pos.income.*'
+        );
+        $isBusinessProfile = request()->routeIs('business.*');
+
+        $navLinkClass = function (bool $active = false) {
+            return $active
+                ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium border border-blue-100 shadow-sm'
+                : 'block px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100';
+        };
+
+        $navButtonClass = function (bool $active = false) {
+            return $active
+                ? 'w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900 text-white'
+                : 'w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100';
+        };
+
+        $navSectionLinkClass = function (bool $active = false) {
+            return $active
+                ? 'block px-3 py-2 rounded-lg bg-slate-900 text-white font-medium'
+                : 'block px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100';
+        };
+      @endphp
       <nav class="px-3 pb-6 space-y-1">
 
   <!-- Dashboard -->
-  <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+  <a class="{{ $navSectionLinkClass($isInventoryDashboard) }}"
      href="{{ route('inventory.dashboard') }}">
      Dashboard
   </a>
 
   <!-- Inventory Dropdown -->
-  <div x-data="{ open: false }" class="space-y-1">
+  <div x-data="{ open: {{ $isInventoryGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
     <button @click="open = !open"
-            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-100">
+            class="{{ $navButtonClass($isInventoryGroup) }}">
       <span>Inventory</span>
       <svg :class="{'rotate-180': open}" 
            class="w-4 h-4 transition-transform duration-200"
@@ -48,38 +84,38 @@
     <!-- Dropdown Items -->
     <div x-show="open" x-transition class="ml-4 space-y-1">
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.categories.*')) }}"
          href="{{ route('inventory.categories.index') }}">
          Category
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.products.*')) }}"
          href="{{ route('inventory.products.index') }}">
          Products
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.suppliers.*')) }}"
          href="{{ route('inventory.suppliers.index') }}">
          Suppliers
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.purchases.*')) }}"
          href="{{ route('inventory.purchases.index') }}">
          Purchases (Stock-In)
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.alerts.*')) }}"
          href="{{ route('inventory.alerts.expiry') }}">
          Expiry Alerts
       </a>
 
     </div>
   </div>
-  <div x-data="{ open: false }" class="space-y-1">
+  <div x-data="{ open: {{ $isPosGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
     <button @click="open = !open"
-            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-100">
+            class="{{ $navButtonClass($isPosGroup) }}">
       <span>POS</span>
       <svg :class="{'rotate-180': open}" 
            class="w-4 h-4 transition-transform duration-200"
@@ -92,27 +128,27 @@
     <!-- Dropdown Items -->
     <div x-show="open" x-transition class="ml-4 space-y-1">
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('pos.dashboard')) }}"
          href="{{ route('pos.dashboard') }}">
          Dashboard
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('pos.invoices.*')) }}"
          href="{{ route('pos.invoices.index') }}">
          New Sale
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('pos.customers.*')) }}"
          href="{{ route('pos.customers.index') }}">
          Customers
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('pos.supplier-payments.*')) }}"
          href="{{ route('pos.supplier-payments.index') }}">
          Payments
       </a>
 
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+      <a class="{{ $navLinkClass(request()->routeIs('pos.income.*')) }}"
          href="{{ route('pos.income.index') }}">
          Income
       </a>
@@ -120,7 +156,7 @@
     </div>
   </div>
   <!-- Dashboard -->
-  <a class="block px-3 py-2 rounded-lg hover:bg-slate-100"
+  <a class="{{ $navSectionLinkClass($isBusinessProfile) }}"
      href="{{ route('business.index') }}">
      Profile
   </a>

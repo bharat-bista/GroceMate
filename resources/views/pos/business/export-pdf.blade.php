@@ -41,6 +41,24 @@
         <tr>
             <td class="label">Net Cash Flow</td>
             <td>Rs {{ number_format($netCashFlow, 2) }}</td>
+            <td class="label">Other Income</td>
+            <td>Rs {{ number_format($otherIncomeTotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Gross Profit/Loss</td>
+            <td>Rs {{ number_format($grossProfitLoss, 2) }}</td>
+            <td class="label">Net Profit/Loss</td>
+            <td>Rs {{ number_format($netProfitLoss, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Profit Margin</td>
+            <td>{{ is_null($profitMargin) ? 'N/A' : number_format($profitMargin, 2) . '%' }}</td>
+            <td class="label">Due Collections</td>
+            <td>Rs {{ number_format($dueCollectionTotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Sale Income Entries</td>
+            <td>Rs {{ number_format($saleIncomeTotal, 2) }}</td>
             <td class="label">Current Balance</td>
             <td>Rs {{ number_format((float) $business->balance, 2) }}</td>
         </tr>

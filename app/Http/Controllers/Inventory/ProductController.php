@@ -14,12 +14,13 @@ class ProductController extends Controller
 {
   public function index(Request $request)
   {
-    $q = $request->string('q')->toString();
+    $q = trim($request->input('search', $request->input('q', '')));
 
     $products = Product::query()
       ->with(['category','stock'])
       ->when($q, fn($qq) => $qq->where('name','like',"%$q%")->orWhere('sku','like',"%$q%"))
-      ->orderByDesc('id')
+      ->orderBy('name')
+      ->orderBy('id')
       ->paginate(10)
       ->withQueryString();
 
@@ -129,4 +130,3 @@ class ProductController extends Controller
     return back()->with('success', 'E-commerce listing updated.');
   }
 }
-

@@ -117,7 +117,7 @@
 
             <!-- Action Buttons -->
             <div class="flex justify-between items-center pt-6 border-t">
-                <a href="{{ route('pos.supplier-payments.index') }}" 
+                <a href="{{ route('pos.supplier-payments.index') }}" data-back-button
                    class="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition duration-200">
                     Cancel
                 </a>

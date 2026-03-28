@@ -20,7 +20,7 @@
     <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
       Update
     </button>
-    <a href="{{ route('inventory.categories.index') }}"
+    <a href="{{ route('inventory.categories.index') }}" data-back-button
        class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
       Cancel
     </a>

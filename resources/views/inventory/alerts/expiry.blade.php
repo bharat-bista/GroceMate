@@ -5,17 +5,25 @@
 @section('subtitle','Expiring soon and expired batches')
 
 @section('content')
-<form method="GET" action="{{ route('inventory.alerts.expiry') }}"
-      class="flex flex-col sm:flex-row gap-2 sm:items-end">
-  <div>
-    <label class="text-sm text-slate-600">Days (expiring soon)</label>
-    <input type="number" min="1" name="days" value="{{ $days }}"
-           class="mt-1 w-40 rounded-xl border-slate-200" />
-  </div>
-  <button class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
-    Apply
-  </button>
-</form>
+<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <form method="GET" action="{{ route('inventory.alerts.expiry') }}"
+        class="flex flex-col sm:flex-row gap-2 sm:items-end">
+    <div>
+      <label class="text-sm text-slate-600">Days (expiring soon)</label>
+      <input type="number" min="1" name="days" value="{{ $days }}"
+             class="mt-1 w-40 rounded-xl border-slate-200" />
+    </div>
+    <button class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+      Apply
+    </button>
+  </form>
+
+  <a href="{{ route('inventory.dashboard') }}"
+     data-back-button
+     class="inline-flex items-center px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700">
+    Back
+  </a>
+</div>
 
 <div class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
   <!-- Expiring Soon -->

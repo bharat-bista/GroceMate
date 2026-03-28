@@ -30,7 +30,8 @@
     @if($businesses->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             @foreach($businesses as $business)
-                <div class="bg-white rounded-md border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                <div class="bg-white rounded-md border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden cursor-pointer"
+                     onclick="window.location='{{ route('business.show', $business) }}'">
                     <!-- Card Header -->
                     <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 text-white">
                         <div class="flex items-center space-x-3">
@@ -82,8 +83,13 @@
 
                     <!-- Card Footer -->
 <div class="bg-slate-100 px-4 py-3 flex justify-end gap-2 border-t border-slate-200">
-    
+    <a href="{{ route('business.show', $business) }}"
+       onclick="event.stopPropagation();"
+       class="px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-500 transition duration-200 flex items-center gap-1">
+        <i class="fas fa-eye"></i> View
+    </a>
     <a href="{{ route('business.edit', $business) }}" 
+       onclick="event.stopPropagation();"
        class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-300 transition duration-200 flex items-center gap-1">
         <i class="fas fa-edit"></i> Edit
     </a>

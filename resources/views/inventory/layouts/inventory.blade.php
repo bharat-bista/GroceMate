@@ -174,5 +174,33 @@
     </main>
   </div>
    @stack('scripts')  {{-- ✅ THIS LINE --}}
+  <script>
+    document.addEventListener('click', function (event) {
+      const backButton = event.target.closest('[data-back-button]');
+
+      if (!backButton) {
+        return;
+      }
+
+      const currentUrl = window.location.href;
+      const referrer = document.referrer;
+
+      if (!referrer) {
+        return;
+      }
+
+      try {
+        const referrerUrl = new URL(referrer);
+        const currentLocation = new URL(currentUrl);
+
+        if (referrerUrl.origin === currentLocation.origin && referrer !== currentUrl) {
+          event.preventDefault();
+          window.history.back();
+        }
+      } catch (error) {
+        return;
+      }
+    });
+  </script>
 </body>
 </html>

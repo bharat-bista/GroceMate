@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Stock extends Model {
   protected $table = 'stock';
@@ -17,6 +18,23 @@ class Stock extends Model {
     'quantity' => 'decimal:3',
     'reorder_level' => 'decimal:3',
   ];
+
+  public function scopeLowStock(Builder $query): Builder
+  {
+    return $query->where(function (Builder $stockQuery) {
+      $stockQuery
+        ->where(function (Builder $configuredQuery) {
+          $configuredQuery
+            ->where('reorder_level', '>', 0)
+            ->whereColumn('quantity', '<=', 'reorder_level');
+        })
+        ->orWhere(function (Builder $fallbackQuery) {
+          $fallbackQuery
+            ->where('reorder_level', '<=', 0)
+            ->where('quantity', '<=', 0);
+        });
+    });
+  }
 
   public function product() { 
     return $this->belongsTo(Product::class); }

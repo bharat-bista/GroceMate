@@ -1,109 +1,193 @@
 @extends('inventory.layouts.inventory')
 
-@section('title','Purchase Detail')
-@section('heading','Purchase Detail')
-@section('subtitle','View items, costs and expiry dates')
+@section('title', 'Purchase Details')
+@section('heading', 'Purchase Details')
+@section('subtitle', 'View purchase details and stock-in items')
 
 @section('content')
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div>
-      <div class="text-sm text-slate-500">Business</div>
-      <div class="font-semibold">{{ $purchase->business->business_name ?? '—' }}</div>
-    </div>
-    <div>
-      <div class="text-sm text-slate-500">Supplier</div>
-      <div class="font-semibold">{{ $purchase->supplier->name ?? '—' }}</div>
-    </div>
-    <div>
-      <div class="text-sm text-slate-500">Purchase Date</div>
-      <div class="font-semibold">{{ $purchase->purchase_date->format('Y-m-d') }}</div>
-    </div>
-    <div>
-      <div class="text-sm text-slate-500">Invoice No</div>
-      <div class="font-semibold">{{ $purchase->invoice_no ?? '—' }}</div>
-    </div>
-  </div>
+<div class="max-w-4xl mx-auto">
+    @if(session('success'))
+        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
 
-  <div class="mt-4">
-    <div class="text-sm text-slate-500">Total Cost</div>
-    <div class="text-2xl font-bold">Rs {{ number_format((float)$purchase->total_cost, 2) }}</div>
-  </div>
-  
-  <!-- Export dropdown with same design as index page -->
-  <div x-data="{
-    open: false,
-    getExportUrl(type) {
-      return '{{ route('inventory.purchases.export-individual', ['purchase' => $purchase->id, 'type' => 'TYPE']) }}'.replace('TYPE', type);
+    <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-500 to-green-700 p-6 text-white">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold">
+                        Purchase #{{ $purchase->invoice_no ?? 'PUR-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }}
+                    </h2>
+                    <p class="text-sm opacity-90">Stock-In Entry - {{ $purchase->purchase_date->format('M d, Y') }}</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <div class="relative inline-block text-left">
+                        <button type="button" id="exportDropdown"
+                                class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 text-sm font-medium">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Export
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div id="exportMenu"
+                             class="hidden origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200">
+                            <div class="py-1">
+                                <a href="{{ route('inventory.purchases.export-individual', ['purchase' => $purchase->id, 'type' => 'pdf']) }}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">PDF</a>
+                                <a href="{{ route('inventory.purchases.export-individual', ['purchase' => $purchase->id, 'type' => 'excel']) }}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">Excel</a>
+                                <a href="{{ route('inventory.purchases.export-individual', ['purchase' => $purchase->id, 'type' => 'csv']) }}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">CSV</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-200">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-3">Business Information</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Business:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->business->business_name ?? 'N/A' }}</span>
+                    </div>
+                    @if($purchase->business)
+                        <div class="flex justify-between gap-4">
+                            <span class="text-sm text-slate-600">Type:</span>
+                            <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->business->business_type ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <span class="text-sm text-slate-600">Phone:</span>
+                            <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->business->phone ?? 'N/A' }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-3">Supplier Information</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Supplier:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->supplier->name ?? 'N/A' }}</span>
+                    </div>
+                    @if($purchase->supplier)
+                        <div class="flex justify-between gap-4">
+                            <span class="text-sm text-slate-600">Phone:</span>
+                            <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->supplier->phone ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <span class="text-sm text-slate-600">Email:</span>
+                            <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->supplier->email ?? 'N/A' }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-3">Purchase Information</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Invoice No:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">
+                            {{ $purchase->invoice_no ?? 'PUR-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Purchase Date:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->purchase_date->format('M d, Y') }}</span>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Created By:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->creator->name ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Items:</span>
+                        <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->items->count() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">Purchase Items</h3>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="w-full text-sm">
+                    <thead class="text-slate-700 bg-slate-100">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-medium">Product</th>
+                            <th class="text-left px-4 py-3 font-medium">Unit</th>
+                            <th class="text-left px-4 py-3 font-medium">Quantity</th>
+                            <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
+                            <th class="text-left px-4 py-3 font-medium">Expiry</th>
+                            <th class="text-left px-4 py-3 font-medium">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @foreach($purchase->items as $item)
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3">{{ $item->product_name ?? $item->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ $item->unit ?? $item->product->unit ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
+                                <td class="px-4 py-3">Rs {{ number_format((float) $item->unit_cost, 2) }}</td>
+                                <td class="px-4 py-3">{{ $item->expiry_date?->format('M d, Y') ?? 'N/A' }}</td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $item->line_total, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot class="bg-slate-50 border-t-2 border-slate-300">
+                        <tr>
+                            <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
+                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 2) }}</td>
+                        </tr>
+                        @if($purchase->total_cost > $purchase->items->sum('line_total'))
+                            <tr>
+                                <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
+                                <td class="px-4 py-3 font-semibold text-red-600">
+                                    Rs {{ number_format((float) ($purchase->total_cost - $purchase->items->sum('line_total')), 2) }}
+                                </td>
+                            </tr>
+                        @endif
+                        <tr class="bg-slate-100">
+                            <td colspan="5" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
+                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format((float) $purchase->total_cost, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-slate-200 flex gap-3">
+            <a href="{{ route('inventory.purchases.index') }}" data-back-button
+               class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+                Back to Purchases
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+const exportDropdown = document.getElementById('exportDropdown');
+const exportMenu = document.getElementById('exportMenu');
+
+if (exportDropdown && exportMenu) {
+    exportDropdown.addEventListener('click', function () {
+        exportMenu.classList.toggle('hidden');
+    });
+}
+
+document.addEventListener('click', function (e) {
+    if (exportDropdown && exportMenu && !exportDropdown.contains(e.target) && !exportMenu.contains(e.target)) {
+        exportMenu.classList.add('hidden');
     }
-  }" class="relative mt-4">
-    <button
-      type="button"
-      @click="open = !open"
-      class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
-      Export ▾
-    </button>
-
-    <div
-      x-cloak
-      x-show="open"
-      x-transition
-      @click.outside="open = false"
-      class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow z-50 p-3 space-y-3"
-    >
-      <div class="text-sm font-medium text-slate-700 mb-2">
-        Export Purchase #{{ $purchase->id }}
-      </div>
-
-      <!-- Export buttons -->
-      <div class="grid grid-cols-3 gap-2">
-        <a :href="getExportUrl('excel')"
-          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
-          Excel
-        </a>
-
-        <a :href="getExportUrl('csv')"
-          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
-          CSV
-        </a>
-
-        <a :href="getExportUrl('pdf')"
-          class="text-center px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm">
-          PDF
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead class="text-slate-500 bg-slate-50">
-      <tr>
-        <th class="text-left px-5 py-3">Product</th>
-        <th class="text-left px-5 py-3">Qty</th>
-        <th class="text-left px-5 py-3">Unit Cost</th>
-        <th class="text-left px-5 py-3">Expiry</th>
-        <th class="text-left px-5 py-3">Line Total</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      @foreach($purchase->items as $it)
-        <tr>
-          <td class="px-5 py-4 font-semibold">{{ $it->product->name ?? '—' }}</td>
-          <td class="px-5 py-4">{{ $it->qty }}</td>
-          <td class="px-5 py-4">Rs {{ number_format((float)$it->unit_cost, 2) }}</td>
-          <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') ?? '—' }}</td>
-          <td class="px-5 py-4">Rs {{ number_format((float)$it->line_total, 2) }}</td>
-        </tr>
-      @endforeach
-    </tbody>
-  </table>
-</div>
-
-<div class="mt-4">
-  <a href="{{ route('inventory.purchases.index') }}" class="underline">← Back to Purchases</a>
-</div>
-
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+});
+</script>
 @endsection

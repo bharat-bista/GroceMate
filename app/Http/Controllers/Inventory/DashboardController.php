@@ -24,13 +24,14 @@ class DashboardController extends Controller
     $totalProducts = Product::count();
     $activeProducts = Product::where('is_active', true)->count();
 
-    $lowStockCount = Stock::whereColumn('quantity', '<=', 'reorder_level')
-      ->where('reorder_level', '>', 0)
+    $lowStockCount = Stock::query()
+      ->lowStock()
+      ->whereHas('product')
       ->count();
 
     $topLowStock = Stock::with('product')
-      ->whereColumn('quantity', '<=', 'reorder_level')
-      ->where('reorder_level', '>', 0)
+      ->lowStock()
+      ->whereHas('product')
       ->orderBy('quantity')
       ->limit(8)
       ->get();
@@ -113,4 +114,3 @@ return view('inventory.dashboard', compact(
     ));
   }
 }
-

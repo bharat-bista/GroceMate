@@ -22,7 +22,7 @@
                     <p class="text-sm opacity-90">Sales Invoice - {{ $invoice->invoice_date->format('M d, Y') }}</p>
                 </div>
                 <div class="text-right">
-                    <a href="{{ route('pos.invoices.index') }}" 
+                    <a href="{{ route('pos.invoices.index') }}" data-back-button
                        class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 text-sm font-medium">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7 7m-8 8l7-7"></path>
@@ -177,7 +177,7 @@
 
         <!-- Action Buttons -->
         <div class="p-6 border-t border-slate-200 flex gap-3">
-            <a href="{{ route('pos.invoices.index') }}" 
+            <a href="{{ route('pos.invoices.index') }}" data-back-button
                class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
                 Back to Invoices
             </a>

@@ -110,7 +110,7 @@
 
             <!-- Action Buttons -->
             <div class="flex justify-between">
-                <a href="{{ route('business.index') }}" 
+                <a href="{{ route('business.index') }}" data-back-button
                    class="px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition duration-200">
                     <i class="fas fa-arrow-left mr-2"></i>Back to Businesses
                 </a>

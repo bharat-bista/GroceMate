@@ -101,7 +101,12 @@
             </div>
 
             <!-- Submit Button -->
-            <div class="flex justify-end">
+            <div class="flex justify-between">
+                <a href="{{ route('business.index') }}"
+                   data-back-button
+                   class="px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
                 <button type="submit"
                         class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition duration-200">
                     Create Business

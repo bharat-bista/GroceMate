@@ -177,12 +177,9 @@ class InvoiceController extends Controller
             $invoiceTotal = $purchaseBaseTotal + $finalTaxAmount;
             $invoice->update(['total_cost' => $invoiceTotal]);
             
-            // Update customer's total_due if payment method is credit
-            if ($data['payment_method'] === 'credit') {
-                $customer = Customer::find($data['customer_id']);
-                if ($customer) {
-                    $customer->increment('total_due', $invoiceTotal);
-                }
+            $customer = Customer::find($data['customer_id']);
+            if ($customer) {
+                $customer->syncTotalDue();
             }
         });
 
@@ -482,16 +479,13 @@ class InvoiceController extends Controller
                 }
             }
             
-            // Reduce customer's total_due if this was a credit invoice
-            if ($invoice->payment_method === 'credit') {
-                $customer = Customer::find($invoice->customer_id);
-                if ($customer && $customer->total_due >= $invoice->total_cost) {
-                    $customer->decrement('total_due', $invoice->total_cost);
-                }
-            }
-            
             // Delete the invoice (this will also delete related items due to foreign key constraints)
             $invoice->delete();
+
+            $customer = Customer::find($invoice->customer_id);
+            if ($customer) {
+                $customer->syncTotalDue();
+            }
         });
         
         return redirect()->route('pos.invoices.index')

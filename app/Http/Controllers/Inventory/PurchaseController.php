@@ -17,7 +17,9 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
-        $q = $request->string('q')->toString();
+        $q = trim($request->input('search', $request->input('q', '')));
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
 
         $purchases = Purchase::query()
             ->with(['supplier','creator','business'])
@@ -26,11 +28,14 @@ class PurchaseController extends Controller
                    ->orWhereHas('supplier', fn($s) => $s->where('name','like',"%{$q}%"))
                    ->orWhereHas('business', fn($b) => $b->where('business_name','like',"%{$q}%"));
             })
+            ->when($dateFrom, fn($qq) => $qq->whereDate('purchase_date', '>=', $dateFrom))
+            ->when($dateTo, fn($qq) => $qq->whereDate('purchase_date', '<=', $dateTo))
+            ->orderByDesc('purchase_date')
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 
-        return view('inventory.purchases.index', compact('purchases','q'));
+        return view('inventory.purchases.index', compact('purchases', 'q', 'dateFrom', 'dateTo'));
     }
 
     public function create()
@@ -174,6 +179,11 @@ class PurchaseController extends Controller
             // Update purchase total with final tax
             $purchaseTotal = $purchaseBaseTotal + $finalTaxAmount;
             $purchase->update(['total_cost' => $purchaseTotal]);
+
+            $supplier = Supplier::find($data['supplier_id']);
+            if ($supplier) {
+                $supplier->syncTotalDue();
+            }
         });
 
         return redirect()->route('inventory.purchases.index')

@@ -186,7 +186,7 @@
         <button type="button" id="saveInvoiceBtn" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
             Save Invoice
         </button>
-        <a href="{{ route('pos.invoices.index') }}"
+        <a href="{{ route('pos.invoices.index') }}" data-back-button
            class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
             Cancel
         </a>

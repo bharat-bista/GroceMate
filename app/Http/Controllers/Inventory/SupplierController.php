@@ -35,6 +35,9 @@ class SupplierController extends Controller
      */
     public function show(Supplier $supplier)
     {
+        $supplier->load(['purchases', 'supplierPayments']);
+        $supplier->syncTotalDue();
+
         // Get supplier's purchase records with pagination
         $purchases = \App\Models\Purchase::where('supplier_id', $supplier->id)
             ->orderBy('created_at', 'desc')
@@ -109,11 +112,9 @@ class SupplierController extends Controller
         // Set default values if not provided
         $data['supplier_type'] = $data['supplier_type'] ?? 'retail';
         $data['opening_due'] = $data['opening_due'] ?? 0;
-        
-        // Update total_due when opening_due changes
-        $data['total_due'] = $data['opening_due'];
 
         $supplier->update($data);
+        $supplier->syncTotalDue();
 
         return redirect()->route('inventory.suppliers.index')
             ->with('success', 'Supplier updated successfully.');
@@ -139,10 +140,12 @@ class SupplierController extends Controller
 
         // Opening Balance Entry
         if (($supplier->opening_due ?? 0) > 0) {
+            $openingDateTime = optional($supplier->created_at)->copy() ?? now();
+
             $transactions->push([
                 'id' => 'opening',
-                'date' => now()->format('Y-m-d'),
-                'datetime' => now()->format('Y-m-d H:i:s'),
+                'date' => $openingDateTime->format('Y-m-d'),
+                'datetime' => $openingDateTime->subSecond()->format('Y-m-d H:i:s'),
                 'reference' => 'OPENING',
                 'description' => 'Opening Balance',
                 'debit' => 0,
@@ -154,10 +157,14 @@ class SupplierController extends Controller
 
         $purchases = \App\Models\Purchase::where('supplier_id', $supplier->id)->get()
             ->map(function ($purchase) {
+                $purchaseDateTime = $purchase->purchase_date
+                    ? $purchase->purchase_date->copy()->setTimeFrom($purchase->created_at)
+                    : $purchase->created_at->copy();
+
                 return [
                     'id' => $purchase->id,
-                    'date' => $purchase->created_at->format('Y-m-d'),
-                    'datetime' => $purchase->created_at->format('Y-m-d H:i:s'),
+                    'date' => $purchaseDateTime->format('Y-m-d'),
+                    'datetime' => $purchaseDateTime->format('Y-m-d H:i:s'),
                     'reference' => $purchase->invoice_no ?? 'PUR-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT),
                     'description' => 'Purchase - ' . ($purchase->invoice_no ?? 'Invoice #' . $purchase->id),
                     'debit' => 0,
@@ -169,10 +176,12 @@ class SupplierController extends Controller
 
         $payments = \App\Models\SupplierPayment::where('supplier_id', $supplier->id)->get()
             ->map(function ($payment) {
+                $paymentDateTime = \Carbon\Carbon::parse($payment->date)->setTimeFrom($payment->created_at);
+
                 return [
                     'id' => $payment->id,
                     'date' => $payment->date,
-                    'datetime' => $payment->created_at->format('Y-m-d H:i:s'),
+                    'datetime' => $paymentDateTime->format('Y-m-d H:i:s'),
                     'reference' => $payment->payment_reference ?? 'PAY-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT),
                     'description' => 'Payment Made',
                     'debit' => $payment->amount,
@@ -192,7 +201,7 @@ class SupplierController extends Controller
         $runningBalance = 0;
 
         $allTransactions = $allTransactions->map(function ($txn) use (&$runningBalance) {
-            $runningBalance = $runningBalance + $txn['debit'] - $txn['credit'];
+            $runningBalance = $runningBalance + $txn['credit'] - $txn['debit'];
             $txn['balance'] = $runningBalance;
             return $txn;
         });

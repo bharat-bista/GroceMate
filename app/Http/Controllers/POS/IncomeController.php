@@ -153,12 +153,10 @@ class IncomeController extends Controller
         $income = Income::create($validated);
         // Income model created event automatically updates business balance ✅
 
-        // Reduce customer due for any payment from customer
-        if ($income->customer_id && $income->amount_received > 0) {
+        if ($income->customer_id) {
             $customer = Customer::find($income->customer_id);
-            if ($customer && $customer->total_due > 0) {
-                $newDue = max(0, $customer->total_due - $income->amount_received);
-                $customer->update(['total_due' => $newDue]);
+            if ($customer) {
+                $customer->syncTotalDue();
             }
         }
 
@@ -245,24 +243,12 @@ class IncomeController extends Controller
      */
     private function handleDueAmountChanges($income, $oldIncomeType, $oldAmount, $oldCustomerId)
     {
-        $newIncomeType = $income->income_type;
-        $newAmount     = $income->amount_received;
         $newCustomerId = $income->customer_id;
 
-        // Restore old due for any payment type (not just Due Collection)
-        if ($oldCustomerId && $oldAmount > 0) {
-            $oldCustomer = Customer::find($oldCustomerId);
-            if ($oldCustomer) {
-                $oldCustomer->increment('total_due', $oldAmount);
-            }
-        }
-
-        // Apply new due deduction for any payment from customer
-        if ($newCustomerId && $newAmount > 0) {
-            $newCustomer = Customer::find($newCustomerId);
-            if ($newCustomer && $newCustomer->total_due > 0) {
-                $newDue = max(0, $newCustomer->total_due - $newAmount);
-                $newCustomer->update(['total_due' => $newDue]);
+        foreach (collect([$oldCustomerId, $newCustomerId])->filter()->unique() as $customerId) {
+            $customer = Customer::find($customerId);
+            if ($customer) {
+                $customer->syncTotalDue();
             }
         }
     }
@@ -272,16 +258,17 @@ class IncomeController extends Controller
      */
     public function destroy(Income $income)
     {
-        // Restore customer due if it was Due Collection
-        if ($income->income_type === 'Due Collection' && $income->customer_id) {
-            $customer = Customer::find($income->customer_id);
-            if ($customer) {
-                $customer->increment('total_due', $income->amount_received);
-            }
-        }
+        $customerId = $income->customer_id;
 
         // Income model deleted event automatically restores business balance ✅
         $income->delete();
+
+        if ($customerId) {
+            $customer = Customer::find($customerId);
+            if ($customer) {
+                $customer->syncTotalDue();
+            }
+        }
 
         return redirect()->route('pos.income.index')
             ->with('success', '✅ Income record deleted successfully.');

@@ -48,8 +48,8 @@
             </div>
             <div>
                 <label class="text-sm text-slate-500">Total Due</label>
-                <p class="font-medium @if($customer->total_due > 0) text-red-600 @else text-emerald-600 @endif">
-                    Rs {{ number_format($customer->total_due, 2) }}
+                <p class="font-medium @if($customer->calculated_total_due > 0) text-red-600 @else text-emerald-600 @endif">
+                    Rs {{ number_format($customer->calculated_total_due, 2) }}
                 </p>
             </div>
             <div class="md:col-span-2 lg:col-span-3">
@@ -99,8 +99,8 @@
             </div>
             <div class="text-sm">
                 <span class="text-slate-500">Current Balance:</span>
-                <span class="font-semibold ml-2 {{ $customer->total_due > 0 ? 'text-red-600' : 'text-green-600' }}">
-                    Rs {{ number_format($customer->total_due, 2) }}
+                <span class="font-semibold ml-2 {{ $customer->calculated_total_due > 0 ? 'text-red-600' : 'text-green-600' }}">
+                    Rs {{ number_format($customer->calculated_total_due, 2) }}
                 </span>
             </div>
         </div>
@@ -155,17 +155,17 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right font-semibold">
-                                <span class="{{ $transaction['balance'] > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                    @if($transaction['balance'] > 0)
-    <span class="text-red-600">
-        Dr {{ number_format($transaction['balance'], 2) }}
-    </span>
-@else
-    <span class="text-green-600">
-        Cr {{ number_format(abs($transaction['balance']), 2) }}
-    </span>
-@endif
-                                </span>
+                                @if($transaction['balance'] > 0)
+                                    <span class="text-red-600">
+                                        Cr {{ number_format($transaction['balance'], 2) }}
+                                    </span>
+                                @elseif($transaction['balance'] < 0)
+                                    <span class="text-green-600">
+                                        Dr {{ number_format(abs($transaction['balance']), 2) }}
+                                    </span>
+                                @else
+                                    <span class="text-slate-600">0.00</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

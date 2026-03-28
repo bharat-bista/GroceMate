@@ -121,7 +121,7 @@ class SupplierPaymentController extends Controller
 
             $supplier = Supplier::find($validated['supplier_id']);
             if ($supplier) {
-                $supplier->decrement('total_due', $validated['amount']);
+                $supplier->syncTotalDue();
             }
 
             // Income model created event handles business balance automatically
@@ -173,14 +173,7 @@ class SupplierPaymentController extends Controller
         $validated['tds_applicable'] = $request->has('tds_applicable');
 
         DB::transaction(function () use ($validated, $supplierPayment) {
-            $originalAmount     = $supplierPayment->amount;
             $originalSupplierId = $supplierPayment->supplier_id;
-
-            // Restore original supplier due
-            $originalSupplier = Supplier::find($originalSupplierId);
-            if ($originalSupplier) {
-                $originalSupplier->increment('total_due', $originalAmount);
-            }
 
             // Delete old income — model deleted event restores business balance
             Income::where('reference_no', 'PAY-' . $supplierPayment->id)->delete();
@@ -188,10 +181,13 @@ class SupplierPaymentController extends Controller
             // Update payment record
             $supplierPayment->update($validated);
 
-            // Apply new supplier due deduction
+            $originalSupplier = Supplier::find($originalSupplierId);
             $supplier = Supplier::find($validated['supplier_id']);
-            if ($supplier) {
-                $supplier->decrement('total_due', $validated['amount']);
+            if ($originalSupplier) {
+                $originalSupplier->syncTotalDue();
+            }
+            if ($supplier && (!$originalSupplier || $supplier->id !== $originalSupplier->id)) {
+                $supplier->syncTotalDue();
             }
 
             // Income model created event handles business balance automatically
@@ -213,16 +209,16 @@ class SupplierPaymentController extends Controller
     public function destroy(SupplierPayment $supplierPayment)
     {
         DB::transaction(function () use ($supplierPayment) {
-            // Restore supplier due
             $supplier = Supplier::find($supplierPayment->supplier_id);
-            if ($supplier) {
-                $supplier->increment('total_due', $supplierPayment->amount);
-            }
 
             // Delete income — model deleted event restores business balance
             Income::where('reference_no', 'PAY-' . $supplierPayment->id)->delete();
 
             $supplierPayment->delete();
+
+            if ($supplier) {
+                $supplier->syncTotalDue();
+            }
         });
 
         return redirect()->route('pos.supplier-payments.index')
@@ -304,7 +300,7 @@ class SupplierPaymentController extends Controller
 
             $supplier = Supplier::find($request->supplier_id);
             if ($supplier) {
-                $supplier->decrement('total_due', $amount);
+                $supplier->syncTotalDue();
             }
 
             // Income model created event handles business balance automatically
@@ -438,7 +434,7 @@ class SupplierPaymentController extends Controller
 
             $supplier = Supplier::find($paymentInfo['supplier_id']);
             if ($supplier) {
-                $supplier->decrement('total_due', $paymentInfo['amount']);
+                $supplier->syncTotalDue();
             }
 
             // ✅ Income model created event handles business balance
@@ -592,7 +588,7 @@ class SupplierPaymentController extends Controller
 
             $supplier = Supplier::find($paymentInfo['supplier_id']);
             if ($supplier) {
-                $supplier->decrement('total_due', $paymentInfo['amount']);
+                $supplier->syncTotalDue();
             }
 
             // ✅ Income model created event handles business balance

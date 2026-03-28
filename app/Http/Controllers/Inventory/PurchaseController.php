@@ -174,6 +174,11 @@ class PurchaseController extends Controller
             // Update purchase total with final tax
             $purchaseTotal = $purchaseBaseTotal + $finalTaxAmount;
             $purchase->update(['total_cost' => $purchaseTotal]);
+
+            $supplier = Supplier::find($data['supplier_id']);
+            if ($supplier) {
+                $supplier->syncTotalDue();
+            }
         });
 
         return redirect()->route('inventory.purchases.index')

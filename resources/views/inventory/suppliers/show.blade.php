@@ -49,7 +49,7 @@
             <div>
                 <label class="text-sm text-slate-500">Total Due</label>
                 <p class="font-semibold text-red-600">
-                    Rs {{ number_format($supplier->total_due, 2) }}
+                    Rs {{ number_format($supplier->calculated_total_due, 2) }}
                 </p>
             </div>
             <div class="md:col-span-2 lg:col-span-3">
@@ -273,8 +273,8 @@
                                         @else text-slate-600
                                         @endif">
                                         Rs {{ number_format(abs($transaction['balance']), 2) }}
-                                        @if($transaction['balance'] > 0) (Dr)
-                                        @elseif($transaction['balance'] < 0) (Cr)
+                                        @if($transaction['balance'] > 0) (Cr)
+                                        @elseif($transaction['balance'] < 0) (Dr)
                                         @endif
                                     </span>
                                 </td>

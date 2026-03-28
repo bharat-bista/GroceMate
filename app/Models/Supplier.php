@@ -19,16 +19,48 @@ class Supplier extends Model
         'address'
     ];
 
-    // Later (when you add purchases):
-    // public function purchases() { return $this->hasMany(Purchase::class); }
+    protected $casts = [
+        'opening_due' => 'decimal:2',
+        'total_due' => 'decimal:2',
+    ];
+
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
 
     public function supplierPayments(): HasMany
     {
         return $this->hasMany(SupplierPayment::class);
     }
 
+    public function calculateTotalDue(): float
+    {
+        $openingDue = (float) ($this->opening_due ?? 0);
+
+        $purchaseTotal = $this->relationLoaded('purchases')
+            ? (float) $this->purchases->sum('total_cost')
+            : (float) $this->purchases()->sum('total_cost');
+
+        $paymentTotal = $this->relationLoaded('supplierPayments')
+            ? (float) $this->supplierPayments->sum('amount')
+            : (float) $this->supplierPayments()->sum('amount');
+
+        return $openingDue + $purchaseTotal - $paymentTotal;
+    }
+
+    public function syncTotalDue(): float
+    {
+        $calculatedTotalDue = $this->calculateTotalDue();
+
+        $this->forceFill(['total_due' => $calculatedTotalDue])->saveQuietly();
+        $this->total_due = $calculatedTotalDue;
+
+        return $calculatedTotalDue;
+    }
+
     public function getCalculatedTotalDueAttribute()
     {
-        return $this->total_due;
+        return $this->calculateTotalDue();
     }
 }

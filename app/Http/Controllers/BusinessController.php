@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class BusinessController extends Controller
 {
@@ -167,8 +168,14 @@ class BusinessController extends Controller
             $csv .= "\"Total Purchases\",\"" . number_format($reportData['purchaseTotal'], 2, '.', '') . "\"\n";
             $csv .= "\"Total Sales\",\"" . number_format($reportData['salesTotal'], 2, '.', '') . "\"\n";
             $csv .= "\"Income Received\",\"" . number_format($reportData['incomeTotal'], 2, '.', '') . "\"\n";
+            $csv .= "\"Other Income\",\"" . number_format($reportData['otherIncomeTotal'], 2, '.', '') . "\"\n";
+            $csv .= "\"Sale Income Entries\",\"" . number_format($reportData['saleIncomeTotal'], 2, '.', '') . "\"\n";
+            $csv .= "\"Due Collections\",\"" . number_format($reportData['dueCollectionTotal'], 2, '.', '') . "\"\n";
             $csv .= "\"Supplier Payments\",\"" . number_format($reportData['supplierPaymentTotal'], 2, '.', '') . "\"\n";
             $csv .= "\"Net Cash Flow\",\"" . number_format($reportData['netCashFlow'], 2, '.', '') . "\"\n";
+            $csv .= "\"Gross Profit/Loss\",\"" . number_format($reportData['grossProfitLoss'], 2, '.', '') . "\"\n";
+            $csv .= "\"Net Profit/Loss\",\"" . number_format($reportData['netProfitLoss'], 2, '.', '') . "\"\n";
+            $csv .= "\"Profit Margin (%)\",\"" . number_format((float) ($reportData['profitMargin'] ?? 0), 2, '.', '') . "\"\n";
             $csv .= "\"Current Balance\",\"" . number_format((float) $business->balance, 2, '.', '') . "\"\n";
             $csv .= "\n";
             $csv .= "Account Activity\n";
@@ -244,8 +251,14 @@ class BusinessController extends Controller
         $purchaseTotal = (float) $purchases->sum('total_cost');
         $salesTotal = (float) $sales->sum('total_cost');
         $incomeTotal = (float) $incomes->sum('amount_received');
+        $otherIncomeTotal = (float) $incomes->where('income_type', 'Other')->sum('amount_received');
+        $saleIncomeTotal = (float) $incomes->where('income_type', 'Sale')->sum('amount_received');
+        $dueCollectionTotal = (float) $incomes->where('income_type', 'Due Collection')->sum('amount_received');
         $supplierPaymentTotal = (float) $supplierPayments->sum('amount');
         $netCashFlow = $incomeTotal - $supplierPaymentTotal;
+        $grossProfitLoss = $salesTotal - $purchaseTotal;
+        $netProfitLoss = $grossProfitLoss + $otherIncomeTotal;
+        $profitMargin = $salesTotal > 0 ? (($netProfitLoss / $salesTotal) * 100) : null;
 
         $activityFeed = $this->buildActivityFeed($purchases, $sales, $incomes, $supplierPayments);
 
@@ -257,18 +270,43 @@ class BusinessController extends Controller
             'purchaseTotal' => $purchaseTotal,
             'salesTotal' => $salesTotal,
             'incomeTotal' => $incomeTotal,
+            'otherIncomeTotal' => $otherIncomeTotal,
+            'saleIncomeTotal' => $saleIncomeTotal,
+            'dueCollectionTotal' => $dueCollectionTotal,
             'supplierPaymentTotal' => $supplierPaymentTotal,
             'netCashFlow' => $netCashFlow,
+            'grossProfitLoss' => $grossProfitLoss,
+            'netProfitLoss' => $netProfitLoss,
+            'profitMargin' => $profitMargin,
             'purchaseCount' => $purchases->count(),
             'salesCount' => $sales->count(),
             'incomeCount' => $incomes->count(),
             'supplierPaymentCount' => $supplierPayments->count(),
             'activityFeed' => $activityFeed,
-            'recentPurchases' => $purchases->take(5),
-            'recentSales' => $sales->take(5),
-            'recentIncomes' => $incomes->take(5),
-            'recentSupplierPayments' => $supplierPayments->take(5),
+            'paginatedActivityFeed' => $this->paginateCollection($activityFeed, 10, 'activity_page'),
+            'recentPurchases' => $this->paginateCollection($purchases, 6, 'purchases_page'),
+            'recentSales' => $this->paginateCollection($sales, 6, 'sales_page'),
+            'recentIncomes' => $this->paginateCollection($incomes, 6, 'incomes_page'),
+            'recentSupplierPayments' => $this->paginateCollection($supplierPayments, 6, 'payments_page'),
         ];
+    }
+
+    private function paginateCollection($items, int $perPage, string $pageName): LengthAwarePaginator
+    {
+        $collection = collect($items)->values();
+        $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+        $currentItems = $collection->forPage($currentPage, $perPage)->values();
+
+        return new LengthAwarePaginator(
+            $currentItems,
+            $collection->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => request()->url(),
+                'pageName' => $pageName,
+            ]
+        );
     }
 
     private function buildActivityFeed($purchases, $sales, $incomes, $supplierPayments)
@@ -335,17 +373,33 @@ class BusinessController extends Controller
         $sales = [];
         $income = [];
         $payments = [];
+        $otherIncome = [];
+        $grossProfit = [];
+        $netProfit = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
+            $purchaseAmount = (float) $business->purchases()->whereDate('purchase_date', $date)->sum('total_cost');
+            $salesAmount = (float) $business->invoices()->whereDate('invoice_date', $date)->sum('total_cost');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereDate('transaction_date', $date)->sum('amount_received');
+            $paymentAmount = (float) $business->supplierPayments()->whereDate('date', $date)->sum('amount');
+            $otherIncomeAmount = (float) $business->incomes()
+                ->where('amount_received', '>', 0)
+                ->where('income_type', 'Other')
+                ->whereDate('transaction_date', $date)
+                ->sum('amount_received');
+
             $labels[] = $date->format('M d');
-            $purchases[] = (float) $business->purchases()->whereDate('purchase_date', $date)->sum('total_cost');
-            $sales[] = (float) $business->invoices()->whereDate('invoice_date', $date)->sum('total_cost');
-            $income[] = (float) $business->incomes()->where('amount_received', '>', 0)->whereDate('transaction_date', $date)->sum('amount_received');
-            $payments[] = (float) $business->supplierPayments()->whereDate('date', $date)->sum('amount');
+            $purchases[] = $purchaseAmount;
+            $sales[] = $salesAmount;
+            $income[] = $incomeAmount;
+            $payments[] = $paymentAmount;
+            $otherIncome[] = $otherIncomeAmount;
+            $grossProfit[] = $salesAmount - $purchaseAmount;
+            $netProfit[] = $salesAmount + $otherIncomeAmount - $purchaseAmount;
         }
 
-        return compact('labels', 'purchases', 'sales', 'income', 'payments');
+        return compact('labels', 'purchases', 'sales', 'income', 'payments', 'otherIncome', 'grossProfit', 'netProfit');
     }
 
     private function buildWeeklyChartSeries(Business $business): array
@@ -355,18 +409,34 @@ class BusinessController extends Controller
         $sales = [];
         $income = [];
         $payments = [];
+        $otherIncome = [];
+        $grossProfit = [];
+        $netProfit = [];
 
         for ($i = 7; $i >= 0; $i--) {
             $start = Carbon::now()->subWeeks($i)->startOfWeek();
             $end = Carbon::now()->subWeeks($i)->endOfWeek();
+            $purchaseAmount = (float) $business->purchases()->whereBetween('purchase_date', [$start, $end])->sum('total_cost');
+            $salesAmount = (float) $business->invoices()->whereBetween('invoice_date', [$start, $end])->sum('total_cost');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereBetween('transaction_date', [$start, $end])->sum('amount_received');
+            $paymentAmount = (float) $business->supplierPayments()->whereBetween('date', [$start, $end])->sum('amount');
+            $otherIncomeAmount = (float) $business->incomes()
+                ->where('amount_received', '>', 0)
+                ->where('income_type', 'Other')
+                ->whereBetween('transaction_date', [$start, $end])
+                ->sum('amount_received');
+
             $labels[] = 'Week ' . $start->format('M d');
-            $purchases[] = (float) $business->purchases()->whereBetween('purchase_date', [$start, $end])->sum('total_cost');
-            $sales[] = (float) $business->invoices()->whereBetween('invoice_date', [$start, $end])->sum('total_cost');
-            $income[] = (float) $business->incomes()->where('amount_received', '>', 0)->whereBetween('transaction_date', [$start, $end])->sum('amount_received');
-            $payments[] = (float) $business->supplierPayments()->whereBetween('date', [$start, $end])->sum('amount');
+            $purchases[] = $purchaseAmount;
+            $sales[] = $salesAmount;
+            $income[] = $incomeAmount;
+            $payments[] = $paymentAmount;
+            $otherIncome[] = $otherIncomeAmount;
+            $grossProfit[] = $salesAmount - $purchaseAmount;
+            $netProfit[] = $salesAmount + $otherIncomeAmount - $purchaseAmount;
         }
 
-        return compact('labels', 'purchases', 'sales', 'income', 'payments');
+        return compact('labels', 'purchases', 'sales', 'income', 'payments', 'otherIncome', 'grossProfit', 'netProfit');
     }
 
     private function buildMonthlyChartSeries(Business $business): array
@@ -376,30 +446,47 @@ class BusinessController extends Controller
         $sales = [];
         $income = [];
         $payments = [];
+        $otherIncome = [];
+        $grossProfit = [];
+        $netProfit = [];
 
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
-            $labels[] = $month->format('M Y');
-            $purchases[] = (float) $business->purchases()
+            $purchaseAmount = (float) $business->purchases()
                 ->whereYear('purchase_date', $month->year)
                 ->whereMonth('purchase_date', $month->month)
                 ->sum('total_cost');
-            $sales[] = (float) $business->invoices()
+            $salesAmount = (float) $business->invoices()
                 ->whereYear('invoice_date', $month->year)
                 ->whereMonth('invoice_date', $month->month)
                 ->sum('total_cost');
-            $income[] = (float) $business->incomes()
+            $incomeAmount = (float) $business->incomes()
                 ->where('amount_received', '>', 0)
                 ->whereYear('transaction_date', $month->year)
                 ->whereMonth('transaction_date', $month->month)
                 ->sum('amount_received');
-            $payments[] = (float) $business->supplierPayments()
+            $paymentAmount = (float) $business->supplierPayments()
                 ->whereYear('date', $month->year)
                 ->whereMonth('date', $month->month)
                 ->sum('amount');
+            $otherIncomeAmount = (float) $business->incomes()
+                ->where('amount_received', '>', 0)
+                ->where('income_type', 'Other')
+                ->whereYear('transaction_date', $month->year)
+                ->whereMonth('transaction_date', $month->month)
+                ->sum('amount_received');
+
+            $labels[] = $month->format('M Y');
+            $purchases[] = $purchaseAmount;
+            $sales[] = $salesAmount;
+            $income[] = $incomeAmount;
+            $payments[] = $paymentAmount;
+            $otherIncome[] = $otherIncomeAmount;
+            $grossProfit[] = $salesAmount - $purchaseAmount;
+            $netProfit[] = $salesAmount + $otherIncomeAmount - $purchaseAmount;
         }
 
-        return compact('labels', 'purchases', 'sales', 'income', 'payments');
+        return compact('labels', 'purchases', 'sales', 'income', 'payments', 'otherIncome', 'grossProfit', 'netProfit');
     }
 
     private function buildYearlyChartSeries(Business $business): array
@@ -409,17 +496,33 @@ class BusinessController extends Controller
         $sales = [];
         $income = [];
         $payments = [];
+        $otherIncome = [];
+        $grossProfit = [];
+        $netProfit = [];
 
         for ($i = 4; $i >= 0; $i--) {
             $year = Carbon::now()->subYears($i)->year;
+            $purchaseAmount = (float) $business->purchases()->whereYear('purchase_date', $year)->sum('total_cost');
+            $salesAmount = (float) $business->invoices()->whereYear('invoice_date', $year)->sum('total_cost');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereYear('transaction_date', $year)->sum('amount_received');
+            $paymentAmount = (float) $business->supplierPayments()->whereYear('date', $year)->sum('amount');
+            $otherIncomeAmount = (float) $business->incomes()
+                ->where('amount_received', '>', 0)
+                ->where('income_type', 'Other')
+                ->whereYear('transaction_date', $year)
+                ->sum('amount_received');
+
             $labels[] = (string) $year;
-            $purchases[] = (float) $business->purchases()->whereYear('purchase_date', $year)->sum('total_cost');
-            $sales[] = (float) $business->invoices()->whereYear('invoice_date', $year)->sum('total_cost');
-            $income[] = (float) $business->incomes()->where('amount_received', '>', 0)->whereYear('transaction_date', $year)->sum('amount_received');
-            $payments[] = (float) $business->supplierPayments()->whereYear('date', $year)->sum('amount');
+            $purchases[] = $purchaseAmount;
+            $sales[] = $salesAmount;
+            $income[] = $incomeAmount;
+            $payments[] = $paymentAmount;
+            $otherIncome[] = $otherIncomeAmount;
+            $grossProfit[] = $salesAmount - $purchaseAmount;
+            $netProfit[] = $salesAmount + $otherIncomeAmount - $purchaseAmount;
         }
 
-        return compact('labels', 'purchases', 'sales', 'income', 'payments');
+        return compact('labels', 'purchases', 'sales', 'income', 'payments', 'otherIncome', 'grossProfit', 'netProfit');
     }
 
     private function applyDateRange(Builder|Relation $query, string $column, ?string $from, ?string $to): void

@@ -22,7 +22,13 @@
     <tr><td>Total Sales</td><td>Rs {{ number_format($salesTotal, 2) }}</td></tr>
     <tr><td>Total Purchases</td><td>Rs {{ number_format($purchaseTotal, 2) }}</td></tr>
     <tr><td>Income Received</td><td>Rs {{ number_format($incomeTotal, 2) }}</td></tr>
+    <tr><td>Other Income</td><td>Rs {{ number_format($otherIncomeTotal, 2) }}</td></tr>
+    <tr><td>Sale Income Entries</td><td>Rs {{ number_format($saleIncomeTotal, 2) }}</td></tr>
+    <tr><td>Due Collections</td><td>Rs {{ number_format($dueCollectionTotal, 2) }}</td></tr>
     <tr><td>Supplier Payments</td><td>Rs {{ number_format($supplierPaymentTotal, 2) }}</td></tr>
+    <tr><td>Gross Profit/Loss</td><td>Rs {{ number_format($grossProfitLoss, 2) }}</td></tr>
+    <tr><td>Net Profit/Loss</td><td>Rs {{ number_format($netProfitLoss, 2) }}</td></tr>
+    <tr><td>Profit Margin</td><td>{{ is_null($profitMargin) ? 'N/A' : number_format($profitMargin, 2) . '%' }}</td></tr>
     <tr><td>Net Cash Flow</td><td>Rs {{ number_format($netCashFlow, 2) }}</td></tr>
     <tr><td>Current Balance</td><td>Rs {{ number_format((float) $business->balance, 2) }}</td></tr>
 </table>

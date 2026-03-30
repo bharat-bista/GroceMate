@@ -52,7 +52,11 @@ class AccountController extends Controller
     // Login user
     Auth::login($user, $request->remember);
 
-    return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
+    if ($user->isAdmin()) {
+        return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
+    }
+
+    return redirect()->route('home')->with('success', 'Login successful!');
 }
 
 
@@ -159,35 +163,38 @@ class AccountController extends Controller
     }
 
     public function googleCallback()
-{
-    try {
-        $googleUser = Socialite::driver('google')->stateless()->user();
-    } catch (\Exception $e) {
-        return redirect()->route('login')->with('popup_error', 'Google login failed.');
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('popup_error', 'Google login failed.');
+        }
+
+        $user = User::where('email', $googleUser->getEmail())->first();
+
+        if ($user && $user->status !== 'Y') {
+            return redirect()->route('login')
+                ->with('popup_error', 'Your account is not verified.');
+        }
+
+        if (!$user) {
+            $user = User::create([
+                'full_name' => $googleUser->getName() ?? 'Google User',
+                'email'     => $googleUser->getEmail(),
+                'google_id' => $googleUser->getId(),
+                'gender'    => 'other',
+                'role_id'   => 2,
+                'status'    => 'Y',
+                'password'  => Str::random(32),
+            ]);
+        }
+
+        Auth::login($user);
+
+        if ($user->isAdmin()) {
+            return redirect()->route('inventory.dashboard')->with('success', 'Logged in with Google!');
+        }
+
+        return redirect()->route('home')->with('success', 'Logged in with Google!');
     }
-
-    $user = User::where('email', $googleUser->getEmail())->first();
-
-    if ($user && $user->status !== 'Y') {
-        return redirect()->route('login')
-            ->with('popup_error', 'Your account is not verified.');
-    }
-
-    if (!$user) {
-        $user = User::create([
-            'full_name' => $googleUser->getName() ?? 'Google User',
-            'email'     => $googleUser->getEmail(),
-            'google_id' => $googleUser->getId(),
-            'gender'    => 'other',
-            'role_id'   => 2,
-            'status'    => 'Y',
-            'password'  => Str::random(32),
-        ]);
-    }
-
-    Auth::login($user);
-
-    return redirect()->route('home')->with('success', 'Logged in with Google!');
-}
-
 }

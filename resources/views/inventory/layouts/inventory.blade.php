@@ -39,6 +39,7 @@
             'pos.income.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
+        $isAccountsGroup = request()->routeIs('admin.accounts.*');
 
         $navLinkClass = function (bool $active = false) {
             return $active
@@ -161,6 +162,18 @@
      Profile
   </a>
 
+  @if(auth()->check() && auth()->user()->isAdmin())
+    <div class="pt-2">
+      <div class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        Accounts
+      </div>
+      <a class="{{ $navLinkClass($isAccountsGroup) }}"
+         href="{{ route('admin.accounts.index') }}">
+         Manage Admins
+      </a>
+    </div>
+  @endif
+
 </nav>
 
     </aside>
@@ -177,7 +190,7 @@
 
           <div class="flex items-center gap-3">
             <div class="text-sm text-slate-600 hidden sm:block">
-              {{ auth()->user()->name ?? 'User' }}
+              {{ auth()->user()->full_name ?? 'User' }}
             </div>
             <form method="POST" action="#">
               @csrf

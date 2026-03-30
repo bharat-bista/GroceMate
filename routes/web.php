@@ -12,6 +12,7 @@ use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
+use App\Http\Controllers\Inventory\AdminAccountController;
 use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
@@ -19,15 +20,6 @@ use App\Http\Controllers\POS\IncomeController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
 use App\Http\Controllers\BusinessController;
 
-Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
-Route::post('/business/store', [BusinessController::class, 'store'])->name('business.store');
-Route::get('/business', [BusinessController::class, 'index'])->name('business.index');
-Route::get('/business/{business}', [BusinessController::class, 'show'])->name('business.show');
-Route::get('/business/{business}/export/{type}', [BusinessController::class, 'export'])->name('business.export');
-Route::get('/business/{business}/edit', [BusinessController::class, 'edit'])->name('business.edit');
-Route::put('/business/{business}', [BusinessController::class, 'update'])->name('business.update');
-Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
-Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
 
 // Khalti Payment Verification Route
 Route::post('/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
@@ -70,7 +62,7 @@ Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyReg
 Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');
 
-Route::middleware(['auth'])
+Route::middleware(['auth', 'admin'])
     ->prefix('inventory')
     ->name('inventory.')
     ->group(function () {
@@ -120,7 +112,7 @@ Route::middleware(['auth'])
     
 );
 
-Route::middleware(['auth'])
+Route::middleware(['auth', 'admin'])
     ->prefix('pos')
     ->name('pos.')
     ->group(function () {
@@ -171,6 +163,29 @@ Route::middleware(['auth'])
 
     
     });
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin/accounts')
+    ->name('admin.accounts.')
+    ->group(function () {
+        Route::get('/', [AdminAccountController::class, 'index'])->name('index');
+        Route::get('/create', [AdminAccountController::class, 'create'])->name('create');
+        Route::post('/send-otp', [AdminAccountController::class, 'sendOtp'])->name('sendOtp');
+        Route::post('/verify-otp', [AdminAccountController::class, 'verifyOtp'])->name('verifyOtp');
+        Route::delete('/{user}', [AdminAccountController::class, 'destroy'])->name('destroy');
+    });
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/business/create', [BusinessController::class, 'create'])->name('business.create');
+    Route::post('/business/store', [BusinessController::class, 'store'])->name('business.store');
+    Route::get('/business', [BusinessController::class, 'index'])->name('business.index');
+    Route::get('/business/{business}', [BusinessController::class, 'show'])->name('business.show');
+    Route::get('/business/{business}/export/{type}', [BusinessController::class, 'export'])->name('business.export');
+    Route::get('/business/{business}/edit', [BusinessController::class, 'edit'])->name('business.edit');
+    Route::put('/business/{business}', [BusinessController::class, 'update'])->name('business.update');
+    Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
+    Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
+});
 
 Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
     ->name('pos.khalti.callback');  // ✅ added 'pos.' prefix

@@ -5,6 +5,7 @@ use App\Http\Controllers\frontend\HomeController;
 use App\Http\Controllers\frontend\AdvancedController;
 use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
+use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
 use App\Http\Controllers\POS\IncomeController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
+use App\Http\Controllers\TaxController;
 use App\Http\Controllers\BusinessController;
 
 
@@ -39,6 +41,12 @@ Route::get('/home', function() {
 })->middleware('auth')->name('home');
 
 Route::get('/advanced', [AdvancedController::class, 'advanced'])->name('advanced');
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::post('/cart/add', [CartController::class, 'addToCart'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'updateQuantity'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'removeItem'])->name('cart.remove');
+Route::post('/cart/promo', [CartController::class, 'applyPromoCode'])->name('cart.promo');
+Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
 Route::get('/description', [DescriptionController::class, 'description'])->name('description');
 
@@ -185,6 +193,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/business/{business}', [BusinessController::class, 'update'])->name('business.update');
     Route::delete('/business/{business}', [BusinessController::class, 'destroy'])->name('business.destroy');
     Route::get('/business/{business}/image', [BusinessController::class, 'getImage'])->name('business.image');
+    
+    // Tax Settings Routes
+    Route::prefix('taxes')->name('taxes.')->group(function () {
+        Route::get('/', [TaxController::class, 'index'])->name('index');
+        Route::get('/create', [TaxController::class, 'create'])->name('create');
+        Route::post('/', [TaxController::class, 'store'])->name('store');
+        Route::get('/{tax}/edit', [TaxController::class, 'edit'])->name('edit');
+        Route::put('/{tax}', [TaxController::class, 'update'])->name('update');
+        Route::delete('/{tax}', [TaxController::class, 'destroy'])->name('destroy');
+    });
 });
 
 Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])

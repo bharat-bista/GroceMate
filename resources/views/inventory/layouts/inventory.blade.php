@@ -40,6 +40,7 @@
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
+        $isSettingsGroup = request()->routeIs(['taxes.*', 'admin.accounts.*']);
 
         $navLinkClass = function (bool $active = false) {
             return $active
@@ -161,18 +162,41 @@
      href="{{ route('business.index') }}">
      Profile
   </a>
+  <div x-data="{ open: {{ $isSettingsGroup ? 'true' : 'false' }} }" class="space-y-1">
+    
+    <!-- Dropdown Button -->
+    <button @click="open = !open"
+            class="{{ $navButtonClass($isSettingsGroup) }}">
+      <span>Settings</span>
+      <svg :class="{'rotate-180': open}" 
+           class="w-4 h-4 transition-transform duration-200"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-  @if(auth()->check() && auth()->user()->isAdmin())
-    <div class="pt-2">
-      <div class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        Accounts
-      </div>
+    <!-- Dropdown Items -->
+    <div x-show="open" x-transition class="ml-4 space-y-1">
+
+      @if(auth()->check() && auth()->user()->isAdmin())
+    
       <a class="{{ $navLinkClass($isAccountsGroup) }}"
          href="{{ route('admin.accounts.index') }}">
          Manage Admins
       </a>
-    </div>
+      
+      <a class="{{ $navLinkClass(request()->routeIs('taxes.*')) }}"
+         href="{{ route('taxes.index') }}">
+         Tax Settings
+      </a>
+    
   @endif
+
+    </div>
+  </div>
+
+  
 
 </nav>
 

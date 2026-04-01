@@ -162,6 +162,203 @@
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
     }
 
+    /* ==========================================
+       SECTION HEADERS (from homepage)
+       ========================================== */
+    .gm-section {
+        padding: 40px 5%;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .gm-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .gm-top-sale-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .gm-top-sale-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ff8a00, #ff4d4f);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(255, 122, 0, 0.25);
+        font-size: 1.25rem;
+    }
+
+    .gm-top-sale-heading {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .gm-top-sale-label {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: rgba(255, 107, 53, 0.12);
+        color: var(--gm-accent);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .gm-top-sale-title {
+        margin: 0;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--gm-dark);
+    }
+
+    .gm-top-sale-subtitle {
+        margin: 0;
+        color: var(--gm-gray);
+        font-size: 0.95rem;
+    }
+
+    .gm-view-all {
+        color: var(--gm-primary);
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: var(--gm-transition);
+    }
+
+    .gm-view-all:hover {
+        color: var(--gm-accent);
+        gap: 12px;
+    }
+
+    /* ==========================================
+       PRODUCT GRID / ECOMMERCE SECTION
+       ========================================== */
+    .gm-ecom-card {
+        background: #fff;
+        border: 1px solid #f0f0f0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        padding: 0;
+        position: relative;
+    }
+
+    .gm-ecom-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .gm-ecom-card .gm-product-badge {
+        top: 10px;
+        left: 10px;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        z-index: 10;
+        background: #28a745;
+        color: white;
+        font-weight: 600;
+    }
+
+    .gm-ecom-card .gm-product-img-wrap {
+        height: 180px;
+        background: #fafafa;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .gm-ecom-card .gm-product-img-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .gm-ecom-card .gm-product-card-link {
+        color: inherit;
+        text-decoration: none;
+        display: block;
+    }
+
+    .gm-ecom-card .gm-product-info {
+        padding: 12px 12px 14px;
+    }
+
+    .gm-ecom-card .gm-product-brand {
+        display: none;
+    }
+
+    .gm-ecom-card .gm-product-name {
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.4;
+        min-height: auto;
+        margin-bottom: 10px;
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: #111;
+    }
+
+    .gm-ecom-card .gm-product-weight {
+        display: none;
+    }
+
+    .gm-ecom-card .gm-product-price {
+        margin-bottom: 0px;
+        gap: 8px;
+        flex-wrap: wrap;
+        display: inline-block;
+    }
+
+    .gm-ecom-card .gm-price-new {
+        font-size: 1.9rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #f57224;
+    }
+
+    .gm-ecom-card .gm-price-old {
+        font-size: 1.4rem;
+        color: #9ca3af;
+    }
+
+    .gm-ecom-discount {
+        font-size: 1.4rem;
+        color: #9ca3af;
+        display: inline-block;
+        margin-left: 10px;
+    }
+
+    .gm-ecom-card .gm-product-rating {
+        display: none !important;
+    }
+
+    .gm-ecom-card .gm-product-btns {
+        display: none;
+    }
+
     /* Product Grid Layout */
     .gm-products-grid {
         display: grid;
@@ -176,71 +373,398 @@
     .search-filters {
         display: flex;
         gap: 15px;
-        background: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 15px;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fdf9 100%);
+        border: 2px solid #e8f5e9;
+        border-radius: 16px;
+        padding: 24px;
+        align-items: stretch;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .search-filters::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--gm-primary) 0%, #1e7e34 50%, var(--gm-primary) 100%);
+        background-size: 200% 100%;
+        animation: gradientShift 3s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    
+    .search-filters:hover {
+        box-shadow: 0 12px 35px rgba(40, 167, 69, 0.2);
+        transform: translateY(-3px);
+        border-color: var(--gm-primary);
     }
 
     /* Input + Select */
     .search-filters .form-control,
     .search-filters .form-select {
         flex: 1;
-        height: 45px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 14px;
-        padding: 0 12px;
-        transition: all 0.3s ease;
+        height: 52px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 15px;
+        padding: 0 18px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #ffffff;
+        font-weight: 500;
+        color: #2c3e50;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .search-filters .form-control::placeholder {
+        color: #95a5a6;
+        font-weight: 400;
+    }
+    
+    .search-filters .form-select {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2328a745' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px 12px;
+        padding-right: 40px;
     }
 
     /* Hover / Focus effect */
+    .search-filters .form-control:hover,
+    .search-filters .form-select:hover {
+        border-color: #c8e6c9;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.08);
+    }
+    
     .search-filters .form-control:focus,
     .search-filters .form-select:focus {
         border-color: var(--gm-primary);
-        box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+        box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.15);
         outline: none;
+        background: #f1f8e9;
+        transform: translateY(-2px);
     }
 
-    /* Optional Apply Button */
-    .search-filters .btn-apply-filter {
-        background: var(--gm-primary);
+    /* Search Button */
+    .search-filters .btn-search {
+        background: linear-gradient(135deg, var(--gm-primary) 0%, #1e7e34 100%);
         color: var(--gm-white);
-        padding: 10px 18px;
+        padding: 0 32px;
         border: none;
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        letter-spacing: 0.5px;
+        position: relative;
+        overflow: hidden;
     }
-    .search-filters .btn-apply-filter:hover {
-        background: var(--gm-accent);
-        color: var(--gm-white);
+    
+    .search-filters .btn-search::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    .search-filters .btn-search:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .search-filters .btn-search:hover {
+        background: linear-gradient(135deg, #1e7e34 0%, #155d27 100%);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        transform: translateY(-3px) scale(1.05);
+    }
+    
+    .search-filters .btn-search:active {
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    .search-filters .btn-search i {
+        font-size: 18px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .search-filters .btn-search span {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .price-filter-section {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid #e8f5e9 !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .price-filter-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gm-primary) 0%, #1e7e34 50%, var(--gm-primary) 100%);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+    
+    .price-filter-section:hover::before {
+        transform: translateX(0);
+    }
+    
+    .price-filter-section:hover {
+        box-shadow: 0 8px 30px rgba(40, 167, 69, 0.25) !important;
+        border-color: var(--gm-primary) !important;
+        transform: translateY(-3px);
     }
 
     .category-title {
         color: var(--gm-white);
-        font-weight: bold;
-        padding: 10px;
+        font-weight: 800;
+        font-size: 1.6rem;
+        padding: 22px 20px;
         margin-bottom: 0;
         text-align: center;
-        background: var(--gm-primary);
+        background: linear-gradient(135deg, var(--gm-primary) 0%, #1e7e34 80%, #155d27 100%);
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .category-title::before {
+        content: '🏷️';
+        position: absolute;
+        left: 20px;
+        font-size: 1.8rem;
+        opacity: 0.9;
+    }
+    
+    .category-title::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: shimmer 3s infinite linear;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     .category-list {
         max-height: 500px;
         overflow-y: auto;
-        padding-right: 10px;
+        padding: 20px;
+        background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+        border: 2px solid #e8f5e9;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
 
     .category-list label {
-        display: block;
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
         cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: linear-gradient(to right, #ffffff 0%, #f8f9fa 100%);
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #333;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .category-list label::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 5px;
+        background: linear-gradient(to bottom, var(--gm-primary) 0%, #1e7e34 100%);
+        transform: scaleY(0);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .category-list label:hover::before {
+        transform: scaleY(1);
+    }
+
+    .category-list label:hover {
+        background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%);
+        border-color: var(--gm-primary);
+        transform: translateX(8px) scale(1.02);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);
+    }
+    
+    .category-list label:has(input:checked) {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #e8f5e9 100%);
+        border-color: var(--gm-primary);
+        border-width: 2.5px;
+        font-weight: 600;
+        color: var(--gm-primary);
+        box-shadow: 0 8px 24px rgba(40, 167, 69, 0.25);
+        transform: translateX(8px);
+    }
+    
+    .category-list label:has(input:checked)::before {
+        transform: scaleY(1);
+    }
+
+    .category-list input[type="checkbox"] {
+        margin-right: 14px;
+        cursor: pointer;
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        border: 2.5px solid #c8e6c9;
+        border-radius: 6px;
+        background: #ffffff;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .category-list input[type="checkbox"]:hover {
+        border-color: var(--gm-primary);
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+    
+    .category-list input[type="checkbox"]:checked {
+        background: linear-gradient(135deg, var(--gm-primary) 0%, #1e7e34 100%);
+        border-color: var(--gm-primary);
+        animation: checkboxPulse 0.5s ease;
+    }
+    
+    @keyframes checkboxPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+        100% { transform: scale(1); }
+    }
+    
+    .category-list input[type="checkbox"]:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    
+    .category-list label span {
+        flex-grow: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        letter-spacing: 0.3px;
+    }
+    
+    /* Custom Scrollbar for Category List */
+    .category-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .category-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .category-list::-webkit-scrollbar-thumb {
+        background: var(--gm-primary);
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+
+    .category-list::-webkit-scrollbar-thumb:hover {
+        background: #1e7e34;
+    }
+    
+    /* Custom NoUiSlider Styling */
+    #price-slider .noUi-connect {
+        background: linear-gradient(90deg, var(--gm-primary) 0%, #1e7e34 100%);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+    
+    #price-slider .noUi-handle {
+        border: 3px solid var(--gm-primary);
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 22px;
+        height: 22px;
+    }
+    
+    #price-slider .noUi-handle:hover {
+        transform: scale(1.2);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+    }
+    
+    #price-slider .noUi-handle::before,
+    #price-slider .noUi-handle::after {
+        display: none;
+    }
+    
+    #price-slider .noUi-target {
+        background: #e8f5e9;
+        border: none;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        height: 8px;
+    }
+    
+    #price-min, #price-max {
+        font-weight: 600;
+        font-size: 0.95rem !important;
+        padding: 10px 16px !important;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.2);
+        letter-spacing: 0.5px;
     }
 
     .search-icon-advanced {
@@ -289,7 +813,39 @@
     }
 
     /* Responsive */
+    @media (max-width: 992px) {
+        .search-filters {
+            padding: 18px;
+            gap: 12px;
+        }
+        
+        .search-filters .form-control,
+        .search-filters .form-select {
+            font-size: 14px;
+            height: 48px;
+        }
+        
+        .search-filters .btn-search {
+            padding: 0 24px;
+            font-size: 14px;
+        }
+    }
+    
     @media (max-width: 768px) {
+        .search-filters {
+            flex-wrap: wrap;
+        }
+        
+        .search-filters .form-control,
+        .search-filters .form-select {
+            flex: 1 1 calc(50% - 8px);
+            min-width: 200px;
+        }
+        
+        .search-filters .btn-search {
+            flex: 1 1 100%;
+        }
+        
         .gm-products-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
@@ -307,20 +863,20 @@
 
     @media (max-width: 576px) {
         .search-filters {
-            flex-direction: row;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
         }
 
         .search-filters .form-control,
         .search-filters .form-select {
-            flex: 1 1 48%;
-            min-width: 120px;
+            width: 100%;
         }
 
-        .search-filters .btn-apply-filter {
+        .search-filters .btn-search {
             width: 100%;
-            margin-top: 10px;
+            justify-content: center;
+            padding: 14px 20px;
         }
         
         .category-list {
@@ -348,67 +904,73 @@
             <h3 class="category-title">Categories</h3>
 
             <!-- Price Filter -->
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold">Price Range</span>
+            <div class="price-filter-section bg-white p-4 rounded-3 shadow-sm mb-4 border border-light">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark" style="font-size: 1.1rem;">
+                        <i class="bi bi-tag-fill text-success me-2"></i>Price Range
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span id="price-min" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">Rs. 200</span>
+                    <span id="price-max" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">Rs. 1000</span>
+                </div>
+                <div id="price-slider" class="mt-3"></div>
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <span id="price-min">Rs. 200</span>
-                <span id="price-max">Rs. 1000</span>
-            </div>
-            <div id="price-slider" class="mt-2"></div>
 
             <!-- Category Filter -->
             <div class="category-list mt-4">
     <label>
         <input type="checkbox" name="categories[]" value="1" class="category-checkbox">
-        COSMETICS
+        <span>💄 COSMETICS</span>
     </label>
 
     <label>
         <input type="checkbox" name="categories[]" value="2" class="category-checkbox">
-        AYURVEDIC
+        <span>🌿 AYURVEDIC</span>
     </label>
 
     <label>
         <input type="checkbox" name="categories[]" value="3" class="category-checkbox">
-        BABY CARE
+        <span>👶 BABY CARE</span>
     </label>
 
     <label>
         <input type="checkbox" name="categories[]" value="4" class="category-checkbox">
-        PERSONAL CARE
+        <span>🧴 PERSONAL CARE</span>
     </label>
 
     <label>
         <input type="checkbox" name="categories[]" value="5" class="category-checkbox">
-        MEDICAL DEVICES
+        <span>🏥 MEDICAL DEVICES</span>
     </label>
 </div>
 
 
         </div>
 
-       <!-- Products -->
-<div class="col-lg-9 col-md-8">
-    <!-- Top Filters -->
-    <div class="search-filters mb-4 p-3 bg-light rounded">
-        
-        <input type="text" id="product_name" class="form-control" placeholder="Product Name">
+        <!-- Products -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Top Filters -->
+            <div class="search-filters mb-4">
+                <input type="text" id="product_name" class="form-control" placeholder="🔍 Search Product Name...">
 
-        <select id="company_name" class="form-select">
-            <option value="">Select Any Company</option>
-            <option value="1">Company A</option>
-            <option value="2">Company B</option>
-            <option value="3">Company C</option>
-            <option value="4">Company D</option>
-        </select>
-
-    </div>
-</div>
-
+                <select id="company_name" class="form-select">
+                    <option value="">🏢 Select Any Company</option>
+                    <option value="1">Company A</option>
+                    <option value="2">Company B</option>
+                    <option value="3">Company C</option>
+                    <option value="4">Company D</option>
+                </select>
+                
+                <button type="button" class="btn-search" id="search-btn">
+                    <i class="bi bi-search"></i>
+                    <span>Search</span>
+                </button>
+            </div>
 
             <!-- Product Listing -->
             <div id="product-listing" class="gm-products-grid"></div>
+        </div>
         </div>
     </div>
 </div>
@@ -450,6 +1012,22 @@
         });
 
         priceSlider.noUiSlider.on('change', fetchProducts);
+
+        // 🔵 Search button click event
+        $('#search-btn').on('click', fetchProducts);
+        
+        // 🔵 Enter key on product name input
+        $('#product_name').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                fetchProducts();
+            }
+        });
+        
+        // 🔵 Company select change event
+        $('#company_name').on('change', fetchProducts);
+        
+        // 🔵 Category checkbox change event
+        $('.category-checkbox').on('change', fetchProducts);
 
         // 🔵 Initial display
         fetchProducts();

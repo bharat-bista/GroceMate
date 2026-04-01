@@ -442,7 +442,7 @@
     color: var(--gm-white);
     padding: 6px 14px;
     border-radius: 50px;
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 700;
     z-index: 2;
 }
@@ -494,20 +494,7 @@
 }
 
 .gm-product-rating {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 12px;
-}
-
-.gm-product-rating i {
-    color: #FFC107;
-    font-size: 0.85rem;
-}
-
-.gm-product-rating span {
-    font-size: 0.8rem;
-    color: var(--gm-gray);
+    display: none !important;
 }
 
 .gm-product-price {
@@ -659,6 +646,8 @@
     border: 1px solid #f0f0f0;
     border-radius: 0;
     box-shadow: none;
+    overflow: hidden;
+    padding: 0;
 }
 
 .gm-ecom-card:hover {
@@ -670,13 +659,51 @@
     top: 10px;
     left: 10px;
     border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.7rem;
+    padding: 8px 16px;
+    font-size: 1rem;
+    z-index: 10;
+    background: #28a745;
+    color: white;
+    font-weight: 600;
+}
+
+.gm-cart-icon-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #28a745;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.gm-cart-icon-badge:hover {
+    background: #218838;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
 }
 
 .gm-ecom-card .gm-product-img-wrap {
-    height: 220px;
+    height: 180px;
     background: #fafafa;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.gm-ecom-card .gm-product-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .gm-ecom-card .gm-product-card-link {
@@ -696,15 +723,16 @@
 .gm-ecom-card .gm-product-name {
     white-space: normal;
     overflow: hidden;
-    text-overflow: unset;
+    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.35;
-    min-height: 2.8em;
+    line-height: 1.4;
+    min-height: auto;
     margin-bottom: 10px;
-    font-size: 1rem;
+    font-size: 1.5rem;
     font-weight: 500;
+    color: #111;
 }
 
 .gm-ecom-card .gm-product-weight {
@@ -712,9 +740,10 @@
 }
 
 .gm-ecom-card .gm-product-price {
-    margin-bottom: 6px;
+    margin-bottom: 0px;
     gap: 8px;
     flex-wrap: wrap;
+    display: inline-block;
 }
 
 .gm-ecom-card .gm-price-new {
@@ -725,28 +754,28 @@
 }
 
 .gm-ecom-card .gm-price-old {
-    font-size: 0.95rem;
+    font-size: 1.4rem;
     color: #9ca3af;
 }
 
 .gm-ecom-discount {
-    font-size: 0.95rem;
+    font-size: 1.4rem;
     color: #9ca3af;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+/* Hide only the percentage text, not the old price */
+.gm-ecom-discount {
+    font-size: 0;
+}
+
+.gm-ecom-discount .gm-price-old {
+    font-size: 1.4rem;
 }
 
 .gm-ecom-card .gm-product-rating {
-    margin-bottom: 0;
-    gap: 3px;
-}
-
-.gm-ecom-card .gm-product-rating i {
-    color: #faca51;
-    font-size: 0.8rem;
-}
-
-.gm-ecom-card .gm-product-rating span {
-    color: #9ca3af;
-    font-size: 0.85rem;
+    display: none !important;
 }
 
 .gm-ecom-card .gm-product-btns {
@@ -1248,6 +1277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 1 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">20% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Sunflower Oil">
@@ -1269,6 +1299,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 2 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">20% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Sugar">
@@ -1290,6 +1321,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 3 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">15% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Masoor Dal">
@@ -1311,6 +1343,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 4 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">25% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Olive Oil">
@@ -1332,6 +1365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 5 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">10% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Basmati Rice">
@@ -1353,6 +1387,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Top Sale Card 6 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">30% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Chana Dal">
@@ -1410,6 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 1 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">20% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Sunflower Oil">
@@ -1431,6 +1467,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 2 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">20% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Sugar">
@@ -1452,6 +1489,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 3 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">15% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Masoor Dal">
@@ -1473,6 +1511,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 4 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">NEW</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Mustard Oil">
@@ -1494,6 +1533,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 5 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">25% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Brown Sugar">
@@ -1515,6 +1555,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Ecommerce Card 6 -->
         <div class="gm-product-card gm-ecom-card">
             <span class="gm-product-badge">10% OFF</span>
+            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
             <a href="{{ route('description') }}" class="gm-product-card-link">
                 <div class="gm-product-img-wrap">
                     <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Toor Dal">

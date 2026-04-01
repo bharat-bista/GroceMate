@@ -142,7 +142,7 @@
 }
 
 .item-title {
-    font-size: 1.1rem;
+    font-size: 2.2rem;
     color: var(--daraz-text);
     font-weight: 600;
     line-height: 1.5;

@@ -25,6 +25,132 @@
     }
 
 /* ==========================================
+   SECTION HEADERS (from homepage)
+   ========================================== */
+.gm-section {
+    padding: 40px 5%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.gm-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.gm-top-sale-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.gm-top-sale-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ff8a00, #ff4d4f);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(255, 122, 0, 0.25);
+    font-size: 1.25rem;
+}
+
+.gm-top-sale-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gm-top-sale-label {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255, 107, 53, 0.12);
+    color: var(--gm-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.gm-top-sale-title {
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--gm-dark);
+}
+
+.gm-top-sale-subtitle {
+    margin: 0;
+    color: var(--gm-gray);
+    font-size: 0.95rem;
+}
+
+.gm-view-all {
+    color: var(--gm-primary);
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--gm-transition);
+}
+
+.gm-view-all:hover {
+    color: var(--gm-accent);
+    gap: 12px;
+}
+
+/* ==========================================
+   TOP SALE HORIZONTAL SCROLLER (from homepage)
+   ========================================== */
+.gm-products-scroll {
+    display: flex;
+    gap: 14px;
+    background: #f5f5f5;
+    padding: 10px;
+    border-radius: 12px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gm-primary) var(--gm-gray-light);
+    position: relative;
+}
+
+.gm-products-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.gm-products-scroll::-webkit-scrollbar-track {
+    background: var(--gm-gray-light);
+    border-radius: 3px;
+}
+
+.gm-products-scroll::-webkit-scrollbar-thumb {
+    background: var(--gm-primary);
+    border-radius: 3px;
+}
+
+.gm-products-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--gm-primary-dark);
+}
+
+.gm-products-scroll .gm-product-card {
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+}
+
+/* ==========================================
    PRODUCT CARDS - HOMEPAGE STYLE (matching home page)
    ========================================== */
 .gm-product-card {
@@ -35,7 +161,6 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     transition: var(--gm-transition);
     position: relative;
-    margin-bottom: 20px;
 }
 
 .gm-product-card:hover {
@@ -248,36 +373,122 @@
         box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
     }
 
+    .qty-control {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: nowrap;
+    }
+
+    .qty-control .qty-label {
+        display: inline-block;
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        text-transform: none;
+        color: #1f2937;
+        line-height: 1;
+    }
+
     .qty-box {
         display: flex;
         align-items: center;
-        border: 2px solid var(--gm-gray-light);
-        border-radius: var(--gm-radius-sm);
+        justify-content: space-between;
+        border: 2px solid #cfd8cf;
+        border-radius: 14px;
         overflow: hidden;
-        max-width: 150px;
+        width: 190px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(27, 94, 32, 0.08);
     }
 
-    .qty-btn {
-        background: var(--gm-primary);
-        color: var(--gm-white);
+    .qty-box .qty-btn {
+        background: #ffffff;
+        color: var(--gm-primary-dark);
         border: none;
-        padding: 8px 12px;
+        width: 54px;
+        height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        font-size: 18px;
-        font-weight: bold;
-        transition: var(--gm-transition);
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
+        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     }
 
-    .qty-btn:hover {
-        background: var(--gm-primary-dark);
+    .qty-box .qty-btn:first-child {
+        border-right: 1px solid #d9e1d9;
+    }
+
+    .qty-box .qty-btn:last-child {
+        border-left: 1px solid #d9e1d9;
+    }
+
+    .qty-box .qty-btn:hover,
+    .qty-box .qty-btn:active,
+    .qty-box .qty-btn:focus-visible {
+        background: var(--gm-primary);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: inset 0 0 0 1px rgba(27, 94, 32, 0.1);
+        outline: none;
     }
 
     #qtyInput {
         border: none;
         text-align: center;
-        width: 50px;
-        font-size: 16px;
-        font-weight: 600;
+        width: 82px;
+        height: 50px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gm-dark);
+        background: #f8fbf8;
+        outline: none;
+    }
+
+    .btn-group-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .btn-group-wrapper .add-to-cart-btn,
+    .btn-group-wrapper .buy-now-btn {
+        flex: 1;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 18px;
+        font-size: 1.08rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .btn-group-wrapper .add-to-cart-btn {
+        background: var(--gm-primary);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(46, 125, 50, 0.25);
+    }
+
+    .btn-group-wrapper .add-to-cart-btn:hover {
+        background: var(--gm-primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-group-wrapper .buy-now-btn {
+        background: #0A0F2C;
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(10, 15, 44, 0.25);
+    }
+
+    .btn-group-wrapper .buy-now-btn:hover {
+        background: #1a2340;
+        transform: translateY(-2px);
     }
 
     
@@ -312,7 +523,17 @@
         }
 
         .btn-group-wrapper {
-            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-group-wrapper .add-to-cart-btn,
+        .btn-group-wrapper .buy-now-btn {
+            padding: 12px 14px;
+            font-size: 0.98rem;
+        }
+
+        .qty-box {
+            width: 160px;
         }
 
         .featured-label {
@@ -562,8 +783,8 @@
                 </div>
 
                 <!-- Quantity -->
-                <div class="my-3">
-                    <label class="form-label fw-bold">QUANTITY:</label>
+                <div class="my-3 qty-control">
+                    <label class="form-label qty-label">Quantity</label>
                     <div class="qty-box">
                         <button class="qty-btn" onclick="adjustQty(-1)">−</button>
                         <input type="text" id="qtyInput" value="1" readonly>
@@ -584,7 +805,7 @@
                 <h2 class="fw-bold text-dark">Sunflower Oil</h2>
 
                 <div class="mb-2">
-                    <span class="text-danger h4 fw-bold">Rs. 499</span>
+                    <span class="text-danger h2 fw-bold">Rs. 499</span>
                     <del class="text-muted">Rs. 650</del>
                     <span class="badge text-white ms-2" style="background:#0A0F2C;">-25% OFF</span>
                 </div>

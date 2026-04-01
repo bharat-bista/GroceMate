@@ -14,15 +14,7 @@
         <i class="fas fa-phone me-1"></i> 1800-123-4567
       </a>
     </div>
-    <div class="top-bar-right">
-      <a href="#" class="top-link">
-        <i class="fas fa-user-plus me-1"></i> Sign Up
-      </a>
-      <span class="top-divider">|</span>
-      <a href="#" class="top-link">
-        <i class="fas fa-sign-in-alt me-1"></i> Sign In
-      </a>
-    </div>
+    
   </div>
 
   <!-- ================= MOBILE HEADER ================= -->
@@ -116,22 +108,22 @@
     <div class="container-fluid px-4">
         <div class="nav-inner d-flex align-items-center py-2">
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-apple-alt me-2"></i>Fruits & Vegetables
+                Fruits & Vegetables
             </a>
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-cheese me-2"></i>Dairy & Eggs
+                Dairy & Eggs
             </a>
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-cookie-bite me-2"></i>Snacks & Beverages
+                Snacks & Beverages
             </a>
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-bread-slice me-2"></i>Bakery
+                Bakery
             </a>
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-pump-soap me-2"></i>Personal Care
+                Personal Care
             </a>
             <a href="{{ route('advanced') }}" class="nav-link-item">
-                <i class="fas fa-home me-2"></i>Household
+                Household
             </a>
         </div>
     </div>
@@ -180,12 +172,19 @@
    HEADER CONTAINER
    ========================================== */
 .header-area {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   background: var(--neutral-white);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: translateY(0);
+}
+
+.header-area.header-hidden {
+  transform: translateY(-100%);
 }
 
 .header-area.scrolled {
@@ -369,8 +368,8 @@
 .nav-link-item {
   color: var(--neutral-white);
   text-decoration: none;
-  padding: 12px 20px;
-  font-size: 0.95rem;
+  padding: 8px 20px;
+  font-size: 1.5rem;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -586,6 +585,50 @@
   const searchToggle   = document.getElementById('searchToggle');
   const mobileSearchBar= document.getElementById('mobileSearchBar');
   const body = document.body;
+
+  // Sticky header hide/show functionality
+  let lastScrollTop = 0;
+  let scrollThreshold = 50; // Minimum scroll distance to trigger header hide/show
+  const header = document.querySelector('.header-area');
+  
+  if (header) {
+    // Add padding to body to prevent content jump when header is fixed
+    body.style.paddingTop = header.offsetHeight + 'px';
+    
+    window.addEventListener('scroll', () => {
+      const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Don't hide/show header if at the top of the page
+      if (currentScrollTop <= 0) {
+        header.classList.remove('header-hidden');
+        header.classList.add('scrolled');
+        lastScrollTop = currentScrollTop;
+        return;
+      }
+      
+      // Don't hide/show header if scroll distance is less than threshold
+      if (Math.abs(currentScrollTop - lastScrollTop) < scrollThreshold) {
+        return;
+      }
+      
+      // Hide header when scrolling down
+      if (currentScrollTop > lastScrollTop) {
+        header.classList.add('header-hidden');
+      } 
+      // Show header when scrolling up
+      else {
+        header.classList.remove('header-hidden');
+        header.classList.add('scrolled');
+      }
+      
+      lastScrollTop = currentScrollTop;
+    }, { passive: true });
+    
+    // Update body padding on window resize
+    window.addEventListener('resize', () => {
+      body.style.paddingTop = header.offsetHeight + 'px';
+    });
+  }
 
   // Drawer guards
   if (navToggle && mobileNav && backdrop) {

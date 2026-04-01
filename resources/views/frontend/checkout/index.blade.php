@@ -106,12 +106,6 @@
     }
   }
 </style>
-@extends('frontend.layouts.main')
-
-@section('main-content')
-<style>
-/* (your same CSS — unchanged) */
-</style>
 
 <div class="container checkout-container">
   <div class="row">

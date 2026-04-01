@@ -1,13 +1,26 @@
 <header class="header-area">
-  <!-- Top Bar -->
-  <div class="top-bar bg-lightblue d-flex justify-content-between align-items-center px-3 py-1">
-    <div>
+  <!-- Top Bar (Desktop Only) -->
+  <div class="top-bar d-none d-lg-flex justify-content-between align-items-center px-4 py-2">
+    <div class="top-bar-left">
       <a href="https://maps.app.goo.gl/kUDL46Ynpvhb9q2x9"
          class="top-link"
          target="_blank"
          rel="noopener noreferrer"
          title="Find us on Google Maps">
         <i class="fas fa-map-marker-alt me-1"></i> Store Locator
+      </a>
+      <span class="top-divider">|</span>
+      <a href="tel:1800-123-4567" class="top-link">
+        <i class="fas fa-phone me-1"></i> 1800-123-4567
+      </a>
+    </div>
+    <div class="top-bar-right">
+      <a href="#" class="top-link">
+        <i class="fas fa-user-plus me-1"></i> Sign Up
+      </a>
+      <span class="top-divider">|</span>
+      <a href="#" class="top-link">
+        <i class="fas fa-sign-in-alt me-1"></i> Sign In
       </a>
     </div>
   </div>
@@ -45,51 +58,45 @@
   </div>
 
   <!-- ================= DESKTOP HEADER ================= -->
-  <div class="container-fluid d-none d-lg-flex align-items-center justify-content-between py-2">
+  <div class="container-fluid d-none d-lg-flex align-items-center justify-content-between px-4 py-3 main-header">
     <!-- Logo -->
-    <div class="logo mx-auto d-lg-block">
-      <a href="{{ url('/') }}">
-        <img src="{{ asset('assets/img/logo/logo.png') }}" alt="Logo">
+    <div class="logo-section">
+      <a href="{{ url('/') }}" class="logo-link">
+        <img src="{{ asset('assets/img/logo/logo.png') }}" alt="GroceMate Logo" class="main-logo">
       </a>
     </div>
 
     <!-- Desktop Search -->
-    <div class="search-bar-wrapper d-flex justify-content-center flex-grow-1">
-      <div class="position-relative search-container" style="width:100%;max-width:600px;">
-        <form action="#" method="GET" class="search-bar-desktop d-flex align-items-center">
-          <input type="text" name="query" id="global-search-input-desktop" class="form-control rounded-0"
-                 placeholder="Search your products..." style="border-top-left-radius:8px;border-bottom-left-radius:8px;">
-          <button type="submit" class="btn rounded-0" style="border-top-right-radius:8px;border-bottom-right-radius:8px;">
-            <i class="fas fa-search"></i>
+    <div class="search-bar-wrapper flex-grow-1 mx-4">
+      <div class="position-relative search-container mx-auto" style="max-width: 600px;">
+        <form action="#" method="GET" class="modern-search-bar">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" name="query" id="global-search-input-desktop" class="search-input"
+                 placeholder="Search for products, brands, and more...">
+          <button type="submit" class="search-button">
+            Search
           </button>
         </form>
         <!-- DESKTOP results -->
-        <div id="global-search-results-desktop" class="list-group"></div>
+        <div id="global-search-results-desktop" class="search-results-dropdown"></div>
       </div>
     </div>
 
-    <!-- Desktop User -->
-    <div class="d-flex align-items-center header-icons">
-      <div class="user-dropdown" id="userDropDesktop">
-       
-        <div class="user-menu" id="userMenuDesktop" role="menu" aria-hidden="true">
-          <div class="user-menu-inner text-center">
-            <div><a href="#" class="top-link d-flex align-items-center justify-content-center">
-              <i class="fas fa-user-plus me-2"></i> Sign up</a></div>
-            <div><a href="#" class="top-link d-flex align-items-center justify-content-center">
-              <i class="fas fa-sign-in-alt me-2"></i> Login</a></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Desktop Actions -->
+    <div class="d-flex align-items-center header-actions gap-3">
+      <!-- Cart Button -->
+      <a href="#" class="header-icon-btn cart-btn" aria-label="Shopping Cart">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="icon-label">Cart</span>
+        <span class="cart-badge">3</span>
+      </a>
 
-    <!-- Desktop Cart -->
-    <a href="#" class="ms-3 text-dark position-relative" aria-label="Cart">
-      <i class="fas fa-shopping-cart fa-2x"></i>
-      <span class="cart-badge position-absolute top-0 start-100 translate-middle badge rounded-pill">
-        {{-- {{ $totalCartQuantity ?? 0 }} --}}
-      </span>
-    </a>
+      <!-- User Button -->
+      <a href="#" class="header-icon-btn user-btn" aria-label="My Account">
+        <i class="fas fa-user"></i>
+        <span class="icon-label">Account</span>
+      </a>
+    </div>
   </div>
 
   <!-- Mobile search dropdown -->
@@ -98,7 +105,7 @@
       <form action="#" method="GET" class="d-flex">
         <input type="text" name="query" id="global-search-input-mobile" class="form-control rounded-0"
                placeholder="Search your products...">
-        <button type="submit" class="btn btn-dark"><i class="fas fa-search"></i></button>
+        <button type="submit" class="btn mobile-search-btn"><i class="fas fa-search"></i></button>
       </form>
       <!-- MOBILE results -->
       <div id="global-search-results-mobile" class="list-group"></div>
@@ -106,14 +113,26 @@
   </div>
 
 <nav class="main-nav d-none d-lg-block">
-    <div class="nav-scroll-wrapper">
-        <div class="nav-inner d-flex flex-nowrap text-white py-1 px-3">
-            <a href="{{ route('advanced') }}" class="nav-link-item">Fruits & Vegetables</a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">Dairy & Eggs</a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">Snacks & Beverages</a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">Bakery</a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">Personal Care</a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">Household</a>
+    <div class="container-fluid px-4">
+        <div class="nav-inner d-flex align-items-center py-2">
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-apple-alt me-2"></i>Fruits & Vegetables
+            </a>
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-cheese me-2"></i>Dairy & Eggs
+            </a>
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-cookie-bite me-2"></i>Snacks & Beverages
+            </a>
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-bread-slice me-2"></i>Bakery
+            </a>
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-pump-soap me-2"></i>Personal Care
+            </a>
+            <a href="{{ route('advanced') }}" class="nav-link-item">
+                <i class="fas fa-home me-2"></i>Household
+            </a>
         </div>
     </div>
 </nav>
@@ -140,86 +159,422 @@
 
 
 <style>
-/* Sticky header */
+/* ==========================================
+   MODERN HEADER STYLES - 3 COLOR PALETTE
+   ========================================== */
+
+/* COLOR VARIABLES */
+:root {
+  --primary-green: #28a745;
+  --primary-green-dark: #218838;
+  --primary-green-light: #d4edda;
+  --secondary-navy: #0A0F2C;
+  --secondary-navy-light: #1a2340;
+  --neutral-white: #FFFFFF;
+  --neutral-light: #F5F5F5;
+  --neutral-gray: #757575;
+  --neutral-border: #E0E0E0;
+}
+
+/* ==========================================
+   HEADER CONTAINER
+   ========================================== */
 .header-area {
-  position: sticky; top: 0; z-index: 1000; background:#fff;
-  box-shadow: 0 4px 6px rgba(0,0,0,.08);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--neutral-white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.header-area.scrolled {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* ==========================================
+   TOP BAR (Desktop Only)
+   ========================================== */
+.top-bar {
+  background: var(--primary-green);
+  color: var(--neutral-white);
+  font-size: 0.8rem;
+  height: 32px;
+}
+
+.top-link {
+  color: var(--neutral-white);
+  text-decoration: none;
+  transition: opacity 0.2s;
+  padding: 0 8px;
+}
+
+.top-link:hover {
+  opacity: 0.85;
+  color: var(--neutral-white);
+}
+
+.top-divider {
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 4px;
+}
+
+/* ==========================================
+   MAIN HEADER (Desktop)
+   ========================================== */
+.main-header {
+  height: 80px;
+  background: var(--neutral-white);
+}
+
+/* Logo Section */
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.logo-link {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.main-logo {
+  height: 70px;
+  width: auto;
+}
+
+/* Modern Search Bar */
+.modern-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--neutral-white);
+  border: 2px solid var(--neutral-border);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  max-width: 600px;
+  width: 100%;
+}
+
+.modern-search-bar:focus-within {
+  border-color: var(--primary-green);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--neutral-gray);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px 16px 12px 45px;
+  font-size: 0.95rem;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: var(--neutral-gray);
+}
+
+.search-button {
+  background: var(--primary-green);
+  color: var(--neutral-white);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 0 10px 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-button:hover {
+  background: var(--primary-green-dark);
+}
+
+/* Header Action Buttons */
+.header-actions {
+  gap: 12px;
+}
+
+.header-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--secondary-navy);
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  min-width: 70px;
+}
+
+.header-icon-btn i {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.icon-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.header-icon-btn:hover {
+  background: var(--primary-green);
+  color: var(--neutral-white);
+  transform: translateY(-2px);
+}
+
+.cart-badge {
+  position: absolute;
+  top: 15px;
+  right: 18px;
+  background: var(--primary-green);
+  color: var(--neutral-white);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 14px;
+  min-width: 24px;
+  text-align: center;
+  line-height: 1;
+}
+
+.header-icon-btn:hover .cart-badge {
+  background: var(--neutral-white);
+  color: var(--secondary-navy);
+  font-weight: 700;
+}
+
+/* ==========================================
+   NAVIGATION BAR
+   ========================================== */
+.main-nav {
+  background: var(--secondary-navy);
+  border-top: 2px solid var(--primary-green);
+}
+
+.nav-inner {
+  gap: 0;
+}
+
+.nav-link-item {
+  color: var(--neutral-white);
+  text-decoration: none;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-link-item i {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.nav-link-item:hover {
+  color: var(--neutral-white);
+  background: var(--secondary-navy-light);
+  border-bottom-color: var(--primary-green);
+}
+
+.nav-link-item.active {
+  border-bottom-color: var(--primary-green);
+  font-weight: 600;
+}
+
+/* Search Results Dropdown */
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--neutral-white);
+  border: 1px solid var(--neutral-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+}
+
+.search-results-dropdown.show {
+  display: block;
+}
+
+/* ==========================================
+   MOBILE STYLES (Color Updates Only)
+   ========================================== */
+@media (max-width: 991.98px) {
+  /* Mobile Header - Update colors only */
+  .hamburger,
+  .search-toggle-btn {
+    color: var(--secondary-navy);
+  }
+
+  .mobile-search-btn {
+    background: var(--primary-green) !important;
+    border-color: var(--primary-green) !important;
+    color: var(--neutral-white) !important;
+  }
+
+  .mobile-search-btn:hover {
+    background: var(--primary-green-dark) !important;
+  }
+
+  .mobile-nav-drawer {
+    background: var(--neutral-white);
+  }
+
+  .mobile-nav-header {
+    background: var(--primary-green);
+    color: var(--neutral-white);
+    border-bottom: none;
+  }
+
+  .close-btn {
+    color: var(--neutral-white);
+  }
+
+  .mobile-nav-link {
+    color: var(--secondary-navy);
+    border-bottom: 1px solid var(--neutral-border);
+  }
+
+  .mobile-nav-link:hover {
+    background: var(--neutral-light);
+    color: var(--primary-green);
+  }
+
+  .cart-badge {
+    background: var(--primary-green);
+    top: -5px !important;
+    right: -5px !important;
+    font-size: 0.7rem !important;
+    padding: 2px 5px !important;
+    min-width: 18px !important;
+  }
 }
 
 /* Prevent background scroll when drawer is open */
 .no-scroll { overflow: hidden; touch-action: none; }
 
 /* Backdrop */
-.mobile-nav-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 998; backdrop-filter: saturate(1) blur(1px); }
+.mobile-nav-backdrop { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(10, 15, 44, 0.6);
+  z-index: 998; 
+  backdrop-filter: blur(2px);
+}
 
 /* Drawer */
 .mobile-nav-drawer {
   position: fixed; top: 0; left: 0; height: 100dvh;
-  width: 88vw; max-width: 360px; background: #fff; color:#111;
-  box-shadow: 2px 0 24px rgba(0,0,0,.15); border-right: 1px solid #eee;
+  width: 88vw; max-width: 360px; 
+  box-shadow: 2px 0 24px rgba(0,0,0,.15);
   transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.7,.3,1);
   z-index: 999; outline: none; display: flex; flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
-@media (prefers-reduced-motion: reduce) { .mobile-nav-drawer { transition: none; } }
+
+@media (prefers-reduced-motion: reduce) { 
+  .mobile-nav-drawer { transition: none; } 
+}
+
 .mobile-nav-drawer.open { transform: translateX(0); }
-.mobile-nav-header { display:flex; align-items:center; justify-content:space-between; padding: .9rem 1rem; border-bottom: 1px solid #eee; font-weight: 700; }
-.close-btn { border:none; background:transparent; font-size:1.8rem; line-height:1; cursor:pointer; min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+
+.mobile-nav-header { 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  padding: 1rem; 
+  font-weight: 700; 
+  font-size: 1.1rem;
+}
+
+.close-btn { 
+  border:none; 
+  background:transparent; 
+  font-size:2rem; 
+  line-height:1; 
+  cursor:pointer; 
+  min-width:44px; 
+  min-height:44px; 
+  display:inline-flex; 
+  align-items:center; 
+  justify-content:center; 
+}
 
 /* Drawer body */
-.mobile-nav-body { padding: .5rem 0; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1 1 auto; }
-.mobile-nav-link { display:block; padding:.85rem 1rem; color:#111; text-decoration:none; border-bottom:1px solid #f3f4f6; }
-.mobile-nav-link:hover, .mobile-nav-link:active { background:#f9fafb; }
+.mobile-nav-body { 
+  padding: .5rem 0; 
+  overflow-y: auto; 
+  -webkit-overflow-scrolling: touch; 
+  flex: 1 1 auto; 
+}
 
-/* ===== MOBILE SEARCH VISIBILITY (responsive, no !important) ===== */
+.mobile-nav-link { 
+  display:block; 
+  padding:1rem 1.2rem; 
+  text-decoration:none; 
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ===== MOBILE SEARCH VISIBILITY ===== */
 @media (max-width: 991.98px) {
   .mobile-search-bar { display: none; }
-  .mobile-search-bar.show { display: block; }
+  .mobile-search-bar.show { 
+    display: block; 
+    background: var(--neutral-light);
+    padding: 12px;
+  }
 }
+
 @media (min-width: 992px) {
-  .mobile-search-bar { display: none; } /* force hidden on desktop */
+  .mobile-search-bar { display: none; }
 }
-
-/* Cart badge */
-.cart-badge {
-  font-size:.75rem; padding:3px 6px; min-width:18px; min-height:18px;
-  display:inline-flex; align-items:center; justify-content:center;
-  background: linear-gradient(to right, #0A0F2C, red);
-  color:#fff; border-radius:30px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,.2);
-}
-
-/* Desktop nav look */
-.nav-scroll-wrapper { overflow-x:auto; }
-.nav-link-item { color:#fff; text-decoration:none; padding:.4rem .8rem; white-space:nowrap; }
 
 /* Tap sizes */
 .hamburger, .search-toggle-btn, .user-icon {
-  min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center;
-  border: none; background: transparent; font-size:1.2rem;
+  min-width:44px; min-height:44px; 
+  display:inline-flex; 
+  align-items:center; 
+  justify-content:center;
+  border: none; 
+  background: transparent; 
+  font-size:1.3rem;
+  cursor: pointer;
 }
-
-/* Small spacing fix for the mobile right cluster */
-.d-flex.align-items-center.gap-2 > * { margin-right:.5rem; }
-.d-flex.align-items-center.gap-2 > *:last-child { margin-right:0; }
 
 /* User dropdown */
 .user-dropdown { position: relative; }
 .user-dropdown .user-menu {
   position: absolute; right: 0; top: 120%;
-  background:#fff; border:1px solid #eee; border-radius:8px; min-width: 180px;
-  padding:.5rem; display:none; z-index: 1001;
+  background: var(--neutral-white);
+  border: 1px solid var(--neutral-border);
+  border-radius: 8px;
+  min-width: 180px;
+  padding: .5rem;
+  display: none;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .user-dropdown.show .user-menu { display:block; }
-
-/* Search results positioning */
-.search-container { position: relative; }
-#global-search-results-desktop, #global-search-results-mobile {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0; width: auto;
-  box-sizing: border-box; display: none; max-height: 60vh; overflow-y: auto;
-  border: 1px solid #ccc; background: #fff; border-radius: 0 0 8px 8px; z-index: 9999;
-}
-#global-search-results-desktop .list-group-item,
-#global-search-results-mobile .list-group-item { cursor: pointer; }
 </style>
 
 <script>

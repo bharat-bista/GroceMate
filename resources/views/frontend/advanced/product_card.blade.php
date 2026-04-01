@@ -2,62 +2,82 @@
 .offer-badge {
     position: absolute;
     top: 10px;
-    right: 10px;
-    background: #0A0F2C;
+    left: 10px;
+    background: #28a745;
     color: white;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: bold;
+    padding: 8px 16px;
+    font-size: 1rem;
+    font-weight: 600;
     border-radius: 4px;
-    z-index: 1;
+    z-index: 10;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     white-space: nowrap;
 }
+
+.cart-icon-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #28a745;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.cart-icon-badge:hover {
+    background: #218838;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
+}
 /* === Text & Price Styling === */
 .product-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 2px 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 10px 0;
     color: #111;
-    white-space: nowrap;
+    white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.product-sku {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 2px 0;
-    color: #222;
-}
-
-.product-description {
-    font-size: 13px;
-    color: #555;
-    margin-bottom: 6px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 34px;
+    line-height: 1.4;
+}
+
+.product-sku {
+    display: none;
+}
+
+.product-description {
+    display: none;
 }
 
 .price-section {
-    margin: 4px 0 6px 0;
+    margin: 0 0 8px 0;
+    display: inline-block;
 }
 
 .old-price {
     text-decoration: line-through;
-    color: #888;
-    font-size: 14px;
-    margin-right: 5px;
+    color: #9ca3af;
+    font-size: 1.4rem;
+    margin-left: 10px;
 }
 
 .new-price {
-    color: #f39c12;
-    font-weight: bold;
-    font-size: 16px;
+    color: #f57224;
+    font-weight: 700;
+    font-size: 1.9rem;
+    line-height: 1;
 }
 
 .btn-group-wrapper {
@@ -95,38 +115,50 @@
 }
 
 .add-to-cart-btn {
-    background-color: #0a0f36;
-    color: #f39c12;
+    background-color: #28a745;
+    color: white;
 }
 
 .add-to-cart-btn:hover {
-    background-color: #1c2250;
-    color:white;
+    background-color: #218838;
+    color: white;
 }
 
 .product-img {
     width: 100%;
-    height: 160px;
-    object-fit: contain;
-    margin-bottom: 6px;
+    height: 180px;
+    object-fit: cover;
+    margin-bottom: 0;
+    background: #fafafa;
 }
 
 .product-card {
     position: relative;
     background: #fff;
-    padding: 10px 12px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 0;
+    border-radius: 0;
+    border: 1px solid #f0f0f0;
+    box-shadow: none;
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+.product-card > * {
+    padding: 0 12px;
+}
+
+.product-card .product-img {
+    padding: 0;
+    margin: 0;
 }
 
 .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 768px) {
@@ -200,13 +232,16 @@
     <!-- Example Product Card -->
     <div class="product-card" data-url="#">
                 <div class="offer-badge">20% OFF</div>
+                <div class="cart-icon-badge">
+                    <i class="bi bi-cart-plus"></i>
+                </div>
                 <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Product 1" class="product-img">
                 <h5 class="product-sku">Brand: Sunny</h5>
                 <h4 class="product-title">Sugar</h4>
                 <p class="product-description">1 kg </p>
                 <div class="price-section">
-                    <span class="old-price">Rs 100</span>
                     <span class="new-price">Rs 80</span>
+                    <span class="old-price">Rs 100</span>
                 </div>
                 <div class="btn-group-wrapper">
                     <button class="add-to-cart-btn">Add To Cart</button>
@@ -215,13 +250,16 @@
             </div>
             <div class="product-card" data-url="#">
                 <div class="offer-badge">20% OFF</div>
+                <div class="cart-icon-badge">
+                    <i class="bi bi-cart-plus"></i>
+                </div>
                 <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Product 1" class="product-img">
                 <h5 class="product-sku">Brand: Sunny</h5>
                 <h4 class="product-title">Sugar</h4>
                 <p class="product-description">1 kg </p>
                 <div class="price-section">
-                    <span class="old-price">Rs 100</span>
                     <span class="new-price">Rs 80</span>
+                    <span class="old-price">Rs 100</span>
                 </div>
                 <div class="btn-group-wrapper">
                     <button class="add-to-cart-btn">Add To Cart</button>
@@ -236,13 +274,16 @@
     <!-- Duplicate product cards as needed -->
     <div class="product-card" data-url="#">
                 <div class="offer-badge">20% OFF</div>
+                <div class="cart-icon-badge">
+                    <i class="bi bi-cart-plus"></i>
+                </div>
                 <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Product 1" class="product-img">
                 <h5 class="product-sku">Brand: Sunny</h5>
                 <h4 class="product-title">Sugar</h4>
                 <p class="product-description">1 kg </p>
                 <div class="price-section">
-                    <span class="old-price">Rs 100</span>
                     <span class="new-price">Rs 80</span>
+                    <span class="old-price">Rs 100</span>
                 </div>
                 <div class="btn-group-wrapper">
                     <button class="add-to-cart-btn">Add To Cart</button>

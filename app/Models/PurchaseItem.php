@@ -10,6 +10,8 @@ class PurchaseItem extends Model
         'purchase_id',
         'product_id',
         'product_name',
+        'category_name',
+        'company_name',
         'unit',
         'qty',
         'unit_cost',

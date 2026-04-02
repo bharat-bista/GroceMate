@@ -842,6 +842,68 @@
 }
 
 /* ==========================================
+   BRANDS SECTION
+   ========================================== */
+.gm-brands {
+    background: var(--gm-white);
+    padding: 60px 5%;
+}
+
+.gm-brands-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 25px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.gm-brand-card {
+    background: var(--gm-white);
+    border-radius: var(--gm-radius);
+    padding: 30px 20px;
+    text-align: center;
+    transition: var(--gm-transition);
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    border: 2px solid var(--gm-gray-light);
+}
+
+.gm-brand-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--gm-shadow-lg);
+    border-color: var(--gm-primary);
+}
+
+.gm-brand-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+    border: 3px solid var(--gm-gray-light);
+    transition: var(--gm-transition);
+}
+
+.gm-brand-card:hover .gm-brand-img {
+    border-color: var(--gm-primary);
+    transform: scale(1.1);
+}
+
+.gm-brand-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gm-dark);
+    margin-bottom: 5px;
+}
+
+.gm-brand-discount {
+    font-size: 0.8rem;
+    color: var(--gm-accent);
+    font-weight: 600;
+}
+
+/* ==========================================
    WHY CHOOSE US
    ========================================== */
 .gm-why-us {
@@ -931,6 +993,10 @@
         grid-template-columns: repeat(4, 1fr);
     }
     
+    .gm-brands-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
     .gm-why-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -955,6 +1021,10 @@
     }
     
     .gm-categories-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .gm-brands-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
@@ -1047,6 +1117,11 @@
         gap: 15px;
     }
     
+    .gm-brands-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
     .gm-why-grid {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -1097,6 +1172,10 @@
     }
     
     .gm-categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .gm-brands-grid {
         grid-template-columns: repeat(2, 1fr);
     }
     
@@ -1620,6 +1699,39 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </section>
+{{-- ==========================================
+    TOP BRANDS
+    ========================================== --}}
+<section class="gm-brands gm-fade-in">
+    <div style="max-width: 1400px; margin: 0 auto;">
+        <div class="gm-section-header">
+            <h2 class="gm-section-title"><i class="fas fa-certificate"></i> Shop By Brand</h2>
+            <a href="#" class="gm-view-all">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="gm-brands-grid">
+            @forelse($brands as $brand)
+                <a href="{{ route('advanced') }}?brand={{ urlencode($brand->name) }}" class="gm-brand-card">
+                    @if($brand->image)
+                        <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="gm-brand-img">
+                    @else
+                        <div class="gm-brand-img" style="background: linear-gradient(135deg, var(--gm-primary-light), var(--gm-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem;">
+                            {{ substr($brand->name, 0, 2) }}
+                        </div>
+                    @endif
+                    <h4 class="gm-brand-name">{{ $brand->name }}</h4>
+                    @if($brand->company_discount > 0)
+                        <p class="gm-brand-discount">{{ $brand->company_discount }}% OFF</p>
+                    @endif
+                </a>
+            @empty
+                <div class="gm-brand-card" style="grid-column: 1 / -1; text-align: center; color: var(--gm-gray);">
+                    <p>No brands available yet.</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+</section> 
 
 {{-- ==========================================
     WHY CHOOSE US

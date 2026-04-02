@@ -61,6 +61,8 @@
                 <thead class="text-slate-700 bg-slate-100">
                     <tr>
                         <th class="text-left px-4 py-3 font-medium">Product</th>
+                        <th class="text-left px-4 py-3 font-medium">Category</th>
+                        <th class="text-left px-4 py-3 font-medium">Company</th>
                         <th class="text-left px-4 py-3 font-medium">Unit</th>
                         <th class="text-left px-4 py-3 font-medium">Qty</th>
                         <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
@@ -75,12 +77,12 @@
                 </tbody>
                 <tfoot class="bg-slate-50 border-t-2 border-slate-300">
                     <tr>
-                        <td colspan="5" class="px-4 py-4 text-right font-semibold text-slate-700">Total Base Cost:</td>
+                        <td colspan="7" class="px-4 py-4 text-right font-semibold text-slate-700">Total Base Cost:</td>
                         <td class="px-4 py-4 font-semibold text-slate-900 text-right" id="totalBaseCost">0.00</td>
                         <td colspan="2"></td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">
+                        <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">
                             Total Tax:
                         </td>
 
@@ -109,7 +111,7 @@
                         <td></td>
                     </tr>
                     <tr class="bg-slate-100">
-                        <td colspan="5" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
+                        <td colspan="7" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
                         <td class="px-4 py-4 font-bold text-lg text-green-700 text-right" id="grandTotal">0.00</td>
                         <td colspan="2"></td>
                     </tr>
@@ -119,7 +121,7 @@
         
         <p class="text-xs text-slate-500 mt-2">
             <strong>Tip:</strong> Start typing product name to see suggestions from purchase history.
-            New products will be created automatically.
+            For new products, you can select a Category and Company (or create new ones using the + buttons).
         </p>
     </div>
 
@@ -303,6 +305,16 @@ function updateProductFromInput(rowId, payload) {
     const unitSelect = row.querySelector('.unit-select');
     const unitDisplay = row.querySelector('.unit-display');
     const costInput = row.querySelector('.cost-input');
+    
+    // Category and Brand elements
+    const categoryCell = row.querySelector('.category-cell');
+    const categoryDisplay = row.querySelector('.category-display');
+    const categoryInput = row.querySelector('.category-name-input');
+    const categoryIdInput = row.querySelector('.category-id-input');
+    const brandCell = row.querySelector('.brand-cell');
+    const brandDisplay = row.querySelector('.brand-display');
+    const brandInput = row.querySelector('.brand-name-input');
+    const brandIdInput = row.querySelector('.brand-id-input');
 
     const name = payload.name || '';
     const id = payload.id ? Number(payload.id) : null;
@@ -314,13 +326,71 @@ function updateProductFromInput(rowId, payload) {
     unitSelect.value = unit;
     unitDisplay.textContent = unit;
 
-    // Show/hide select for new/existing
+    // Show/hide fields based on whether product is new or existing
     if (id) {
+        // Existing product - hide editable unit field, show display
         unitSelect.classList.add('hidden');
         unitDisplay.classList.remove('hidden');
+        
+        // For category and brand: check if they have values
+        // If they are empty, keep the input fields visible for editing
+        const hasCategory = payload.category_id || payload.category_name;
+        const hasBrand = payload.brand_id || payload.brand_name;
+        
+        if (hasCategory) {
+            // Hide category input if it has data
+            categoryCell.classList.add('hidden');
+            categoryDisplay.classList.remove('hidden');
+            categoryDisplay.textContent = payload.category_name || '-';
+            // Populate hidden inputs
+            categoryInput.value = payload.category_name || '';
+            categoryIdInput.value = payload.category_id || '';
+        } else {
+            // Keep category input visible if empty
+            categoryCell.classList.remove('hidden');
+            categoryDisplay.classList.add('hidden');
+            // Clear inputs
+            categoryInput.value = '';
+            categoryIdInput.value = '';
+        }
+        
+        if (hasBrand) {
+            // Hide brand input if it has data
+            brandCell.classList.add('hidden');
+            brandDisplay.classList.remove('hidden');
+            brandDisplay.textContent = payload.brand_name || '-';
+            // Populate hidden inputs
+            brandInput.value = payload.brand_name || '';
+            brandIdInput.value = payload.brand_id || '';
+        } else {
+            // Keep brand input visible if empty
+            brandCell.classList.remove('hidden');
+            brandDisplay.classList.add('hidden');
+            // Clear inputs
+            brandInput.value = '';
+            brandIdInput.value = '';
+        }
     } else {
+        // New product - show all editable fields
         unitSelect.classList.remove('hidden');
         unitDisplay.classList.add('hidden');
+        
+        // Show category and brand selection for new products
+        categoryCell.classList.remove('hidden');
+        categoryDisplay.classList.add('hidden');
+        brandCell.classList.remove('hidden');
+        brandDisplay.classList.add('hidden');
+        
+        // DON'T clear inputs if they already have values (user may have typed them first)
+        // Only clear if explicitly passed empty values in payload
+        if (payload.category_name === '' || payload.category_id === '') {
+            categoryInput.value = '';
+            categoryIdInput.value = '';
+        }
+        if (payload.brand_name === '' || payload.brand_id === '') {
+            brandInput.value = '';
+            brandIdInput.value = '';
+        }
     }
 
     costInput.value = lastCost;
@@ -392,6 +462,8 @@ item.style.transition = 'background 0.2s';
             <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
             <div class="text-[11px] text-slate-500 leading-tight">
                 ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'}
+                ${p.category_name ? `• Category: ${p.category_name}` : ''}
+                ${p.brand_name ? `• Company: ${p.brand_name}` : ''}
             </div>
         </div>
         <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
@@ -405,7 +477,11 @@ dropdown.className = 'autocomplete-dropdown absolute left-0 min-w-[220px] mt-1 b
                     id: p.id,
                     name: p.name,
                     unit: p.unit,
-                    last_cost: p.last_cost
+                    last_cost: p.last_cost,
+                    category_id: p.category_id,
+                    category_name: p.category_name,
+                    brand_id: p.brand_id,
+                    brand_name: p.brand_name
                 });
 
                 dropdown.remove();
@@ -498,6 +574,383 @@ async function handleProductSearch(rowId, inputElement) {
     }, 300);
 }
 
+// ---------- Category Search & Autocomplete ----------
+let categorySearchTimeout = null;
+
+async function searchCategoriesApi(query) {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const response = await fetch(`/inventory/purchases/search-categories?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            },
+            credentials: 'same-origin'
+        });
+        
+        console.log('🔍 Category search API response:', response.status);
+        
+        if (!response.ok) throw new Error('API Error');
+        const data = await response.json();
+        console.log('📦 Category search results:', data);
+        return data;
+    } catch (e) {
+        console.error('Category search failed:', e);
+        return [];
+    }
+}
+
+function createCategoryDropdown(rowId, inputElement, results) {
+    removeAutocomplete();
+    
+    const query = inputElement.value.trim();
+    if (!query) return;
+
+    console.log('🎯 Creating category dropdown for query:', JSON.stringify(query), 'with results:', results);
+
+    const wrapper = inputElement.closest('.relative');
+    if (!wrapper) return;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto text-sm';
+
+    const list = document.createElement('div');
+    list.className = 'max-h-80 overflow-y-auto';
+
+    const qLower = query.toLowerCase();
+    const hasExact = results.some(c => (c.name || '').toLowerCase() === qLower);
+    
+    console.log('🔍 Exact match check:');
+    console.log('  Query:', JSON.stringify(query));
+    console.log('  Query lowercase:', JSON.stringify(qLower));
+    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
+    console.log('  Has exact match:', hasExact);
+
+    // Show existing categories
+    if (results.length > 0) {
+        console.log('📋 Showing', results.length, 'categories');
+        results.forEach((cat) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate text-left';
+            
+            const name = cat.name || '';
+            const idx = name.toLowerCase().indexOf(qLower);
+            const highlighted = idx >= 0
+                ? name.substring(0, idx) + `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>` + name.substring(idx + query.length)
+                : name;
+
+            item.innerHTML = `<span class="font-medium">${highlighted}</span>`;
+            
+            item.addEventListener('click', () => {
+                const row = document.getElementById(`row-${rowId}`);
+                if (row) {
+                    row.querySelector('.category-name-input').value = cat.name;
+                    row.querySelector('.category-id-input').value = cat.id;
+                }
+                dropdown.remove();
+                activeAutocomplete = null;
+            });
+
+            list.appendChild(item);
+        });
+    } else {
+        console.log('📭 No categories found');
+    }
+
+    // Create new option (always show if query has length, but don't show if exact match)
+    if (!hasExact && query.length > 0) {
+        console.log('➕ Showing create new category option');
+        if (results.length > 0) {
+            const sep = document.createElement('div');
+            sep.className = 'h-px bg-slate-200';
+            list.appendChild(sep);
+        }
+
+        const createBtn = document.createElement('button');
+        createBtn.type = 'button';
+        createBtn.className = 'w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 outline-none';
+        createBtn.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-white text-sm">+</span>
+                <div class="text-sm font-medium text-green-800">
+                    Create new category: <span class="font-semibold">"${query}"</span>
+                </div>
+            </div>
+        `;
+
+        createBtn.addEventListener('click', async () => {
+            await createNewCategory(rowId, query);
+            dropdown.remove();
+            activeAutocomplete = null;
+        });
+
+        list.appendChild(createBtn);
+    } else {
+        console.log('🚫 Not showing create option (has exact match or empty query)');
+    }
+
+    dropdown.appendChild(list);
+    wrapper.appendChild(dropdown);
+    activeAutocomplete = dropdown;
+
+    setTimeout(() => {
+        const close = (e) => {
+            if (activeAutocomplete && !wrapper.contains(e.target)) {
+                activeAutocomplete.remove();
+                activeAutocomplete = null;
+                document.removeEventListener('click', close);
+            }
+        };
+        document.addEventListener('click', close);
+    }, 50);
+}
+
+async function createNewCategory(rowId, name) {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    try {
+        const response = await fetch('/inventory/purchases/store-category', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ name: name })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const row = document.getElementById(`row-${rowId}`);
+            if (row) {
+                row.querySelector('.category-name-input').value = data.category.name;
+                row.querySelector('.category-id-input').value = data.category.id;
+            }
+        } else {
+            alert(data.message || 'Failed to create category');
+        }
+    } catch (e) {
+        console.error('Error creating category:', e);
+        alert('Failed to create category. Please try again.');
+    }
+}
+
+async function handleCategorySearch(rowId, inputElement) {
+    clearTimeout(categorySearchTimeout);
+
+    const query = inputElement.value.trim();
+    const row = document.getElementById(`row-${rowId}`);
+    
+    console.log('🔍 Category search triggered for:', query, 'in row:', rowId);
+    
+    // Clear category_id if user is typing (changed from selected)
+    if (row) {
+        row.querySelector('.category-id-input').value = '';
+    }
+
+    if (query.length < 1) {
+        console.log('⏸️ Query too short, removing autocomplete');
+        removeAutocomplete();
+        return;
+    }
+
+    categorySearchTimeout = setTimeout(async () => {
+        console.log('⏰ Searching categories after delay for:', query);
+        const results = await searchCategoriesApi(query);
+        console.log('📦 Got category results:', results.length, 'items');
+        createCategoryDropdown(rowId, inputElement, results);
+    }, 300);
+}
+
+// ---------- Brand/Company Search & Autocomplete ----------
+let brandSearchTimeout = null;
+
+async function searchBrandsApi(query) {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const response = await fetch(`/inventory/purchases/search-brands?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            },
+            credentials: 'same-origin'
+        });
+        
+        if (!response.ok) throw new Error('API Error');
+        return await response.json();
+    } catch (e) {
+        console.error('Brand search failed:', e);
+        return [];
+    }
+}
+
+function createBrandDropdown(rowId, inputElement, results) {
+    removeAutocomplete();
+    
+    const query = inputElement.value.trim();
+    if (!query) return;
+
+    console.log('🎯 Creating brand dropdown for query:', JSON.stringify(query), 'with results:', results);
+
+    const wrapper = inputElement.closest('.relative');
+    if (!wrapper) return;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto text-sm';
+
+    const list = document.createElement('div');
+    list.className = 'max-h-80 overflow-y-auto';
+
+    const qLower = query.toLowerCase();
+    const hasExact = results.some(b => (b.name || '').toLowerCase() === qLower);
+    
+    console.log('🔍 Brand exact match check:');
+    console.log('  Query:', JSON.stringify(query));
+    console.log('  Query lowercase:', JSON.stringify(qLower));
+    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
+    console.log('  Has exact match:', hasExact);
+
+    // Show existing brands
+    if (results.length > 0) {
+        console.log('📋 Showing', results.length, 'brands');
+        results.forEach((brand) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate text-left';
+            
+            const name = brand.name || '';
+            const idx = name.toLowerCase().indexOf(qLower);
+            const highlighted = idx >= 0
+                ? name.substring(0, idx) + `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>` + name.substring(idx + query.length)
+                : name;
+
+            item.innerHTML = `<span class="font-medium">${highlighted}</span>`;
+            
+            item.addEventListener('click', () => {
+                const row = document.getElementById(`row-${rowId}`);
+                if (row) {
+                    row.querySelector('.brand-name-input').value = brand.name;
+                    row.querySelector('.brand-id-input').value = brand.id;
+                }
+                dropdown.remove();
+                activeAutocomplete = null;
+            });
+
+            list.appendChild(item);
+        });
+    } else {
+        console.log('📭 No brands found');
+    }
+
+    // Create new option (if no exact match)
+    if (!hasExact && query.length > 0) {
+        console.log('➕ Showing create new brand option');
+        if (results.length > 0) {
+            const sep = document.createElement('div');
+            sep.className = 'h-px bg-slate-200';
+            list.appendChild(sep);
+        }
+
+        const createBtn = document.createElement('button');
+        createBtn.type = 'button';
+        createBtn.className = 'w-full text-left px-3 py-2 bg-blue-50 hover:bg-blue-100 outline-none';
+        createBtn.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-sm">+</span>
+                <div class="text-sm font-medium text-blue-800">
+                    Create new company: <span class="font-semibold">"${query}"</span>
+                </div>
+            </div>
+        `;
+
+        createBtn.addEventListener('click', async () => {
+            await createNewBrand(rowId, query);
+            dropdown.remove();
+            activeAutocomplete = null;
+        });
+
+        list.appendChild(createBtn);
+    } else {
+        console.log('🚫 Not showing create option (has exact match or empty query)');
+    }
+
+    dropdown.appendChild(list);
+    wrapper.appendChild(dropdown);
+    activeAutocomplete = dropdown;
+
+    setTimeout(() => {
+        const close = (e) => {
+            if (activeAutocomplete && !wrapper.contains(e.target)) {
+                activeAutocomplete.remove();
+                activeAutocomplete = null;
+                document.removeEventListener('click', close);
+            }
+        };
+        document.addEventListener('click', close);
+    }, 50);
+}
+
+async function createNewBrand(rowId, name) {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    try {
+        const response = await fetch('/inventory/purchases/store-brand', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ name: name })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const row = document.getElementById(`row-${rowId}`);
+            if (row) {
+                row.querySelector('.brand-name-input').value = data.brand.name;
+                row.querySelector('.brand-id-input').value = data.brand.id;
+            }
+        } else {
+            alert(data.message || 'Failed to create company');
+        }
+    } catch (e) {
+        console.error('Error creating company:', e);
+        alert('Failed to create company. Please try again.');
+    }
+}
+
+async function handleBrandSearch(rowId, inputElement) {
+    clearTimeout(brandSearchTimeout);
+
+    const query = inputElement.value.trim();
+    const row = document.getElementById(`row-${rowId}`);
+    
+    // Clear brand_id if user is typing (changed from selected)
+    if (row) {
+        row.querySelector('.brand-id-input').value = '';
+    }
+
+    if (query.length < 1) {
+        removeAutocomplete();
+        return;
+    }
+
+    brandSearchTimeout = setTimeout(async () => {
+        const results = await searchBrandsApi(query);
+        createBrandDropdown(rowId, inputElement, results);
+    }, 300);
+}
+
 
 // ---------- Row creation ----------
 function createRow() {
@@ -518,6 +971,32 @@ function createRow() {
                 <input type="hidden" name="items[${rowId}][product_id]" class="product-id-input" />
                 <input type="hidden" name="items[${rowId}][product_name]" class="product-name-hidden" />
             </div>
+        </td>
+        <td class="px-4 py-3">
+            <div class="category-cell">
+                <div class="relative">
+                    <input type="text"
+                           name="items[${rowId}][category_name]"
+                           class="category-name-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5"
+                           placeholder="Type category..."
+                           autocomplete="off" />
+                    <input type="hidden" name="items[${rowId}][category_id]" class="category-id-input" />
+                </div>
+            </div>
+            <div class="category-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
+        </td>
+        <td class="px-4 py-3">
+            <div class="brand-cell">
+                <div class="relative">
+                    <input type="text"
+                           name="items[${rowId}][brand_name]"
+                           class="brand-name-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5"
+                           placeholder="Type company..."
+                           autocomplete="off" />
+                    <input type="hidden" name="items[${rowId}][brand_id]" class="brand-id-input" />
+                </div>
+            </div>
+            <div class="brand-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
         </td>
         <td class="px-4 py-3">
             <select name="items[${rowId}][product_unit]"
@@ -571,28 +1050,42 @@ function createRow() {
     `;
 
     // bind events (better than inline HTML)
- // bind events (better than inline HTML)
-const productInput = row.querySelector('.product-name-input');
+    const productInput = row.querySelector('.product-name-input');
 
-// AUTO CAPITALIZE INPUT and trigger search
-productInput.addEventListener('input', () => {
-    // auto capitalize each word
-    productInput.value = productInput.value.replace(/\b\w/g, l => l.toUpperCase());
-    handleProductSearch(rowId, productInput); // call your autocomplete search
-});
+    // AUTO CAPITALIZE INPUT and trigger search
+    productInput.addEventListener('input', () => {
+        // auto capitalize each word
+        productInput.value = productInput.value.replace(/\b\w/g, l => l.toUpperCase());
+        handleProductSearch(rowId, productInput); // call your autocomplete search
+    });
 
-// also trigger search on focus
-productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
+    // also trigger search on focus
+    productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
 
-// update totals when qty or cost changes
-row.querySelector('.qty-input').addEventListener('input', updateAllTotals);
-row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
+    // Category autocomplete
+    const categoryInput = row.querySelector('.category-name-input');
+    categoryInput.addEventListener('input', () => {
+        categoryInput.value = categoryInput.value.replace(/\b\w/g, l => l.toUpperCase());
+        handleCategorySearch(rowId, categoryInput);
+    });
+    categoryInput.addEventListener('focus', () => handleCategorySearch(rowId, categoryInput));
 
-// remove row
-row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
+    // Brand/Company autocomplete
+    const brandInput = row.querySelector('.brand-name-input');
+    brandInput.addEventListener('input', () => {
+        brandInput.value = brandInput.value.replace(/\b\w/g, l => l.toUpperCase());
+        handleBrandSearch(rowId, brandInput);
+    });
+    brandInput.addEventListener('focus', () => handleBrandSearch(rowId, brandInput));
 
-return row;
+    // update totals when qty or cost changes
+    row.querySelector('.qty-input').addEventListener('input', updateAllTotals);
+    row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
 
+    // remove row
+    row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
+
+    return row;
 }
 
 function removeRow(rowId) {

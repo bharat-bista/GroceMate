@@ -55,7 +55,7 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Product</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Selling Price</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Price</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">E-commerce</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>

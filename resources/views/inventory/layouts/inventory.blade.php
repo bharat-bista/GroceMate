@@ -163,6 +163,47 @@
 
     </div>
   </div>
+  <div x-data="{ open: {{ $isPosGroup ? 'true' : 'false' }} }" class="space-y-1">
+    
+    <!-- Dropdown Button -->
+    <button @click="open = !open"
+            class="{{ $navButtonClass($isPosGroup) }}">
+      <span>Ecommerce</span>
+      <svg :class="{'rotate-180': open}" 
+           class="w-4 h-4 transition-transform duration-200"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+
+    <!-- Dropdown Items -->
+    <div x-show="open" x-transition class="ml-4 space-y-1">
+
+      <a class="{{ $navLinkClass(request()->routeIs('pos.dashboard')) }}"
+         href="{{ route('pos.dashboard') }}">
+         Dashboard
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('pos.invoices.*')) }}"
+         href="{{ route('pos.invoices.index') }}">
+         Product
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('pos.customers.*')) }}"
+         href="{{ route('pos.customers.index') }}">
+         Orders
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('pos.supplier-payments.*')) }}"
+         href="{{ route('pos.supplier-payments.index') }}">
+         Photo Slider
+      </a>
+
+      
+
+    </div>
+  </div>
   <!-- Dashboard -->
   <a class="{{ $navSectionLinkClass($isBusinessProfile) }}"
      href="{{ route('business.index') }}">

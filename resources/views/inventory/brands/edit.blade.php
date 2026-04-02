@@ -1,0 +1,65 @@
+@extends('inventory.layouts.inventory')
+
+@section('title','Edit Brand')
+@section('heading','Edit Brand')
+@section('subtitle','Update brand details')
+
+@section('content')
+<form method="POST" action="{{ route('inventory.brands.update', $brand) }}"
+      class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5 max-w-xl" enctype="multipart/form-data">
+  @csrf
+  @method('PUT')
+
+  <div>
+    <label class="text-sm text-slate-600">Brand Name</label>
+    <input name="name" value="{{ old('name', $brand->name) }}"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('name')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div>
+    <label class="text-sm text-slate-600">Brand Image</label>
+    <input type="file" name="image" accept="image/*"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @if($brand->image)
+      <div class="mt-2">
+        <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="w-20 h-20 object-cover rounded-lg">
+        <p class="text-xs text-slate-500 mt-1">Current image</p>
+      </div>
+    @endif
+    @error('image')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div>
+    <label class="text-sm text-slate-600">Order (Display Sequence)</label>
+    <input type="number" name="order" value="{{ old('order', $brand->order) }}" min="0"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('order')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div>
+    <label class="text-sm text-slate-600">Company Discount (%)</label>
+    <input type="number" name="company_discount" value="{{ old('company_discount', $brand->company_discount) }}" min="0" max="100" step="0.01"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('company_discount')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div class="flex gap-3">
+    <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+      Update
+    </button>
+    <a href="{{ route('inventory.brands.index') }}" data-back-button
+       class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
+      Cancel
+    </a>
+  </div>
+</form>
+@endsection

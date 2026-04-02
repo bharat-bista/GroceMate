@@ -6,13 +6,34 @@
 
 @section('content')
 <form method="POST" action="{{ route('inventory.categories.store') }}"
-      class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5 max-w-xl">
+      class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5 max-w-xl" enctype="multipart/form-data">
   @csrf
 
   <div>
     <label class="text-sm text-slate-600">Category Name</label>
     <input name="name" value="{{ old('name') }}"
            class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('name')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div>
+    <label class="text-sm text-slate-600">Category Image</label>
+    <input type="file" name="image" accept="image/*"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('image')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
+  <div>
+    <label class="text-sm text-slate-600">Order (Display Sequence)</label>
+    <input type="number" name="order" value="{{ old('order', 0) }}" min="0"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('order')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
   </div>
 
   <div class="flex gap-3">

@@ -98,7 +98,7 @@ $yearlyPurchases = Purchase::select(
 ->groupBy('label')
 ->orderBy('label')
 ->get();
-   
+
 return view('inventory.dashboard', compact(
         'totalProducts',
         'activeProducts',

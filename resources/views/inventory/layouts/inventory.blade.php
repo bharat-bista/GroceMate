@@ -29,6 +29,7 @@
             'inventory.products.*',
             'inventory.suppliers.*',
             'inventory.purchases.*',
+            'inventory.brands.*',
             'inventory.alerts.*'
         );
         $isPosGroup = request()->routeIs(
@@ -89,6 +90,11 @@
       <a class="{{ $navLinkClass(request()->routeIs('inventory.categories.*')) }}"
          href="{{ route('inventory.categories.index') }}">
          Category
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.brands.*')) }}"
+         href="{{ route('inventory.brands.index') }}">
+         Brands
       </a>
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.products.*')) }}"

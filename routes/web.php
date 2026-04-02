@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\CategoryController;
+use App\Http\Controllers\Inventory\BrandController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
 use App\Http\Controllers\Inventory\AdminAccountController;
@@ -98,17 +99,29 @@ Route::middleware(['auth', 'admin'])
         
         Route::resource('categories', CategoryController::class)->except(['show']);
         
-        // Purchase routes - using resource route with custom additional routes
-        Route::resource('purchases', PurchaseController::class);
+        Route::resource('brands', BrandController::class)->except(['show']);
+        
+        // AJAX routes for searching and creating categories/brands inline (purchase form)
+        // IMPORTANT: These must come BEFORE Route::resource to avoid being caught by {purchase} param
         Route::get('/purchases/search-products', [PurchaseController::class, 'searchProducts'])
             ->name('purchases.search-products');
-        
+        Route::get('/purchases/search-categories', [PurchaseController::class, 'searchCategories'])
+            ->name('purchases.search-categories');
+        Route::get('/purchases/search-brands', [PurchaseController::class, 'searchBrands'])
+            ->name('purchases.search-brands');
+        Route::post('/purchases/store-category', [PurchaseController::class, 'storeCategory'])
+            ->name('purchases.store-category');
+        Route::post('/purchases/store-brand', [PurchaseController::class, 'storeBrand'])
+            ->name('purchases.store-brand');
+        Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+        
+        // Purchase resource routes (must come AFTER custom routes)
+        Route::resource('purchases', PurchaseController::class);
         Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
         
         Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
-        Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
     
         // Individual purchase export route
         Route::get('/purchases/{purchase}/export/{type}',[PurchaseController::class, 'exportIndividual'])->name('purchases.export-individual');

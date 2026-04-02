@@ -53,8 +53,9 @@
                 <thead class="bg-slate-100 border-b border-slate-200">
                     <tr>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Product</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Selling Price</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Price</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">E-commerce</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
@@ -75,6 +76,9 @@
                                 <div class="text-xs text-slate-500 mt-1">
                                     {{ $product->sku ?: 'No SKU' }} • {{ $product->unit }}
                                 </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-900">{{ $product->brandRelation ? $product->brandRelation->name : '-' }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-slate-900">{{ $product->category->name ?? 'N/A' }}</div>
@@ -118,7 +122,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="text-slate-500">
                                     <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"></path>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -14,6 +15,7 @@ class CategoryController extends Controller
 
         $categories = Category::query()
             ->when($q, fn($qq) => $qq->where('name', 'like', "%{$q}%"))
+            ->orderBy('order')
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
@@ -30,7 +32,16 @@ class CategoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $data['order'] = $data['order'] ?? 0;
 
         Category::create($data);
 
@@ -48,7 +59,20 @@ class CategoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:categories,name,' . $category->id],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $data['order'] = $data['order'] ?? 0;
 
         $category->update($data);
 
@@ -62,6 +86,11 @@ class CategoryController extends Controller
         // Prevent delete if products exist
         if ($category->products()->exists()) {
             return back()->with('success', 'Cannot delete: category has products. (Disable products or move them first)');
+        }
+
+        // Delete image if exists
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
         }
 
         $category->delete();

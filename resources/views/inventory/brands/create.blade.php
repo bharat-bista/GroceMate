@@ -1,18 +1,17 @@
 @extends('inventory.layouts.inventory')
 
-@section('title','Edit Category')
-@section('heading','Edit Category')
-@section('subtitle','Update category details')
+@section('title','Add Brand')
+@section('heading','Add Brand')
+@section('subtitle','Create a new brand')
 
 @section('content')
-<form method="POST" action="{{ route('inventory.categories.update', $category) }}"
+<form method="POST" action="{{ route('inventory.brands.store') }}"
       class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5 max-w-xl" enctype="multipart/form-data">
   @csrf
-  @method('PUT')
 
   <div>
-    <label class="text-sm text-slate-600">Category Name</label>
-    <input name="name" value="{{ old('name', $category->name) }}"
+    <label class="text-sm text-slate-600">Brand Name</label>
+    <input name="name" value="{{ old('name') }}"
            class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
     @error('name')
       <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -20,16 +19,9 @@
   </div>
 
   <div>
-    <label class="text-sm text-slate-600">Category Image</label>
-    @if($category->image)
-      <div class="mt-2 mb-2">
-        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="h-20 w-20 object-cover rounded-lg">
-        <p class="text-xs text-slate-500 mt-1">Current image</p>
-      </div>
-    @endif
+    <label class="text-sm text-slate-600">Brand Image</label>
     <input type="file" name="image" accept="image/*"
            class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    <p class="text-xs text-slate-500 mt-1">Leave empty to keep current image</p>
     @error('image')
       <span class="text-red-500 text-sm">{{ $message }}</span>
     @enderror
@@ -37,18 +29,27 @@
 
   <div>
     <label class="text-sm text-slate-600">Order (Display Sequence)</label>
-    <input type="number" name="order" value="{{ old('order', $category->order) }}" min="0"
+    <input type="number" name="order" value="{{ old('order', 0) }}" min="0"
            class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
     @error('order')
       <span class="text-red-500 text-sm">{{ $message }}</span>
     @enderror
   </div>
 
+  <div>
+    <label class="text-sm text-slate-600">Company Discount (%)</label>
+    <input type="number" name="company_discount" value="{{ old('company_discount', 0) }}" min="0" max="100" step="0.01"
+           class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+    @error('company_discount')
+      <span class="text-red-500 text-sm">{{ $message }}</span>
+    @enderror
+  </div>
+
   <div class="flex gap-3">
     <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-      Update
+      Save
     </button>
-    <a href="{{ route('inventory.categories.index') }}" data-back-button
+    <a href="{{ route('inventory.brands.index') }}" data-back-button
        class="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
       Cancel
     </a>

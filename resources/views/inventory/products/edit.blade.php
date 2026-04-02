@@ -21,6 +21,20 @@
     </div>
 
     <div>
+      <label class="text-sm text-slate-600">Brand</label>
+      <select name="brand_id" class="mt-1 w-full rounded-xl border-slate-200">
+        <option value="">Select a brand</option>
+        @foreach($brands as $b)
+          <option value="{{ $b->id }}" @selected(old('brand_id', $product->brand_id) == $b->id)>{{ $b->name }}</option>
+        @endforeach
+      </select>
+      <input name="brand_name" value="{{ old('brand_name') }}"
+             placeholder="Or type new brand name"
+             class="mt-2 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+      <p class="text-xs text-slate-500 mt-1">Select existing brand or type new brand name</p>
+    </div>
+
+    <div>
       <label class="text-sm text-slate-600">Category</label>
       <select name="category_id" class="mt-1 w-full rounded-xl border-slate-200">
         @foreach($categories as $c)

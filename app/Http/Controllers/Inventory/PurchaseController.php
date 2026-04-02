@@ -9,6 +9,8 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Stock;
 use App\Models\Tax;
+use App\Models\Category;
+use App\Models\Brand;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +93,10 @@ class PurchaseController extends Controller
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
             'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'], // Unit for new products
+            'items.*.category_id' => ['nullable', 'exists:categories,id'], // Category for new products
+            'items.*.category_name' => ['nullable', 'string', 'max:255'], // Category name for auto-creation
+            'items.*.brand_id' => ['nullable', 'exists:brands,id'], // Brand for new products
+            'items.*.brand_name' => ['nullable', 'string', 'max:255'], // Brand name for auto-creation
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
             'items.*.expiry_date' => ['nullable', 'date'],
@@ -114,16 +120,103 @@ class PurchaseController extends Controller
                 $unitCost = (float) $row['unit_cost'];
                 $baseCost = $qty * $unitCost;
 
+                // Get category and brand names for snapshot
+                $categoryName = null;
+                $companyName = null;
+
                 // Check if product exists, if not create it
                 if (!empty($row['product_id'])) {
-                    // Existing product
+                    // Existing product - get category and brand from product
                     $productId = $row['product_id'];
+                    $existingProduct = Product::with(['category', 'brand'])->find($productId);
+                    if ($existingProduct) {
+                        $categoryName = $existingProduct->category->name ?? null;
+                        $companyName = $existingProduct->brand->name ?? null;
+                        
+                        // Check if user wants to update brand for existing product
+                        $updateBrand = false;
+                        if (!empty($row['brand_id'])) {
+                            $brand = Brand::find($row['brand_id']);
+                            if ($brand) {
+                                $existingProduct->brand_id = $brand->id;
+                                $companyName = $brand->name;
+                                $updateBrand = true;
+                            }
+                        } elseif (!empty($row['brand_name']) && empty($existingProduct->brand_id)) {
+                            // Create new brand from name if product has no brand
+                            $brand = Brand::firstOrCreate(
+                                ['name' => trim($row['brand_name'])],
+                                ['name' => trim($row['brand_name'])]
+                            );
+                            $existingProduct->brand_id = $brand->id;
+                            $companyName = $brand->name;
+                            $updateBrand = true;
+                        }
+                        
+                        // Check if user wants to update category for existing product
+                        $updateCategory = false;
+                        if (!empty($row['category_id'])) {
+                            $category = Category::find($row['category_id']);
+                            if ($category) {
+                                $existingProduct->category_id = $category->id;
+                                $categoryName = $category->name;
+                                $updateCategory = true;
+                            }
+                        } elseif (!empty($row['category_name']) && empty($existingProduct->category_id)) {
+                            // Create new category from name if product has no category
+                            $category = Category::firstOrCreate(
+                                ['name' => trim($row['category_name'])],
+                                ['name' => trim($row['category_name'])]
+                            );
+                            $existingProduct->category_id = $category->id;
+                            $categoryName = $category->name;
+                            $updateCategory = true;
+                        }
+                        
+                        // Save product if brand or category was updated
+                        if ($updateBrand || $updateCategory) {
+                            $existingProduct->save();
+                        }
+                    }
                 } else {
-                    // Create new product
+                    // Handle category - use existing ID or create from name
+                    $categoryId = null;
+                    if (!empty($row['category_id'])) {
+                        $category = Category::find($row['category_id']);
+                        $categoryId = $category->id ?? null;
+                        $categoryName = $category->name ?? null;
+                    } elseif (!empty($row['category_name'])) {
+                        // Create new category from name or find existing
+                        $category = Category::firstOrCreate(
+                            ['name' => trim($row['category_name'])],
+                            ['name' => trim($row['category_name'])]
+                        );
+                        $categoryId = $category->id;
+                        $categoryName = $category->name;
+                    }
+                    
+                    // Handle brand - use existing ID or create from name
+                    $brandId = null;
+                    if (!empty($row['brand_id'])) {
+                        $brand = Brand::find($row['brand_id']);
+                        $brandId = $brand->id ?? null;
+                        $companyName = $brand->name ?? null;
+                    } elseif (!empty($row['brand_name'])) {
+                        // Create new brand from name or find existing
+                        $brand = Brand::firstOrCreate(
+                            ['name' => trim($row['brand_name'])],
+                            ['name' => trim($row['brand_name'])]
+                        );
+                        $brandId = $brand->id;
+                        $companyName = $brand->name;
+                    }
+
+                    // Create new product with category and brand
                     $product = Product::create([
                         'name' => $row['product_name'],
                         'unit' => $row['product_unit'],
-                        'category_id' => 1, // Default category, you might want to change this
+                        'category_id' => $categoryId ?? 1, // Use selected or default category
+                        'brand_id' => $brandId, // Use selected brand
                         'selling_price' => $unitCost * 1.2, // 20% markup by default
                         'is_active' => true,
                     ]);
@@ -138,11 +231,13 @@ class PurchaseController extends Controller
                     $productId = $product->id;
                 }
 
-                // Create purchase item (no per-product taxes)
+                // Create purchase item with category and company snapshots
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
                     'product_name' => $row['product_name'],         // snapshot
+                    'category_name' => $categoryName,               // snapshot
+                    'company_name' => $companyName,                 // snapshot
                     'unit' => $row['product_unit'],  
                     'qty' => $qty,
                     'unit_cost' => $unitCost,
@@ -247,11 +342,15 @@ public function searchProducts(Request $request)
         ->map(function ($group) {
             $item = $group->first();
             return [
-                'id'        => $item->product_id,
-                'name'      => $item->product_name,
-                'sku'       => null,
-                'unit'      => $item->unit,
-                'last_cost' => (float) $item->unit_cost,
+                'id'            => $item->product_id,
+                'name'          => $item->product_name,
+                'sku'           => null,
+                'unit'          => $item->unit,
+                'last_cost'     => (float) $item->unit_cost,
+                'category_name' => $item->category_name,
+                'category_id'   => null, // PurchaseItem doesn't store category_id
+                'brand_name'    => $item->company_name, // company_name is the brand
+                'brand_id'      => null, // PurchaseItem doesn't store brand_id
             ];
         })
         ->values()
@@ -489,6 +588,90 @@ public function exportIndividual(Purchase $purchase, $type)
     }
     
     abort(404);
+}
+
+/**
+ * Create a new category via AJAX (for purchase form)
+ */
+public function storeCategory(Request $request)
+{
+    $data = $request->validate([
+        'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+    ]);
+
+    $category = Category::create(['name' => $data['name']]);
+
+    return response()->json([
+        'success' => true,
+        'category' => [
+            'id' => $category->id,
+            'name' => $category->name,
+        ]
+    ]);
+}
+
+/**
+ * Search categories via AJAX (for purchase form autocomplete)
+ */
+public function searchCategories(Request $request)
+{
+    $q = trim($request->get('q', ''));
+    if (strlen($q) < 1) return response()->json([]);
+
+    $categories = Category::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($q) . '%'])
+        ->orderBy('name')
+        ->limit(10)
+        ->get()
+        ->map(function($cat) {
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+            ];
+        });
+
+    return response()->json($categories);
+}
+
+/**
+ * Create a new brand/company via AJAX (for purchase form)
+ */
+public function storeBrand(Request $request)
+{
+    $data = $request->validate([
+        'name' => ['required', 'string', 'max:255', 'unique:brands,name'],
+    ]);
+
+    $brand = Brand::create(['name' => $data['name']]);
+
+    return response()->json([
+        'success' => true,
+        'brand' => [
+            'id' => $brand->id,
+            'name' => $brand->name,
+        ]
+    ]);
+}
+
+/**
+ * Search brands/companies via AJAX (for purchase form autocomplete)
+ */
+public function searchBrands(Request $request)
+{
+    $q = trim($request->get('q', ''));
+    if (strlen($q) < 1) return response()->json([]);
+
+    $brands = Brand::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($q) . '%'])
+        ->orderBy('name')
+        ->limit(10)
+        ->get()
+        ->map(function($brand) {
+            return [
+                'id' => $brand->id,
+                'name' => $brand->name,
+            ];
+        });
+
+    return response()->json($brands);
 }
 
 }

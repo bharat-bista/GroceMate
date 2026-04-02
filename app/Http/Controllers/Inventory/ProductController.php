@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,7 @@ class ProductController extends Controller
     $q = trim($request->input('search', $request->input('q', '')));
 
     $products = Product::query()
-      ->with(['category','stock'])
+      ->with(['category','stock','brandRelation'])
       ->when($q, fn($qq) => $qq->where('name','like',"%$q%")->orWhere('sku','like',"%$q%"))
       ->orderBy('name')
       ->orderBy('id')
@@ -34,6 +35,7 @@ class ProductController extends Controller
   {
     return view('inventory.products.create', [
       'categories' => Category::orderBy('name')->get(),
+      'brands' => Brand::orderBy('name')->get(),
       'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
@@ -43,6 +45,8 @@ class ProductController extends Controller
     $data = $request->validate([
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
+      'brand_id' => ['nullable','exists:brands,id'],
+      'brand_name' => ['nullable','string','max:255'],
       'sku' => ['nullable','string','max:50','unique:products,sku'],
       'unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
@@ -55,9 +59,23 @@ class ProductController extends Controller
     ]);
 
     DB::transaction(function () use ($data) {
+      // Handle brand - use existing ID or create from name
+      $brandId = null;
+      if (!empty($data['brand_id'])) {
+          $brandId = $data['brand_id'];
+      } elseif (!empty($data['brand_name'])) {
+          // Create new brand from name or find existing
+          $brand = Brand::firstOrCreate(
+              ['name' => trim($data['brand_name'])],
+              ['name' => trim($data['brand_name'])]
+          );
+          $brandId = $brand->id;
+      }
+
       $product = Product::create([
         'category_id' => $data['category_id'],
         'name' => $data['name'],
+        'brand_id' => $brandId,
         'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
@@ -83,6 +101,7 @@ class ProductController extends Controller
     return view('inventory.products.edit', [
       'product' => $product,
       'categories' => Category::orderBy('name')->get(),
+      'brands' => Brand::orderBy('name')->get(),
       'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
@@ -92,6 +111,8 @@ class ProductController extends Controller
     $data = $request->validate([
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
+      'brand_id' => ['nullable','exists:brands,id'],
+      'brand_name' => ['nullable','string','max:255'],
       'sku' => ['nullable','string','max:50','unique:products,sku,'.$product->id],
       'unit' => ['required','in:kg,liter,pcs'],
       'selling_price' => ['required','numeric','min:0'],
@@ -103,9 +124,23 @@ class ProductController extends Controller
     ]);
 
     DB::transaction(function () use ($data, $product) {
+      // Handle brand - use existing ID or create from name
+      $brandId = null;
+      if (!empty($data['brand_id'])) {
+          $brandId = $data['brand_id'];
+      } elseif (!empty($data['brand_name'])) {
+          // Create new brand from name or find existing
+          $brand = Brand::firstOrCreate(
+              ['name' => trim($data['brand_name'])],
+              ['name' => trim($data['brand_name'])]
+          );
+          $brandId = $brand->id;
+      }
+
       $product->update([
         'category_id' => $data['category_id'],
         'name' => $data['name'],
+        'brand_id' => $brandId,
         'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],

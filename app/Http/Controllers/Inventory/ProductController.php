@@ -19,7 +19,7 @@ class ProductController extends Controller
 
     $products = Product::query()
       ->with(['category','stock','brandRelation'])
-      ->when($q, fn($qq) => $qq->where('name','like',"%$q%")->orWhere('sku','like',"%$q%"))
+      ->when($q, fn($qq) => $qq->where('name','like',"%$q%"))
       ->orderBy('name')
       ->orderBy('id')
       ->paginate(10)
@@ -47,11 +47,8 @@ class ProductController extends Controller
       'name' => ['required','string','max:255'],
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
-      'sku' => ['nullable','string','max:50','unique:products,sku'],
       'unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
-      'description' => ['nullable','string'],
-      'image_url' => ['nullable','string','max:2048'],
       'is_active' => ['nullable','boolean'],
       'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
@@ -76,11 +73,8 @@ class ProductController extends Controller
         'category_id' => $data['category_id'],
         'name' => $data['name'],
         'brand_id' => $brandId,
-        'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
-        'description' => $data['description'] ?? null,
-        'image_url' => $data['image_url'] ?? null,
         'is_active' => (bool)($data['is_active'] ?? true),
         'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);
@@ -113,11 +107,8 @@ class ProductController extends Controller
       'name' => ['required','string','max:255'],
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
-      'sku' => ['nullable','string','max:50','unique:products,sku,'.$product->id],
-      'unit' => ['required','in:kg,liter,pcs'],
+      'unit' => ['required','in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
-      'description' => ['nullable','string'],
-      'image_url' => ['nullable','string','max:2048'],
       'is_active' => ['nullable','boolean'],
       'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
@@ -141,11 +132,8 @@ class ProductController extends Controller
         'category_id' => $data['category_id'],
         'name' => $data['name'],
         'brand_id' => $brandId,
-        'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
-        'description' => $data['description'] ?? null,
-        'image_url' => $data['image_url'] ?? null,
         'is_active' => (bool)($data['is_active'] ?? false),
         'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);

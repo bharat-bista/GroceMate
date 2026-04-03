@@ -11,11 +11,8 @@ class Product extends Model {
     'category_id',
     'brand_id',
     'name',
-    'sku',
     'unit',
     'selling_price',
-    'description',
-    'image_url',
     'is_active',
     'is_listed'
   ];
@@ -49,5 +46,10 @@ class Product extends Model {
 
   public function stock() { 
       return $this->hasOne(Stock::class); 
+  }
+
+  public function ecommerceProduct()
+  {
+      return $this->hasOne(EcommerceProduct::class);
   }
 }

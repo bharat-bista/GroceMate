@@ -9,7 +9,11 @@ use Illuminate\Http\Request;
 class HomeController extends Controller
 {
     public function home(){
-        $brands = Brand::orderBy('order')->orderBy('name')->get();
+        // Only show brands that have e-commerce products
+        $brands = Brand::whereHas('ecommerceProducts')
+            ->orderBy('order')
+            ->orderBy('name')
+            ->get();
         return view('frontend.home.index', compact('brands'));
     }
 }

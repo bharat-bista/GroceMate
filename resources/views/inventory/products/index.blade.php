@@ -31,7 +31,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
                         <input type="text" name="search" value="{{ request('search', $q) }}"
-                               placeholder="Product name or SKU..."
+                               placeholder="Product name..."
                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
                     </div>
                     <div class="flex items-end gap-3">
@@ -73,9 +73,7 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-4">
                                 <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
-                                <div class="text-xs text-slate-500 mt-1">
-                                    {{ $product->sku ?: 'No SKU' }} • {{ $product->unit }}
-                                </div>
+                                <div class="text-xs text-slate-500 mt-1">{{ $product->unit }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-slate-900">{{ $product->brandRelation ? $product->brandRelation->name : '-' }}</div>

@@ -40,12 +40,6 @@
     </div>
 
     <div>
-      <label class="text-sm text-slate-600">SKU (optional)</label>
-      <input name="sku" value="{{ old('sku') }}"
-             class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    </div>
-
-    <div>
       <label class="text-sm text-slate-600">Unit</label>
       <select name="unit" class="mt-1 w-full rounded-xl border-slate-200">
         @foreach($units as $u)
@@ -58,18 +52,6 @@
       <label class="text-sm text-slate-600">Selling Price</label>
       <input name="selling_price" type="number" step="0.01" value="{{ old('selling_price',0) }}"
              class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    </div>
-
-    <div>
-      <label class="text-sm text-slate-600">Image URL (optional)</label>
-      <input name="image_url" value="{{ old('image_url') }}"
-             class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    </div>
-
-    <div class="md:col-span-2">
-      <label class="text-sm text-slate-600">Description (optional)</label>
-      <textarea name="description" rows="3"
-                class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200">{{ old('description') }}</textarea>
     </div>
 
     <div>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
@@ -14,6 +15,7 @@ class Supplier extends Model
         'vat_number',
         'pan_number',
         'supplier_type',
+        'business_account',
         'opening_due',
         'total_due',
         'address'
@@ -27,6 +29,11 @@ class Supplier extends Model
     public function purchases(): HasMany
     {
         return $this->hasMany(Purchase::class);
+    }
+
+    public function businessAccount(): BelongsTo
+    {
+        return $this->belongsTo(Business::class, 'business_account');
     }
 
     public function supplierPayments(): HasMany

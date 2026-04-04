@@ -24,7 +24,7 @@
                 {{-- Brand Logo --}}
                 <div class="w-32 h-32 rounded-2xl bg-white border-2 border-purple-200 flex items-center justify-center overflow-hidden shadow-lg">
                     @if($brand->image)
-                        <img src="{{ Storage::url($brand->image) }}" 
+                        <img src="{{ asset('assets/img/brands/' . $brand->image) }}" 
                              alt="{{ $brand->name }}"
                              class="w-full h-full object-contain p-3">
                     @else

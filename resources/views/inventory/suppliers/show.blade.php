@@ -47,6 +47,10 @@
                 <p class="font-medium">{{ $supplier->pan_number ?? '-' }}</p>
             </div>
             <div>
+                <label class="text-sm text-slate-500">Business Account</label>
+                <p class="font-medium">{{ $supplier->businessAccount->business_name ?? '-' }}</p>
+            </div>
+            <div>
                 <label class="text-sm text-slate-500">Total Due</label>
                 <p class="font-semibold text-red-600">
                     Rs {{ number_format($supplier->calculated_total_due, 2) }}

@@ -37,12 +37,14 @@
             'pos.invoices.*',
             'pos.customers.*',
             'pos.supplier-payments.*',
-            'pos.income.*'
+          'pos.income.*',
+          'pos.expenses.*'
         );
         $isEcommerceGroup = request()->routeIs(
           'inventory.ecommerce-products.*',
           'inventory.ecommerce-brands.*',
-          'inventory.ecommerce-categories.*'
+          'inventory.ecommerce-categories.*',
+          'inventory.sliders.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
@@ -166,6 +168,11 @@
          Income
       </a>
 
+      <a class="{{ $navLinkClass(request()->routeIs('pos.expenses.*')) }}"
+        href="{{ route('pos.expenses.index') }}">
+        Expenses
+      </a>
+
     </div>
   </div>
   <div x-data="{ open: {{ $isEcommerceGroup ? 'true' : 'false' }} }" class="space-y-1">
@@ -193,6 +200,11 @@
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-brands.*')) }}"
         href="{{ route('inventory.ecommerce-brands.index') }}">
         Brand
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.sliders.*')) }}"
+        href="{{ route('inventory.sliders.index') }}">
+        Slider Image
       </a>
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-categories.*')) }}"

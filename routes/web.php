@@ -17,6 +17,7 @@ use App\Http\Controllers\Inventory\SupplierController;
 use App\Http\Controllers\Inventory\AdminAccountController;
 use App\Http\Controllers\Inventory\EcommerceProductController;
 use App\Http\Controllers\Inventory\EcommerceBrandController;
+use App\Http\Controllers\Inventory\EcommerceCategoryController;
 use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
@@ -137,6 +138,10 @@ Route::middleware(['auth', 'admin'])
         // E-commerce Brands routes
         Route::get('ecommerce-brands', [EcommerceBrandController::class, 'index'])->name('ecommerce-brands.index');
         Route::get('ecommerce-brands/{brand}', [EcommerceBrandController::class, 'show'])->name('ecommerce-brands.show');
+
+        // E-commerce Categories routes
+        Route::get('ecommerce-categories', [EcommerceCategoryController::class, 'index'])->name('ecommerce-categories.index');
+        Route::get('ecommerce-categories/{category}', [EcommerceCategoryController::class, 'show'])->name('ecommerce-categories.show');
     }
     
 );

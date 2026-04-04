@@ -150,14 +150,12 @@
                 <thead class="bg-slate-100 border-b border-slate-200">
                     <tr>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">#</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Thumbnail</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Product</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">SKU</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">MRP</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Discount</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Display Price</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Profit</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -172,39 +170,24 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $firstImage = $eProduct->images->sortBy('sort_order')->first();
-                                @endphp
-                                @if($firstImage)
-                                    <div class="relative">
-                                        <img src="{{ Storage::url($firstImage->image_path) }}" 
-                                             alt="{{ $eProduct->product->name }}"
-                                             class="w-14 h-14 rounded-xl object-cover border border-slate-200 shadow-sm">
-                                        @if($eProduct->images->count() > 1)
-                                            <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
-                                                +{{ $eProduct->images->count() - 1 }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                @elseif($eProduct->thumbnail)
-                                    <img src="{{ Storage::url($eProduct->thumbnail) }}" 
-                                         alt="{{ $eProduct->product->name }}"
-                                         class="w-14 h-14 rounded-xl object-cover border border-slate-200 shadow-sm">
-                                @else
-                                    <div class="w-14 h-14 rounded-xl bg-gradient-to-r from-slate-100 to-slate-200 flex items-center justify-center border border-slate-200">
-                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
-                                @endif
-                            </td>
-
                             <td class="px-6 py-4">
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-900">{{ $eProduct->product->name }}</div>
-                                    <div class="text-xs text-slate-500">
-                                        {{ $eProduct->product->category->name ?? 'N/A' }} • {{ $eProduct->product->brandRelation->name ?? 'N/A' }}
+                                <div class="flex items-center gap-3">
+                                    @if($eProduct->thumbnail)
+                                        <img src="{{ Storage::url($eProduct->thumbnail) }}" 
+                                             alt="{{ $eProduct->product->name }}"
+                                             class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm">
+                                    @else
+                                        <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-slate-100 to-slate-200 flex items-center justify-center border border-slate-200">
+                                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ $eProduct->product->name }}</div>
+                                        <div class="text-xs text-slate-500">
+                                            {{ $eProduct->product->category->name ?? 'N/A' }} • {{ $eProduct->product->brandRelation->name ?? 'N/A' }}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -238,15 +221,6 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-semibold {{ $eProduct->profit >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
                                     {{ $eProduct->profit >= 0 ? '+' : '' }}Rs {{ number_format((float) $eProduct->profit, 2) }}
-                                </div>
-                            </td>
-
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold {{ ($eProduct->ecommerce_stock ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600' }}">
-                                    {{ number_format((float) ($eProduct->ecommerce_stock ?? 0), 0) }}
-                                </div>
-                                <div class="text-xs text-slate-400">
-                                    Inv: {{ number_format((float) ($eProduct->product->stock->quantity ?? 0), 0) }}
                                 </div>
                             </td>
 

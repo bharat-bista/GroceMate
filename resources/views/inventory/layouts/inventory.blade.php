@@ -39,7 +39,11 @@
             'pos.supplier-payments.*',
             'pos.income.*'
         );
-        $isEcommerceGroup = request()->routeIs('inventory.ecommerce-products.*', 'inventory.ecommerce-brands.*');
+        $isEcommerceGroup = request()->routeIs(
+          'inventory.ecommerce-products.*',
+          'inventory.ecommerce-brands.*',
+          'inventory.ecommerce-categories.*'
+        );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
         $isSettingsGroup = request()->routeIs(['taxes.*', 'admin.accounts.*']);
@@ -120,11 +124,11 @@
 
     </div>
   </div>
-  <div x-data="{ open: {{ $isPosGroup ? 'true' : 'false' }} }" class="space-y-1">
+  <div x-data="{ open: {{ $isEcommerceGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
     <button @click="open = !open"
-            class="{{ $navButtonClass($isPosGroup) }}">
+            class="{{ $navButtonClass($isEcommerceGroup) }}">
       <span>POS</span>
       <svg :class="{'rotate-180': open}" 
            class="w-4 h-4 transition-transform duration-200"
@@ -182,17 +186,18 @@
     <div x-show="open" x-transition class="ml-4 space-y-1">
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-products.*')) }}"
-         href="{{ route('inventory.ecommerce-products.index') }}">
-         Products
+        href="{{ route('inventory.ecommerce-products.index') }}">
+        Product
       </a>
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-brands.*')) }}"
-         href="{{ route('inventory.ecommerce-brands.index') }}">
-         Brands
+        href="{{ route('inventory.ecommerce-brands.index') }}">
+        Brand
       </a>
-      <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-brands.*')) }}"
-         href="{{ route('inventory.ecommerce-brands.index') }}">
-         Photo Slider
+
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-categories.*')) }}"
+        href="{{ route('inventory.ecommerce-categories.index') }}">
+        Category
       </a>
 
     </div>

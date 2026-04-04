@@ -1,49 +1,49 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', $brand->name . ' - E-commerce Brand')
-@section('heading', $brand->name)
-@section('subtitle', 'E-commerce products from this brand')
+@section('title', $category->name . ' - E-commerce Category')
+@section('heading', $category->name)
+@section('subtitle', 'E-commerce products in this category')
 
 @section('content')
 <div class="space-y-6">
 
     {{-- Back Button --}}
-    <a href="{{ route('inventory.ecommerce-brands.index') }}" 
-       class="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm">
+    <a href="{{ route('inventory.ecommerce-categories.index') }}" 
+       class="inline-flex items-center text-emerald-600 hover:text-emerald-800 font-medium text-sm">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
-        Back to Brands
+        Back to Categories
     </a>
 
-    {{-- Brand Card --}}
+    {{-- Category Card --}}
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
-        <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-blue-50">
+        <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-blue-50">
             <div class="flex flex-col md:flex-row items-center gap-6">
                 
-                {{-- Brand Logo --}}
-                <div class="w-32 h-32 rounded-2xl bg-white border-2 border-purple-200 flex items-center justify-center overflow-hidden shadow-lg">
-                    @if($brand->image)
-                        <img src="{{ Storage::url($brand->image) }}" 
-                             alt="{{ $brand->name }}"
+                {{-- Category Image --}}
+                <div class="w-32 h-32 rounded-2xl bg-white border-2 border-emerald-200 flex items-center justify-center overflow-hidden shadow-lg">
+                    @if($category->image)
+                        <img src="{{ asset('storage/' . $category->image) }}" 
+                             alt="{{ $category->name }}"
                              class="w-full h-full object-contain p-3">
                     @else
-                        <span class="text-5xl font-bold text-purple-400">
-                            {{ strtoupper(substr($brand->name, 0, 2)) }}
+                        <span class="text-5xl font-bold text-emerald-400">
+                            {{ strtoupper(substr($category->name, 0, 2)) }}
                         </span>
                     @endif
                 </div>
 
-                {{-- Brand Info --}}
+                {{-- Category Info --}}
                 <div class="flex-1 text-center md:text-left">
-                    <h1 class="text-3xl font-bold text-slate-900">{{ $brand->name }}</h1>
+                    <h1 class="text-3xl font-bold text-slate-900">{{ $category->name }}</h1>
                     <p class="text-slate-600 mt-2">{{ $products->total() }} {{ Str::plural('product', $products->total()) }} in e-commerce</p>
                 </div>
 
                 {{-- Stats --}}
                 <div class="flex gap-4">
-                    <div class="bg-white rounded-xl px-6 py-4 text-center border border-purple-200 shadow">
-                        <p class="text-3xl font-bold text-purple-600">{{ $products->total() }}</p>
+                    <div class="bg-white rounded-xl px-6 py-4 text-center border border-emerald-200 shadow">
+                        <p class="text-3xl font-bold text-emerald-600">{{ $products->total() }}</p>
                         <p class="text-xs text-slate-500 mt-1">Products</p>
                     </div>
                     <div class="bg-white rounded-xl px-6 py-4 text-center border border-blue-200 shadow">
@@ -170,7 +170,7 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-slate-900 mb-1">No products found</h3>
-                <p class="text-sm text-slate-500">This brand has no e-commerce products yet.</p>
+                <p class="text-sm text-slate-500">This category has no e-commerce products yet.</p>
             </div>
         @endif
 

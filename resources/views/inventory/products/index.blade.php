@@ -77,6 +77,8 @@
                         @php
                             $quantity = (float) ($product->stock->quantity ?? 0);
                             $reorderLevel = (float) ($product->stock->reorder_level ?? 0);
+                            $ecommerceStock = (float) ($product->ecommerceProduct->ecommerce_stock ?? 0);
+                            $availableStock = max($quantity - $ecommerceStock, 0);
                             $isCritical = $quantity <= 0;
                             $isLow = !$isCritical && $reorderLevel > 0 && $quantity <= $reorderLevel;
                         @endphp
@@ -99,7 +101,9 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-slate-900">{{ number_format($quantity, 3) }}</span>
+                                    <span class="text-sm font-semibold text-slate-900">Total: {{ number_format($quantity, 3) }}</span>
+                                    <span class="text-xs text-slate-500">Ecommerce used: {{ number_format($ecommerceStock, 3) }}</span>
+                                    <span class="text-xs text-emerald-700">Available: {{ number_format($availableStock, 3) }}</span>
                                     <span class="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-medium
                                         {{ $isCritical ? 'bg-red-100 text-red-700' : ($isLow ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
                                         {{ $isCritical ? 'Critical' : ($isLow ? 'Low' : 'Healthy') }}

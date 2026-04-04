@@ -15,6 +15,8 @@ class Slider extends Model
         'primary_button_link',
         'secondary_button_text',
         'secondary_button_link',
+        'slider_type',
+        'promo_slot',
         'sort_order',
         'is_active',
     ];
@@ -22,5 +24,6 @@ class Slider extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'promo_slot' => 'integer',
     ];
 }

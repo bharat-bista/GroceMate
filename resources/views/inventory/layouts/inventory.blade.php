@@ -37,7 +37,8 @@
             'pos.invoices.*',
             'pos.customers.*',
             'pos.supplier-payments.*',
-            'pos.income.*'
+          'pos.income.*',
+          'pos.expenses.*'
         );
         $isEcommerceGroup = request()->routeIs(
           'inventory.ecommerce-products.*',
@@ -165,6 +166,11 @@
       <a class="{{ $navLinkClass(request()->routeIs('pos.income.*')) }}"
          href="{{ route('pos.income.index') }}">
          Income
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('pos.expenses.*')) }}"
+        href="{{ route('pos.expenses.index') }}">
+        Expenses
       </a>
 
     </div>

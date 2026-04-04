@@ -756,76 +756,102 @@
 
 </style>
 
+@php
+    $product = $selectedProduct->product;
+    $displayPrice = (float) ($selectedProduct->display_price ?? 0);
+    $mrp = (float) ($selectedProduct->mrp ?? 0);
+    $previousPrice = !is_null($selectedProduct->previous_price) && (float) $selectedProduct->previous_price > 0
+        ? (float) $selectedProduct->previous_price
+        : $mrp;
+    $discountPercent = (float) ($selectedProduct->discount_percent ?? 0);
+    $brandName = $product?->brandRelation?->name ?? 'N/A';
+    $mainImagePath = $galleryPaths->first();
+    $mainImageUrl = $mainImagePath ? asset('storage/' . $mainImagePath) : asset('assets/img/product/product1.jpg');
+@endphp
+
 <section class="product-detail-section py-5">
     <div class="container">
         <div class="row">
 
-            <!-- Left Image Gallery -->
             <div class="col-lg-4 mb-4">
-
                 <div class="text-center mb-3">
                     <div class="image-zoom-container">
                         <img id="mainProductImage"
-                             src="{{ asset('assets/img/product/product1.jpg') }}"
+                             src="{{ $mainImageUrl }}"
                              class="img-fluid rounded shadow-sm main-product-image"
-                             alt="Product">
+                             alt="{{ $product?->name ?? 'Product' }}">
 
                         <div class="thumbnail-container mt-3">
-                            <img src="{{ asset('assets/img/product/product1.jpg') }}"
-
-                                 class="product-thumb active-thumb">
-                            <img src="{{ asset('assets/img/product/product2.jpg') }}"
-                                 class="product-thumb">
-                            <img src="{{ asset('assets/img/product/product3.jpg') }}"
-                                 class="product-thumb">
+                            @forelse($galleryPaths as $galleryIndex => $galleryPath)
+                                <img src="{{ asset('storage/' . $galleryPath) }}"
+                                     class="product-thumb {{ $galleryIndex === 0 ? 'active-thumb' : '' }}"
+                                     alt="{{ $product?->name ?? 'Product image' }}">
+                            @empty
+                                <img src="{{ $mainImageUrl }}"
+                                     class="product-thumb active-thumb"
+                                     alt="{{ $product?->name ?? 'Product image' }}">
+                            @endforelse
                         </div>
                     </div>
                 </div>
 
-                <!-- Quantity -->
                 <div class="my-3 qty-control">
                     <label class="form-label qty-label">Quantity</label>
                     <div class="qty-box">
-                        <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+                        <button class="qty-btn" onclick="adjustQty(-1)">-</button>
                         <input type="text" id="qtyInput" value="1" readonly>
                         <button class="qty-btn" onclick="adjustQty(1)">+</button>
                     </div>
                 </div>
 
-                <!-- Buttons -->
                 <div class="btn-group-wrapper">
-                    <button class="add-to-cart-btn frontend-add-cart">Add To Cart</button>
-                    <button class="buy-now-btn frontend-buy-now">Buy Now</button>
+                    <button class="add-to-cart-btn frontend-add-cart"
+                            data-id="{{ $selectedProduct->id }}"
+                            data-name="{{ $product?->name }}"
+                            data-price="{{ $displayPrice }}"
+                            data-image="{{ $mainImageUrl }}">
+                        Add To Cart
+                    </button>
+                    <button class="buy-now-btn frontend-buy-now"
+                            data-id="{{ $selectedProduct->id }}"
+                            data-name="{{ $product?->name }}"
+                            data-price="{{ $displayPrice }}"
+                            data-image="{{ $mainImageUrl }}">
+                        Buy Now
+                    </button>
                 </div>
-
             </div>
 
-            <!-- Right Product Info -->
             <div class="col-lg-8">
-                <h2 class="fw-bold text-dark">Sunflower Oil</h2>
+                <h2 class="fw-bold text-dark">{{ $product?->name ?? 'Product' }}</h2>
 
                 <div class="mb-2">
-                    <span class="text-danger h2 fw-bold">Rs. 499</span>
-                    <del class="text-muted">Rs. 650</del>
-                    <span class="badge text-white ms-2" style="background:#0A0F2C;">-25% OFF</span>
+                    <span class="text-danger h2 fw-bold">Rs. {{ number_format($displayPrice, 2) }}</span>
+                    @if($previousPrice > 0)
+                        <del class="text-muted">Rs. {{ number_format($previousPrice, 2) }}</del>
+                    @endif
+                    @if($discountPercent > 0)
+                        <span class="badge text-white ms-2" style="background:#0A0F2C;">-{{ rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') }}% OFF</span>
+                    @endif
                 </div>
 
-                <h4 class="fw-bold mt-3">Brand: Sunflow</h4>
+                <h4 class="fw-bold mt-3">Brand: {{ $brandName }}</h4>
 
-                <!-- Description -->
                 <div class="product-description-wrapper">
-                    <p id="productDescription" class="clamp-text">
-                        1 litre sunflower oil 1 litre sunflower oil 1 litre sunflower oil1 litre sunflower oil
-                    </p>
+                    @if(!empty(trim((string) $selectedProduct->description)))
+                        <div id="productDescription" class="clamp-text">{!! $selectedProduct->description !!}</div>
+                    @else
+                        <p id="productDescription" class="clamp-text text-muted mb-0">
+                            No product description available right now.
+                        </p>
+                    @endif
                 </div>
-
             </div>
 
         </div>
     </div>
 </section>
 
-<!-- Similar Products -->
 {{-- ==========================================
     TOP SALE SECTION
     ========================================== --}}
@@ -843,142 +869,48 @@
         </div>
         <a href="#" class="gm-view-all">View All <i class="fas fa-arrow-right"></i></a>
     </div>
-    
+
     <div class="gm-products-scroll">
-        <!-- Top Sale Card 1 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Sunflower Oil">
+        @forelse($topSaleProducts as $topSaleProduct)
+            @php
+                $topSaleItem = $topSaleProduct->product;
+                $topSaleDiscount = (float) ($topSaleProduct->discount_percent ?? 0);
+                $topSaleOldPrice = !is_null($topSaleProduct->previous_price) && (float) $topSaleProduct->previous_price > 0
+                    ? (float) $topSaleProduct->previous_price
+                    : (float) ($topSaleProduct->mrp ?? 0);
+            @endphp
+
+            @if($topSaleItem)
+                <div class="gm-product-card gm-ecom-card">
+                    <span class="gm-product-badge">{{ rtrim(rtrim(number_format($topSaleDiscount, 2, '.', ''), '0'), '.') }}% OFF</span>
+                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+                    <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
+                        <div class="gm-product-img-wrap">
+                            @if($topSaleProduct->thumbnail)
+                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $topSaleItem->name }}">
+                            @else
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $topSaleItem->name }}">
+                            @endif
+                        </div>
+                        <div class="gm-product-info">
+                            <h3 class="gm-product-name">{{ $topSaleItem->name }}</h3>
+                            <div class="gm-product-price">
+                                <span class="gm-price-new">Rs.{{ number_format((float) $topSaleProduct->display_price, 2) }}</span>
+                            </div>
+                            <div class="gm-ecom-discount">
+                                <span class="gm-price-old">Rs.{{ number_format($topSaleOldPrice, 2) }}</span>
+                            </div>
+                        </div>
+                    </a>
                 </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Sunflower Oil Premium Cooking Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(128)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 2 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Sugar">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Refined Crystal Sugar for Daily Kitchen Use</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.80</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.100</span> -20%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(95)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 3 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">15% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Masoor Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Masoor Dal Healthy Family Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(156)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 4 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">25% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Olive Oil">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Olive Oil Healthy Everyday Choice</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.350</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.450</span> -22%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(78)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 5 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">10% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Basmati Rice">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Basmati Rice Premium Long Grain Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.680</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.750</span> -9%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(203)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 6 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">30% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Chana Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Chana Dal Nutritious Everyday Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.95</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.135</span> -30%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(89)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
+            @endif
+        @empty
+            <div class="gm-product-card gm-ecom-card" style="min-width: 100%; text-align: center; padding: 24px;">
+                <p style="margin: 0; color: var(--gm-gray);">No related products available right now.</p>
+            </div>
+        @endforelse
     </div>
 </section>
-
 
 <script>
 /* ----------------------------- */
@@ -1062,7 +994,7 @@ document.addEventListener("click", e => {
 
         localStorage.setItem("buynow", JSON.stringify(product));
 
-        window.location.href = "/checkout.html";  // front-end only
+        window.location.href = "{{ route('checkout') }}";
     }
 });
 
@@ -1088,3 +1020,4 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 @endsection
+

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,7 @@ class SupplierController extends Controller
         $q = $request->string('q')->toString();
 
         $suppliers = Supplier::query()
+            ->with('businessAccount')
             ->when($q, function ($qq) use ($q) {
                 $qq->where('name','like',"%{$q}%")
                    ->orWhere('phone','like',"%{$q}%")
@@ -27,7 +29,9 @@ class SupplierController extends Controller
 
     public function create()
     {
-        return view('inventory.suppliers.create');
+        $businesses = Business::orderBy('business_name')->get();
+
+        return view('inventory.suppliers.create', compact('businesses'));
     }
 
     /**
@@ -35,7 +39,7 @@ class SupplierController extends Controller
      */
     public function show(Supplier $supplier)
     {
-        $supplier->load(['purchases', 'supplierPayments']);
+        $supplier->load(['purchases', 'supplierPayments', 'businessAccount']);
         $supplier->syncTotalDue();
 
         // Get supplier's purchase records with pagination
@@ -76,6 +80,7 @@ class SupplierController extends Controller
             'vat_number' => ['nullable','string','max:50'],
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
+            'business_account' => ['required','exists:businesses,id'],
             'opening_due' => ['nullable','numeric','min:0'],
             'address' => ['nullable','string','max:2000'],
         ]);
@@ -93,7 +98,9 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier)
     {
-        return view('inventory.suppliers.edit', compact('supplier'));
+        $businesses = Business::orderBy('business_name')->get();
+
+        return view('inventory.suppliers.edit', compact('supplier', 'businesses'));
     }
 
     public function update(Request $request, Supplier $supplier)
@@ -105,6 +112,7 @@ class SupplierController extends Controller
             'vat_number' => ['nullable','string','max:50'],
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
+            'business_account' => ['required','exists:businesses,id'],
             'opening_due' => ['nullable','numeric','min:0'],
             'address' => ['nullable','string','max:2000'],
         ]);

@@ -15,9 +15,22 @@ class HomeController extends Controller
 
         $heroSlides = Slider::query()
             ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('slider_type', 'hero')
+                    ->orWhereNull('slider_type');
+            })
             ->orderBy('sort_order')
             ->latest('id')
             ->limit(8)
+            ->get();
+
+        $promoSlides = Slider::query()
+            ->where('is_active', true)
+            ->where('slider_type', 'promo')
+            ->orderBy('promo_slot')
+            ->orderBy('sort_order')
+            ->latest('id')
+            ->limit(4)
             ->get();
 
         $topSaleProducts = EcommerceProduct::query()
@@ -28,8 +41,11 @@ class HomeController extends Controller
             ->whereHas('product.brandRelation')
             ->orderByDesc('discount_percent')
             ->latest()
-            ->limit($topSaleLimit)
-            ->get();
+            ->limit($topSaleLimit * 3)
+            ->get()
+            ->unique('product_id')
+            ->values()
+            ->take($topSaleLimit);
 
         $featuredLimit = 16; // 4 rows x 4 cards target
         $maxPerCategory = 2;
@@ -92,6 +108,6 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('frontend.home.index', compact('brands', 'categories', 'featuredProducts', 'topSaleProducts', 'heroSlides'));
+        return view('frontend.home.index', compact('brands', 'categories', 'featuredProducts', 'topSaleProducts', 'heroSlides', 'promoSlides'));
     }
 }

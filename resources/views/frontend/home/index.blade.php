@@ -1506,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gm-product-card gm-ecom-card">
                     <span class="gm-product-badge">{{ rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') }}% OFF</span>
                     <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-                    <a href="{{ route('description') }}" class="gm-product-card-link">
+                    <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($topSaleProduct->thumbnail)
                                 <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $product->name }}">
@@ -1541,38 +1541,34 @@ document.addEventListener('DOMContentLoaded', function() {
 {{-- ==========================================
     PROMO BANNERS
     ========================================== --}}
+@php $topPromoSlides = $promoSlides->take(2); @endphp
+@if($topPromoSlides->isNotEmpty())
 <section class="gm-promo-section gm-fade-in">
     <div class="gm-promo-grid">
-        <div class="gm-promo-card gm-promo-card--primary">
-            <div class="gm-promo-ribbon"><i class="fas fa-leaf"></i> Fresh Picks</div>
-            <img src="{{ asset('assets/img/slide/slide1.jpg') }}" alt="Fresh Produce">
-            <div class="gm-promo-overlay">
-                <span class="gm-promo-tag">Fresh Arrivals</span>
-                <h3 class="gm-promo-title">Farm Fresh Vegetables</h3>
-                <p class="gm-promo-text">Farm-picked daily produce with a clean, premium store feel and fast delivery appeal.</p>
-                <div class="gm-promo-meta">
-                    <span class="gm-promo-pill"><i class="fas fa-truck-fast"></i> Same day delivery</span>
-                    <span class="gm-promo-pill"><i class="fas fa-seedling"></i> New harvest</span>
+        @foreach($topPromoSlides as $promoIndex => $promoSlide)
+            @php
+                $promoImageUrl = $promoSlide->image ? asset('storage/' . $promoSlide->image) : asset('assets/img/slide/slide1.jpg');
+            @endphp
+            <div class="gm-promo-card {{ $promoIndex === 0 ? 'gm-promo-card--primary' : 'gm-promo-card--secondary' }}">
+                <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
+                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}">
+                <div class="gm-promo-overlay">
+                    @if($promoSlide->secondary_button_text)
+                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
+                    @endif
+                    <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
+                    @if($promoSlide->subtitle)
+                        <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>
+                    @endif
+                    @if($promoSlide->primary_button_text)
+                        <a href="{{ $promoSlide->primary_button_link ?: '#' }}" class="gm-promo-btn">{{ $promoSlide->primary_button_text }} <i class="fas fa-arrow-right"></i></a>
+                    @endif
                 </div>
-                <a href="#" class="gm-promo-btn">Shop Now <i class="fas fa-arrow-right"></i></a>
             </div>
-        </div>
-        <div class="gm-promo-card gm-promo-card--secondary">
-            <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> Hot Deal</div>
-            <img src="{{ asset('assets/img/slide/slide2.jpg') }}" alt="Special Offers">
-            <div class="gm-promo-overlay">
-                <span class="gm-promo-tag">Limited Time</span>
-                <h3 class="gm-promo-title">Up to 40% Off on Dairy</h3>
-                <p class="gm-promo-text">Bold promotional banner designed to stand out with modern glass styling and clear CTA.</p>
-                <div class="gm-promo-meta">
-                    <span class="gm-promo-pill"><i class="fas fa-tag"></i> Save more</span>
-                    <span class="gm-promo-pill"><i class="fas fa-clock"></i> Ends soon</span>
-                </div>
-                <a href="#" class="gm-promo-btn">Grab Deal <i class="fas fa-arrow-right"></i></a>
-            </div>
-        </div>
+        @endforeach
     </div>
 </section>
+@endif
 
 {{-- ==========================================
     FEATURED PRODUCTS
@@ -1605,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                     <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
 
-                    <a href="{{ route('description') }}" class="gm-product-card-link">
+                    <a href="{{ route('description', $featuredProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($featuredProduct->thumbnail)
                                 <img src="{{ asset('storage/' . $featuredProduct->thumbnail) }}" alt="{{ $product->name }}">
@@ -1673,38 +1669,34 @@ document.addEventListener('DOMContentLoaded', function() {
 {{-- ==========================================
     PROMO BANNERS
     ========================================== --}}
+@php $bottomPromoSlides = $promoSlides->slice(2, 2); @endphp
+@if($bottomPromoSlides->isNotEmpty())
 <section class="gm-promo-section gm-fade-in">
     <div class="gm-promo-grid">
-        <div class="gm-promo-card gm-promo-card--primary">
-            <div class="gm-promo-ribbon"><i class="fas fa-leaf"></i> Fresh Picks</div>
-            <img src="{{ asset('assets/img/slide/slide1.jpg') }}" alt="Fresh Produce">
-            <div class="gm-promo-overlay">
-                <span class="gm-promo-tag">Fresh Arrivals</span>
-                <h3 class="gm-promo-title">Farm Fresh Vegetables</h3>
-                <p class="gm-promo-text">Farm-picked daily produce with a clean, premium store feel and fast delivery appeal.</p>
-                <div class="gm-promo-meta">
-                    <span class="gm-promo-pill"><i class="fas fa-truck-fast"></i> Same day delivery</span>
-                    <span class="gm-promo-pill"><i class="fas fa-seedling"></i> New harvest</span>
+        @foreach($bottomPromoSlides as $promoIndex => $promoSlide)
+            @php
+                $promoImageUrl = $promoSlide->image ? asset('storage/' . $promoSlide->image) : asset('assets/img/slide/slide2.jpg');
+            @endphp
+            <div class="gm-promo-card {{ $promoIndex === 0 ? 'gm-promo-card--primary' : 'gm-promo-card--secondary' }}">
+                <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
+                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}">
+                <div class="gm-promo-overlay">
+                    @if($promoSlide->secondary_button_text)
+                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
+                    @endif
+                    <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
+                    @if($promoSlide->subtitle)
+                        <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>
+                    @endif
+                    @if($promoSlide->primary_button_text)
+                        <a href="{{ $promoSlide->primary_button_link ?: '#' }}" class="gm-promo-btn">{{ $promoSlide->primary_button_text }} <i class="fas fa-arrow-right"></i></a>
+                    @endif
                 </div>
-                <a href="#" class="gm-promo-btn">Shop Now <i class="fas fa-arrow-right"></i></a>
             </div>
-        </div>
-        <div class="gm-promo-card gm-promo-card--secondary">
-            <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> Hot Deal</div>
-            <img src="{{ asset('assets/img/slide/slide2.jpg') }}" alt="Special Offers">
-            <div class="gm-promo-overlay">
-                <span class="gm-promo-tag">Limited Time</span>
-                <h3 class="gm-promo-title">Up to 40% Off on Dairy</h3>
-                <p class="gm-promo-text">Bold promotional banner designed to stand out with modern glass styling and clear CTA.</p>
-                <div class="gm-promo-meta">
-                    <span class="gm-promo-pill"><i class="fas fa-tag"></i> Save more</span>
-                    <span class="gm-promo-pill"><i class="fas fa-clock"></i> Ends soon</span>
-                </div>
-                <a href="#" class="gm-promo-btn">Grab Deal <i class="fas fa-arrow-right"></i></a>
-            </div>
-        </div>
+        @endforeach
     </div>
 </section>
+@endif
 {{-- ==========================================
     TOP BRANDS
     ========================================== --}}
@@ -1812,6 +1804,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let isPaused = false;
         let isUserDragging = false;
         const speed = window.innerWidth <= 768 ? 0.35 : 0.55;
+
+        // Skip cloning/auto-scroll when there is only one real card.
+        if (baseItems.length < 2) {
+            return;
+        }
 
         // Duplicate cards once for infinite-like scrolling.
         baseItems.forEach(item => {

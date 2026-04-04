@@ -8,14 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model {
   protected $fillable = [
+    'business_id',
     'category_id',
     'brand_id',
     'name',
-    'sku',
     'unit',
     'selling_price',
-    'description',
-    'image_url',
     'is_active',
     'is_listed'
   ];
@@ -36,10 +34,20 @@ class Product extends Model {
       return $this->belongsTo(Category::class); 
   }
 
+    public function business()
+    {
+      return $this->belongsTo(Business::class);
+    }
+
   public function brandRelation() 
   { 
       return $this->belongsTo(Brand::class, 'brand_id'); 
   }
+
+    public function brand()
+    {
+      return $this->brandRelation();
+    }
 
   // Add an accessor for brand name
   public function getBrandNameAttribute()
@@ -49,5 +57,10 @@ class Product extends Model {
 
   public function stock() { 
       return $this->hasOne(Stock::class); 
+  }
+
+  public function ecommerceProduct()
+  {
+      return $this->hasOne(EcommerceProduct::class);
   }
 }

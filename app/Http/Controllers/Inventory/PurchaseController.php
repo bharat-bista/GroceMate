@@ -11,9 +11,11 @@ use App\Models\Stock;
 use App\Models\Tax;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Business;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PurchaseController extends Controller
 {
@@ -22,6 +24,7 @@ class PurchaseController extends Controller
         $q = trim($request->input('search', $request->input('q', '')));
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
+        $businessId = $request->input('business_id');
 
         $purchases = Purchase::query()
             ->with(['supplier','creator','business'])
@@ -30,6 +33,7 @@ class PurchaseController extends Controller
                    ->orWhereHas('supplier', fn($s) => $s->where('name','like',"%{$q}%"))
                    ->orWhereHas('business', fn($b) => $b->where('business_name','like',"%{$q}%"));
             })
+            ->when($businessId, fn($qq) => $qq->where('business_id', $businessId))
             ->when($dateFrom, fn($qq) => $qq->whereDate('purchase_date', '>=', $dateFrom))
             ->when($dateTo, fn($qq) => $qq->whereDate('purchase_date', '<=', $dateTo))
             ->orderByDesc('purchase_date')
@@ -37,13 +41,16 @@ class PurchaseController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('inventory.purchases.index', compact('purchases', 'q', 'dateFrom', 'dateTo'));
+        return view('inventory.purchases.index', compact('purchases', 'q', 'dateFrom', 'dateTo', 'businessId'))
+            ->with('businesses', Business::orderBy('business_name')->get());
     }
 
     public function create()
 {
     // Get products
-    $products = Product::with('stock')->orderBy('name')->get();
+        $products = Product::with(['stock', 'business'])
+            ->orderBy('name')
+            ->get();
     
     // Get last purchase prices for each product
     $productIds = $products->pluck('id')->toArray();
@@ -69,6 +76,8 @@ class PurchaseController extends Controller
             'name' => $product->name,
             'unit' => $product->unit,
             'sku' => $product->sku,
+            'business_id' => $product->business_id,
+            'business_name' => $product->business->business_name ?? null,
             'last_cost' => $lastPurchaseItem ? $lastPurchaseItem->unit_cost : 0
         ];
     });
@@ -119,6 +128,7 @@ class PurchaseController extends Controller
                 $qty = (float) $row['qty'];
                 $unitCost = (float) $row['unit_cost'];
                 $baseCost = $qty * $unitCost;
+                $normalizedProductName = $this->normalizeProductName($row['product_name']);
 
                 // Get category and brand names for snapshot
                 $categoryName = null;
@@ -128,29 +138,31 @@ class PurchaseController extends Controller
                 if (!empty($row['product_id'])) {
                     // Existing product - get category and brand from product
                     $productId = $row['product_id'];
-                    $existingProduct = Product::with(['category', 'brand'])->find($productId);
+                    $existingProduct = Product::with(['category', 'brandRelation'])->find($productId);
                     if ($existingProduct) {
+                        $brandId = $this->resolveBrandId($row);
+
+                        if ($brandId && (int) $existingProduct->brand_id !== (int) $brandId) {
+                            $this->assertNoBusinessProductConflict(
+                                $normalizedProductName,
+                                $brandId,
+                                (int) $data['business_id'],
+                                $existingProduct->id
+                            );
+                        }
+
                         $categoryName = $existingProduct->category->name ?? null;
-                        $companyName = $existingProduct->brand->name ?? null;
+                        $companyName = $existingProduct->brandRelation->name ?? null;
                         
                         // Check if user wants to update brand for existing product
                         $updateBrand = false;
-                        if (!empty($row['brand_id'])) {
-                            $brand = Brand::find($row['brand_id']);
+                        if ($brandId) {
+                            $brand = Brand::find($brandId);
                             if ($brand) {
                                 $existingProduct->brand_id = $brand->id;
                                 $companyName = $brand->name;
                                 $updateBrand = true;
                             }
-                        } elseif (!empty($row['brand_name']) && empty($existingProduct->brand_id)) {
-                            // Create new brand from name if product has no brand
-                            $brand = Brand::firstOrCreate(
-                                ['name' => trim($row['brand_name'])],
-                                ['name' => trim($row['brand_name'])]
-                            );
-                            $existingProduct->brand_id = $brand->id;
-                            $companyName = $brand->name;
-                            $updateBrand = true;
                         }
                         
                         // Check if user wants to update category for existing product
@@ -179,6 +191,14 @@ class PurchaseController extends Controller
                         }
                     }
                 } else {
+                    $businessId = $data['business_id'];
+                    $brandId = $this->resolveBrandId($row);
+                    $this->assertNoBusinessProductConflict(
+                        $normalizedProductName,
+                        $brandId,
+                        (int) $businessId
+                    );
+
                     // Handle category - use existing ID or create from name
                     $categoryId = null;
                     if (!empty($row['category_id'])) {
@@ -196,24 +216,15 @@ class PurchaseController extends Controller
                     }
                     
                     // Handle brand - use existing ID or create from name
-                    $brandId = null;
-                    if (!empty($row['brand_id'])) {
-                        $brand = Brand::find($row['brand_id']);
-                        $brandId = $brand->id ?? null;
+                    if ($brandId) {
+                        $brand = Brand::find($brandId);
                         $companyName = $brand->name ?? null;
-                    } elseif (!empty($row['brand_name'])) {
-                        // Create new brand from name or find existing
-                        $brand = Brand::firstOrCreate(
-                            ['name' => trim($row['brand_name'])],
-                            ['name' => trim($row['brand_name'])]
-                        );
-                        $brandId = $brand->id;
-                        $companyName = $brand->name;
                     }
 
                     // Create new product with category and brand
                     $product = Product::create([
-                        'name' => $row['product_name'],
+                        'business_id' => $businessId,
+                        'name' => $normalizedProductName,
                         'unit' => $row['product_unit'],
                         'category_id' => $categoryId ?? 1, // Use selected or default category
                         'brand_id' => $brandId, // Use selected brand
@@ -300,7 +311,7 @@ class PurchaseController extends Controller
         $soon = $today->copy()->addDays($days);
 
         $expiringSoon = PurchaseItem::query()
-            ->with('product')
+            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
             ->whereNotNull('expiry_date')
             ->whereBetween('expiry_date', [$today, $soon])
             ->orderBy('expiry_date')
@@ -308,7 +319,7 @@ class PurchaseController extends Controller
             ->withQueryString();
 
         $expired = PurchaseItem::query()
-            ->with('product')
+            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '<', $today)
             ->orderByDesc('expiry_date')
@@ -320,6 +331,11 @@ class PurchaseController extends Controller
 public function searchProducts(Request $request)
 {
     $q = trim($request->get('q', ''));
+    $businessId = $request->get('business_id');
+    $businessName = null;
+    if ($businessId) {
+        $businessName = Business::find($businessId)?->business_name;
+    }
     if (strlen($q) < 2) return response()->json([]);
 
     // Debug: Log the search query
@@ -327,6 +343,11 @@ public function searchProducts(Request $request)
 
     // Simple direct search on purchase items
     $items = PurchaseItem::query()
+        ->when($businessId, function ($query) use ($businessId) {
+            $query->whereHas('purchase', function ($purchaseQuery) use ($businessId) {
+                $purchaseQuery->where('business_id', $businessId);
+            });
+        })
         ->whereNotNull('product_name')
         ->where('product_name', 'LIKE', '%' . $q . '%')
         ->orderByDesc('id')
@@ -351,6 +372,7 @@ public function searchProducts(Request $request)
                 'category_id'   => null, // PurchaseItem doesn't store category_id
                 'brand_name'    => $item->company_name, // company_name is the brand
                 'brand_id'      => null, // PurchaseItem doesn't store brand_id
+                'business_id'   => $item->purchase->business_id ?? null,
             ];
         })
         ->values()
@@ -366,6 +388,7 @@ public function export($type, Request $request)
     // Get date filters
     $from = $request->get('from');
     $to = $request->get('to');
+    $businessId = $request->get('business_id');
     
     // Debug: Log the received parameters
     \Log::info('Export parameters:', [
@@ -375,7 +398,10 @@ public function export($type, Request $request)
     ]);
     
     // Build query with date filtering
-    $query = Purchase::with(['supplier', 'creator']);
+    $query = Purchase::with(['supplier', 'creator', 'business']);
+    if ($businessId) {
+        $query->where('business_id', $businessId);
+    }
     
     if ($from && $to) {
         try {
@@ -414,11 +440,12 @@ public function export($type, Request $request)
         
         $callback = function () use ($purchases) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Date', 'Supplier', 'Invoice', 'Total', 'Created By']);
+            fputcsv($file, ['Date', 'Business', 'Supplier', 'Invoice', 'Total', 'Created By']);
             
             foreach ($purchases as $p) {
                 fputcsv($file, [
                     $p->purchase_date->format('Y-m-d'),
+                    $p->business->business_name ?? '',
                     $p->supplier->name ?? '',
                     $p->invoice_no ?? '',
                     number_format($p->total_cost, 2),
@@ -437,7 +464,9 @@ public function export($type, Request $request)
         $html = view('inventory.purchases.export-pdf', [
             'purchases' => $purchases,
             'from' => $from,
-            'to' => $to
+            'to' => $to,
+            'businessId' => $businessId,
+            'businessName' => $businessName,
         ])->render();
         
         // Use simple PDF generation with DOMPDF style
@@ -459,7 +488,9 @@ public function export($type, Request $request)
         $html = view('inventory.purchases.export-excel', [
             'purchases' => $purchases,
             'from' => $from,
-            'to' => $to
+            'to' => $to,
+            'businessId' => $businessId,
+            'businessName' => $businessName,
         ])->render();
         
         return response($html, 200, [
@@ -672,6 +703,78 @@ public function searchBrands(Request $request)
         });
 
     return response()->json($brands);
+}
+
+private function normalizeProductName(string $name): string
+{
+    return trim(preg_replace('/\s+/', ' ', $name));
+}
+
+private function resolveBrandId(array $row): ?int
+{
+    if (!empty($row['brand_id'])) {
+        return (int) $row['brand_id'];
+    }
+
+    if (!empty($row['brand_name'])) {
+        $brandName = trim($row['brand_name']);
+        if ($brandName === '') {
+            return null;
+        }
+
+        $brand = Brand::firstOrCreate(
+            ['name' => $brandName],
+            ['name' => $brandName]
+        );
+
+        return $brand->id;
+    }
+
+    return null;
+}
+
+private function assertNoBusinessProductConflict(
+    string $normalizedProductName,
+    ?int $brandId,
+    int $businessId,
+    ?int $ignoreProductId = null
+): void {
+    $query = Product::query()
+        ->with('business')
+        ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedProductName)])
+        ->when($ignoreProductId, fn($q) => $q->where('id', '!=', $ignoreProductId));
+
+    if (is_null($brandId)) {
+        $query->whereNull('brand_id');
+    } else {
+        $query->where('brand_id', $brandId);
+    }
+
+    $conflict = $query->where('business_id', '!=', $businessId)->first();
+
+    if ($conflict) {
+        $owner = $conflict->business->business_name ?? 'another business';
+        throw ValidationException::withMessages([
+            'brand_name' => "This product with the same company already belongs to {$owner}. Choose a different company for this business entry.",
+        ]);
+    }
+
+    $sameBusinessConflict = Product::query()
+        ->where('business_id', $businessId)
+        ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedProductName)])
+        ->when($ignoreProductId, fn($q) => $q->where('id', '!=', $ignoreProductId));
+
+    if (is_null($brandId)) {
+        $sameBusinessConflict->whereNull('brand_id');
+    } else {
+        $sameBusinessConflict->where('brand_id', $brandId);
+    }
+
+    if ($sameBusinessConflict->exists()) {
+        throw ValidationException::withMessages([
+            'brand_name' => 'This business already has the same product under the same company.',
+        ]);
+    }
 }
 
 }

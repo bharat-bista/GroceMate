@@ -88,12 +88,21 @@
 
         <div class="p-6 bg-slate-50 border-b border-slate-200">
             <form method="GET" action="{{ route('inventory.purchases.index') }}" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
                         <input type="text" name="search" value="{{ request('search', $q) }}"
                                placeholder="Invoice, supplier, or business..."
                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Business</label>
+                        <select name="business_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">All Businesses</option>
+                            @foreach($businesses as $business)
+                                <option value="{{ $business->id }}" @selected((string) request('business_id', $businessId) === (string) $business->id)>{{ $business->business_name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">From Date</label>
@@ -254,9 +263,15 @@ function updateExportModeUi() {
 
 function getPurchaseExportUrl(type) {
     const baseUrl = "{{ route('inventory.purchases.export', ['type' => 'TYPE']) }}".replace('TYPE', type);
+    const businessId = document.querySelector('select[name="business_id"]')?.value || '';
+    const url = new URL(baseUrl, window.location.origin);
+
+    if (businessId) {
+        url.searchParams.set('business_id', businessId);
+    }
 
     if (exportMode === 'all') {
-        return baseUrl;
+        return url.toString();
     }
 
     const from = exportFromDate?.value;
@@ -269,7 +284,6 @@ function getPurchaseExportUrl(type) {
 
     exportDateWarning?.classList.add('hidden');
 
-    const url = new URL(baseUrl, window.location.origin);
     url.searchParams.set('from', from);
     url.searchParams.set('to', to);
 

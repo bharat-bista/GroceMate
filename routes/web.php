@@ -15,6 +15,9 @@ use App\Http\Controllers\Inventory\BrandController;
 use App\Http\Controllers\Inventory\PurchaseController;
 use App\Http\Controllers\Inventory\SupplierController;
 use App\Http\Controllers\Inventory\AdminAccountController;
+use App\Http\Controllers\Inventory\EcommerceProductController;
+use App\Http\Controllers\Inventory\EcommerceBrandController;
+use App\Http\Controllers\Inventory\EcommerceCategoryController;
 use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
@@ -37,9 +40,7 @@ Route::get('/auth/login', [AccountController::class, 'login'])->name('login');
 Route::post('/login', [AccountController::class, 'store'])->name('login.post');
 
 // home after login
-Route::get('/home', function() {
-    return view('frontend.home.index');
-})->middleware('auth')->name('home');
+Route::get('/home', [HomeController::class, 'home'])->middleware('auth')->name('home');
 
 Route::get('/advanced', [AdvancedController::class, 'advanced'])->name('advanced');
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
@@ -129,6 +130,18 @@ Route::middleware(['auth', 'admin'])
         // Test route for debugging date filtering
         Route::get('/purchases/test-date-filter', [PurchaseController::class, 'testDateFilter']);
 
+        // E-commerce Products routes
+        Route::resource('ecommerce-products', EcommerceProductController::class);
+        Route::delete('ecommerce-products/{ecommerce_product}/images/{image}', [EcommerceProductController::class, 'deleteImage'])->name('ecommerce-products.delete-image');
+        Route::post('ecommerce-products/{ecommerce_product}/images/{image}/primary', [EcommerceProductController::class, 'setPrimaryImage'])->name('ecommerce-products.set-primary-image');
+
+        // E-commerce Brands routes
+        Route::get('ecommerce-brands', [EcommerceBrandController::class, 'index'])->name('ecommerce-brands.index');
+        Route::get('ecommerce-brands/{brand}', [EcommerceBrandController::class, 'show'])->name('ecommerce-brands.show');
+
+        // E-commerce Categories routes
+        Route::get('ecommerce-categories', [EcommerceCategoryController::class, 'index'])->name('ecommerce-categories.index');
+        Route::get('ecommerce-categories/{category}', [EcommerceCategoryController::class, 'show'])->name('ecommerce-categories.show');
     }
     
 );

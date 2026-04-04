@@ -12,4 +12,29 @@ class Brand extends Model
     {
         return $this->hasMany(\App\Models\Product::class);
     }
+
+    // Get products that are listed in e-commerce
+    public function ecommerceProducts()
+    {
+        return $this->hasManyThrough(
+            \App\Models\EcommerceProduct::class,
+            \App\Models\Product::class,
+            'brand_id',
+            'product_id',
+            'id',
+            'id'
+        );
+    }
+
+    // Check if brand has any e-commerce products
+    public function hasEcommerceProducts()
+    {
+        return $this->ecommerceProducts()->exists();
+    }
+
+    // Get count of e-commerce products
+    public function getEcommerceProductsCountAttribute()
+    {
+        return $this->ecommerceProducts()->count();
+    }
 }

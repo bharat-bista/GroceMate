@@ -11,9 +11,21 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
+      <label class="text-sm text-slate-600">Business Account</label>
+      <select name="business_id" class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" required>
+        <option value="">Select business account</option>
+        @foreach($businesses as $business)
+          <option value="{{ $business->id }}" @selected(old('business_id')==$business->id)>{{ $business->business_name }}</option>
+        @endforeach
+      </select>
+      @error('business_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
       <label class="text-sm text-slate-600">Product Name</label>
       <input name="name" value="{{ old('name') }}"
              class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
+      @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
@@ -28,6 +40,8 @@
              placeholder="Or type new brand name"
              class="mt-2 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
       <p class="text-xs text-slate-500 mt-1">Select existing brand or type new brand name</p>
+            @error('brand_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            @error('brand_name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
@@ -37,12 +51,6 @@
           <option value="{{ $c->id }}" @selected(old('category_id')==$c->id)>{{ $c->name }}</option>
         @endforeach
       </select>
-    </div>
-
-    <div>
-      <label class="text-sm text-slate-600">SKU (optional)</label>
-      <input name="sku" value="{{ old('sku') }}"
-             class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
     </div>
 
     <div>
@@ -58,18 +66,6 @@
       <label class="text-sm text-slate-600">Selling Price</label>
       <input name="selling_price" type="number" step="0.01" value="{{ old('selling_price',0) }}"
              class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    </div>
-
-    <div>
-      <label class="text-sm text-slate-600">Image URL (optional)</label>
-      <input name="image_url" value="{{ old('image_url') }}"
-             class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
-    </div>
-
-    <div class="md:col-span-2">
-      <label class="text-sm text-slate-600">Description (optional)</label>
-      <textarea name="description" rows="3"
-                class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200">{{ old('description') }}</textarea>
     </div>
 
     <div>

@@ -35,6 +35,9 @@
       <thead class="text-slate-500 bg-slate-50">
         <tr>
           <th class="text-left px-5 py-3">Product</th>
+          <th class="text-left px-5 py-3">Company</th>
+          <th class="text-left px-5 py-3">Business</th>
+          <th class="text-left px-5 py-3">Purchase Date</th>
           <th class="text-left px-5 py-3">Qty</th>
           <th class="text-left px-5 py-3">Expiry</th>
         </tr>
@@ -43,11 +46,14 @@
         @forelse($expiringSoon as $it)
           <tr>
             <td class="px-5 py-4 font-semibold">{{ $it->product->name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->company_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchase->business->business_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchase->purchase_date?->format('Y-m-d') ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->qty }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty
-          <tr><td class="px-5 py-6 text-slate-500" colspan="3">No expiring items.</td></tr>
+          <tr><td class="px-5 py-6 text-slate-500" colspan="6">No expiring items.</td></tr>
         @endforelse
       </tbody>
     </table>
@@ -63,6 +69,9 @@
       <thead class="text-slate-500 bg-slate-50">
         <tr>
           <th class="text-left px-5 py-3">Product</th>
+          <th class="text-left px-5 py-3">Company</th>
+          <th class="text-left px-5 py-3">Business</th>
+          <th class="text-left px-5 py-3">Purchase Date</th>
           <th class="text-left px-5 py-3">Qty</th>
           <th class="text-left px-5 py-3">Expiry</th>
         </tr>
@@ -71,11 +80,14 @@
         @forelse($expired as $it)
           <tr>
             <td class="px-5 py-4 font-semibold">{{ $it->product->name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->company_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchase->business->business_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchase->purchase_date?->format('Y-m-d') ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->qty }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty
-          <tr><td class="px-5 py-6 text-slate-500" colspan="3">No expired items.</td></tr>
+          <tr><td class="px-5 py-6 text-slate-500" colspan="6">No expired items.</td></tr>
         @endforelse
       </tbody>
     </table>

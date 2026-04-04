@@ -1352,138 +1352,47 @@ document.addEventListener('DOMContentLoaded', function() {
         <a href="#" class="gm-view-all">View All <i class="fas fa-arrow-right"></i></a>
     </div>
     
-    <div class="gm-products-scroll">
-        <!-- Top Sale Card 1 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Sunflower Oil">
+    <div class="gm-products-scroll" data-auto-scroll="top-sale">
+        @forelse($topSaleProducts as $topSaleProduct)
+            @php
+                $product = $topSaleProduct->product;
+                $discountPercent = (float) ($topSaleProduct->discount_percent ?? 0);
+                $hasOldPrice = !is_null($topSaleProduct->previous_price) && (float) $topSaleProduct->previous_price > 0;
+            @endphp
+
+            @if($product)
+                <div class="gm-product-card gm-ecom-card">
+                    <span class="gm-product-badge">{{ rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') }}% OFF</span>
+                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+                    <a href="{{ route('description') }}" class="gm-product-card-link">
+                        <div class="gm-product-img-wrap">
+                            @if($topSaleProduct->thumbnail)
+                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $product->name }}">
+                            @else
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
+                            @endif
+                        </div>
+                        <div class="gm-product-info">
+                            <h3 class="gm-product-name">{{ $product->name }}</h3>
+                            <div class="gm-product-price">
+                                <span class="gm-price-new">Rs.{{ number_format((float) $topSaleProduct->display_price, 2) }}</span>
+                            </div>
+                            <div class="gm-ecom-discount">
+                                @if($hasOldPrice)
+                                    <span class="gm-price-old">Rs.{{ number_format((float) $topSaleProduct->previous_price, 2) }}</span>
+                                @else
+                                    <span class="gm-price-old">Rs.{{ number_format((float) $topSaleProduct->mrp, 2) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
                 </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Sunflower Oil Premium Cooking Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(128)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 2 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Sugar">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Refined Crystal Sugar for Daily Kitchen Use</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.80</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.100</span> -20%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(95)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 3 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">15% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Masoor Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Masoor Dal Healthy Family Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(156)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 4 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">25% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Olive Oil">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Olive Oil Healthy Everyday Choice</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.350</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.450</span> -22%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(78)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 5 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">10% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Basmati Rice">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Basmati Rice Premium Long Grain Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.680</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.750</span> -9%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(203)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Top Sale Card 6 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">30% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Chana Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Chana Dal Nutritious Everyday Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.95</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.135</span> -30%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(89)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
+            @endif
+        @empty
+            <div class="gm-product-card gm-ecom-card" style="min-width: 100%; text-align: center; padding: 24px;">
+                <p style="margin: 0; color: var(--gm-gray);">No products above 30% discount right now.</p>
+            </div>
+        @endforelse
     </div>
 </section>
 
@@ -1521,137 +1430,57 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     
     <div class="gm-products-grid">
-        <!-- Ecommerce Card 1 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Sunflower Oil">
+        @forelse($featuredProducts as $featuredProduct)
+            @php
+                $product = $featuredProduct->product;
+                $discountPercent = (float) ($featuredProduct->discount_percent ?? 0);
+                $isNew = $featuredProduct->created_at && $featuredProduct->created_at->gt(now()->subDays(10));
+                $hasOldPrice = !is_null($featuredProduct->previous_price) && (float) $featuredProduct->previous_price > 0;
+            @endphp
+
+            @if($product)
+                <div class="gm-product-card gm-ecom-card">
+                    <span class="gm-product-badge">
+                        @if($discountPercent > 0)
+                            {{ rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') }}% OFF
+                        @elseif($isNew)
+                            NEW
+                        @else
+                            FEATURED
+                        @endif
+                    </span>
+                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+
+                    <a href="{{ route('description') }}" class="gm-product-card-link">
+                        <div class="gm-product-img-wrap">
+                            @if($featuredProduct->thumbnail)
+                                <img src="{{ asset('storage/' . $featuredProduct->thumbnail) }}" alt="{{ $product->name }}">
+                            @else
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
+                            @endif
+                        </div>
+
+                        <div class="gm-product-info">
+                            <h3 class="gm-product-name">{{ $product->name }}</h3>
+                            <div class="gm-product-price">
+                                <span class="gm-price-new">Rs.{{ number_format((float) $featuredProduct->display_price, 2) }}</span>
+                            </div>
+                            <div class="gm-ecom-discount">
+                                @if($hasOldPrice)
+                                    <span class="gm-price-old">Rs.{{ number_format((float) $featuredProduct->previous_price, 2) }}</span>
+                                @else
+                                    <span class="gm-price-old">Rs.{{ number_format((float) $featuredProduct->mrp, 2) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
                 </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Sunflower Oil Premium Cooking Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(128)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Ecommerce Card 2 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">20% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Sugar">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Refined Crystal Sugar for Daily Kitchen Use</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.80</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.100</span> -20%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(95)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Ecommerce Card 3 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">15% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Masoor Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Masoor Dal Healthy Family Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.120</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.180</span> -33%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(156)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Ecommerce Card 4 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">NEW</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="Mustard Oil">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Mustard Oil Fresh Pressed Bottle</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.190</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.220</span> -14%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        <span>(67)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Ecommerce Card 5 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">25% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product2.jpg') }}" alt="Brown Sugar">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Organic Brown Sugar Natural Sweetener</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.85</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.110</span> -23%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                        <span>(45)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Ecommerce Card 6 -->
-        <div class="gm-product-card gm-ecom-card">
-            <span class="gm-product-badge">10% OFF</span>
-            <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-            <a href="{{ route('description') }}" class="gm-product-card-link">
-                <div class="gm-product-img-wrap">
-                    <img src="{{ asset('assets/img/product/product3.jpg') }}" alt="Toor Dal">
-                </div>
-                <div class="gm-product-info">
-                    <h3 class="gm-product-name">Toor Dal Premium Quality Pack</h3>
-                    <div class="gm-product-price">
-                        <span class="gm-price-new">Rs.145</span>
-                    </div>
-                    <div class="gm-ecom-discount"><span class="gm-price-old">Rs.160</span> -9%</div>
-                    <div class="gm-product-rating">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        <span>(198)</span>
-                    </div>
-                </div>
-            </a>
-        </div>
+            @endif
+        @empty
+            <div class="gm-product-card gm-ecom-card" style="grid-column: 1 / -1; text-align: center; padding: 24px;">
+                <p style="margin: 0; color: var(--gm-gray);">No featured ecommerce products available yet.</p>
+            </div>
+        @endforelse
     </div>
 </section>
 
@@ -1666,36 +1495,23 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         
         <div class="gm-categories-grid">
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory5.jpg') }}" alt="Staples & Grains" class="gm-category-img">
-                <h4 class="gm-category-name">Staples & Grains</h4>
-                <p class="gm-category-count">250+ Products</p>
-            </a>
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory2.avif') }}" alt="Snacks" class="gm-category-img">
-                <h4 class="gm-category-name">Snacks & Confectionery</h4>
-                <p class="gm-category-count">180+ Products</p>
-            </a>
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory3.jpg') }}" alt="Beverages" class="gm-category-img">
-                <h4 class="gm-category-name">Beverages</h4>
-                <p class="gm-category-count">120+ Products</p>
-            </a>
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory5.jpg') }}" alt="Dairy" class="gm-category-img">
-                <h4 class="gm-category-name">Dairy & Eggs</h4>
-                <p class="gm-category-count">95+ Products</p>
-            </a>
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory6.webp') }}" alt="Personal Care" class="gm-category-img">
-                <h4 class="gm-category-name">Personal Care</h4>
-                <p class="gm-category-count">200+ Products</p>
-            </a>
-            <a href="#" class="gm-category-card">
-                <img src="{{ asset('assets/img/catagory/catagory7.webp') }}" alt="Household" class="gm-category-img">
-                <h4 class="gm-category-name">Household Items</h4>
-                <p class="gm-category-count">150+ Products</p>
-            </a>
+            @forelse($categories as $category)
+                <a href="{{ route('advanced') }}?category={{ urlencode($category->name) }}" class="gm-category-card">
+                    @if($category->image)
+                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="gm-category-img">
+                    @else
+                        <div class="gm-category-img" style="background: linear-gradient(135deg, var(--gm-primary-light), var(--gm-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem;">
+                            {{ substr($category->name, 0, 2) }}
+                        </div>
+                    @endif
+                    <h4 class="gm-category-name">{{ $category->name }}</h4>
+                    <p class="gm-category-count">{{ $category->ecommerce_products_count }}+ Products</p>
+                </a>
+            @empty
+                <div class="gm-category-card" style="grid-column: 1 / -1; text-align: center; color: var(--gm-gray);">
+                    <p>No categories available yet.</p>
+                </div>
+            @endforelse
         </div>
     </div>
 </section>
@@ -1788,60 +1604,103 @@ document.addEventListener('DOMContentLoaded', function() {
     
     fadeElements.forEach(el => observer.observe(el));
     
-    // Auto-scroll functionality for product scrollers
-    const autoScrollContainers = document.querySelectorAll('.gm-products-scroll');
-    autoScrollContainers.forEach(container => {
-        // Add auto-scroll class
-        container.classList.add('auto-scroll');
-        
-        let scrollInterval;
-        let scrollDirection = 1;
+    // Seamless auto-scroll for Top Sale section with interaction-aware pause.
+    const topSaleScrollers = document.querySelectorAll('[data-auto-scroll="top-sale"]');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    topSaleScrollers.forEach(container => {
+        if (prefersReducedMotion) {
+            return;
+        }
+
+        const baseItems = Array.from(container.children);
+        if (!baseItems.length) {
+            return;
+        }
+
+        let animationFrameId = null;
         let isPaused = false;
-        
-        function startAutoScroll() {
-            if (isPaused) return;
-            
-            scrollInterval = setInterval(() => {
-                if (!isPaused && container.scrollWidth > container.clientWidth) {
-                    container.scrollLeft += scrollDirection * 1;
-                    
-                    // Check if we've reached the end
-                    if (container.scrollLeft >= container.scrollWidth - container.clientWidth) {
-                        scrollDirection = -1;
-                    } else if (container.scrollLeft <= 0) {
-                        scrollDirection = 1;
-                    }
+        let isUserDragging = false;
+        const speed = window.innerWidth <= 768 ? 0.35 : 0.55;
+
+        // Duplicate cards once for infinite-like scrolling.
+        baseItems.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.setAttribute('aria-hidden', 'true');
+            container.appendChild(clone);
+        });
+
+        const loopWidth = container.scrollWidth / 2;
+
+        function step() {
+            if (!isPaused && !isUserDragging && loopWidth > container.clientWidth) {
+                container.scrollLeft += speed;
+
+                if (container.scrollLeft >= loopWidth) {
+                    container.scrollLeft -= loopWidth;
                 }
-            }, 30);
+            }
+
+            animationFrameId = window.requestAnimationFrame(step);
         }
-        
-        function stopAutoScroll() {
-            clearInterval(scrollInterval);
+
+        function pauseAutoScroll() {
+            isPaused = true;
         }
-        
-        // Pause on hover
-        container.addEventListener('mouseenter', () => {
-            isPaused = true;
-            container.classList.remove('auto-scroll');
-        });
-        
-        container.addEventListener('mouseleave', () => {
+
+        function resumeAutoScroll() {
             isPaused = false;
-            container.classList.add('auto-scroll');
+        }
+
+        container.addEventListener('mouseenter', pauseAutoScroll);
+        container.addEventListener('mouseleave', resumeAutoScroll);
+        container.addEventListener('focusin', pauseAutoScroll);
+        container.addEventListener('focusout', resumeAutoScroll);
+        container.addEventListener('touchstart', pauseAutoScroll, { passive: true });
+        container.addEventListener('touchend', resumeAutoScroll, { passive: true });
+        container.addEventListener('wheel', pauseAutoScroll, { passive: true });
+
+        let resumeTimer = null;
+        container.addEventListener('scroll', () => {
+            if (!isPaused) {
+                return;
+            }
+
+            window.clearTimeout(resumeTimer);
+            resumeTimer = window.setTimeout(() => {
+                if (!isUserDragging) {
+                    resumeAutoScroll();
+                }
+            }, 900);
+        }, { passive: true });
+
+        // Cleanup if page gets hidden.
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && animationFrameId) {
+                window.cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                return;
+            }
+
+            if (!document.hidden && !animationFrameId) {
+                animationFrameId = window.requestAnimationFrame(step);
+            }
         });
-        
-        // Start auto-scroll
-        startAutoScroll();
-        
-        // Handle touch devices
-        container.addEventListener('touchstart', () => {
-            isPaused = true;
-            container.classList.remove('auto-scroll');
+
+        animationFrameId = window.requestAnimationFrame(step);
+
+        container.addEventListener('mousedown', () => {
+            isUserDragging = true;
+            pauseAutoScroll();
         });
-        
-        container.addEventListener('touchend', () => {
-            isPaused = false;
-            container.classList.add('auto-scroll');
+
+        window.addEventListener('mouseup', () => {
+            if (!isUserDragging) {
+                return;
+            }
+
+            isUserDragging = false;
+            resumeAutoScroll();
         });
     });
     

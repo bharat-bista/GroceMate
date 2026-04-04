@@ -8,18 +8,22 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Brand;
+use App\Models\Business;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
   public function index(Request $request)
   {
     $q = trim($request->input('search', $request->input('q', '')));
+    $businessId = $request->input('business_id');
 
     $products = Product::query()
-      ->with(['category','stock','brandRelation'])
-      ->when($q, fn($qq) => $qq->where('name','like',"%$q%")->orWhere('sku','like',"%$q%"))
+      ->with(['category','stock','brandRelation','business'])
+      ->when($q, fn($qq) => $qq->where('name','like',"%$q%"))
+      ->when($businessId, fn($qq) => $qq->where('business_id', $businessId))
       ->orderBy('name')
       ->orderBy('id')
       ->paginate(10)
@@ -28,6 +32,8 @@ class ProductController extends Controller
     return view('inventory.products.index', [
       'products' => $products,
       'q' => $q,
+      'businesses' => Business::orderBy('business_name')->get(),
+      'selectedBusinessId' => $businessId,
     ]);
   }
 
@@ -36,6 +42,7 @@ class ProductController extends Controller
     return view('inventory.products.create', [
       'categories' => Category::orderBy('name')->get(),
       'brands' => Brand::orderBy('name')->get(),
+      'businesses' => Business::orderBy('business_name')->get(),
       'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
@@ -43,15 +50,13 @@ class ProductController extends Controller
   public function store(Request $request)
   {
     $data = $request->validate([
+      'business_id' => ['required','exists:businesses,id'],
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
-      'sku' => ['nullable','string','max:50','unique:products,sku'],
       'unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
-      'description' => ['nullable','string'],
-      'image_url' => ['nullable','string','max:2048'],
       'is_active' => ['nullable','boolean'],
       'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
@@ -59,28 +64,19 @@ class ProductController extends Controller
     ]);
 
     DB::transaction(function () use ($data) {
-      // Handle brand - use existing ID or create from name
-      $brandId = null;
-      if (!empty($data['brand_id'])) {
-          $brandId = $data['brand_id'];
-      } elseif (!empty($data['brand_name'])) {
-          // Create new brand from name or find existing
-          $brand = Brand::firstOrCreate(
-              ['name' => trim($data['brand_name'])],
-              ['name' => trim($data['brand_name'])]
-          );
-          $brandId = $brand->id;
-      }
+      $normalizedName = $this->normalizeProductName($data['name']);
+      $brandId = $this->resolveBrandId($data);
+
+      $this->assertNoCrossBusinessConflict($normalizedName, $brandId, (int) $data['business_id']);
+      $this->assertNoDuplicateInsideBusiness($normalizedName, $brandId, (int) $data['business_id']);
 
       $product = Product::create([
+        'business_id' => $data['business_id'],
         'category_id' => $data['category_id'],
-        'name' => $data['name'],
+        'name' => $normalizedName,
         'brand_id' => $brandId,
-        'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
-        'description' => $data['description'] ?? null,
-        'image_url' => $data['image_url'] ?? null,
         'is_active' => (bool)($data['is_active'] ?? true),
         'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);
@@ -102,6 +98,7 @@ class ProductController extends Controller
       'product' => $product,
       'categories' => Category::orderBy('name')->get(),
       'brands' => Brand::orderBy('name')->get(),
+      'businesses' => Business::orderBy('business_name')->get(),
       'units' => ['kg', 'liter', 'pcs', 'cartoon', 'peti', 'bori', 'box', 'bottle', 'pack', 'set'],
     ]);
   }
@@ -109,43 +106,43 @@ class ProductController extends Controller
   public function update(Request $request, Product $product)
   {
     $data = $request->validate([
+      'business_id' => ['required','exists:businesses,id'],
       'category_id' => ['required','exists:categories,id'],
       'name' => ['required','string','max:255'],
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
-      'sku' => ['nullable','string','max:50','unique:products,sku,'.$product->id],
-      'unit' => ['required','in:kg,liter,pcs'],
+      'unit' => ['required','in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','numeric','min:0'],
-      'description' => ['nullable','string'],
-      'image_url' => ['nullable','string','max:2048'],
       'is_active' => ['nullable','boolean'],
       'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
     ]);
 
     DB::transaction(function () use ($data, $product) {
-      // Handle brand - use existing ID or create from name
-      $brandId = null;
-      if (!empty($data['brand_id'])) {
-          $brandId = $data['brand_id'];
-      } elseif (!empty($data['brand_name'])) {
-          // Create new brand from name or find existing
-          $brand = Brand::firstOrCreate(
-              ['name' => trim($data['brand_name'])],
-              ['name' => trim($data['brand_name'])]
-          );
-          $brandId = $brand->id;
-      }
+      $normalizedName = $this->normalizeProductName($data['name']);
+      $brandId = $this->resolveBrandId($data);
+
+      $this->assertNoCrossBusinessConflict(
+        $normalizedName,
+        $brandId,
+        (int) $data['business_id'],
+        $product->id
+      );
+
+      $this->assertNoDuplicateInsideBusiness(
+        $normalizedName,
+        $brandId,
+        (int) $data['business_id'],
+        $product->id
+      );
 
       $product->update([
+        'business_id' => $data['business_id'],
         'category_id' => $data['category_id'],
-        'name' => $data['name'],
+        'name' => $normalizedName,
         'brand_id' => $brandId,
-        'sku' => $data['sku'] ?? null,
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
-        'description' => $data['description'] ?? null,
-        'image_url' => $data['image_url'] ?? null,
         'is_active' => (bool)($data['is_active'] ?? false),
         'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);
@@ -163,5 +160,85 @@ class ProductController extends Controller
   {
     $product->update(['is_listed' => !$product->is_listed]);
     return back()->with('success', 'E-commerce listing updated.');
+  }
+
+  private function normalizeProductName(string $name): string
+  {
+    return trim(preg_replace('/\s+/', ' ', $name));
+  }
+
+  private function resolveBrandId(array $data): ?int
+  {
+    if (!empty($data['brand_id'])) {
+      return (int) $data['brand_id'];
+    }
+
+    if (!empty($data['brand_name'])) {
+      $brandName = trim($data['brand_name']);
+      if ($brandName === '') {
+        return null;
+      }
+
+      $brand = Brand::firstOrCreate(
+        ['name' => $brandName],
+        ['name' => $brandName]
+      );
+
+      return $brand->id;
+    }
+
+    return null;
+  }
+
+  private function assertNoCrossBusinessConflict(
+    string $normalizedName,
+    ?int $brandId,
+    int $businessId,
+    ?int $ignoreProductId = null
+  ): void {
+    $query = Product::query()
+      ->with('business')
+      ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedName)])
+      ->where('business_id', '!=', $businessId)
+      ->when($ignoreProductId, fn($q) => $q->where('id', '!=', $ignoreProductId));
+
+    if (is_null($brandId)) {
+      $query->whereNull('brand_id');
+    } else {
+      $query->where('brand_id', $brandId);
+    }
+
+    $conflict = $query->first();
+
+    if ($conflict) {
+      $owner = $conflict->business->business_name ?? 'another business';
+      throw ValidationException::withMessages([
+        'name' => "This product with the same brand/company already belongs to {$owner}. Choose a different company (brand) or product name.",
+      ]);
+    }
+  }
+
+  private function assertNoDuplicateInsideBusiness(
+    string $normalizedName,
+    ?int $brandId,
+    int $businessId,
+    ?int $ignoreProductId = null
+  ): void {
+    $query = Product::query()
+      ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedName)])
+      ->where('business_id', $businessId)
+      ->when($ignoreProductId, fn($q) => $q->where('id', '!=', $ignoreProductId));
+
+    if (is_null($brandId)) {
+      $query->whereNull('brand_id');
+    } else {
+      $query->where('brand_id', $brandId);
+    }
+
+    if ($query->exists()) {
+      throw ValidationException::withMessages([
+        'name' => 'This business already has the same product name with the same brand/company.',
+      ]);
+    }
   }
 }

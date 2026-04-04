@@ -19,6 +19,7 @@
                     <option value="{{ $b->id }}" @selected(old('business_id')==$b->id)>{{ $b->business_name }}</option>
                 @endforeach
             </select>
+            <p class="text-xs text-slate-500 mt-1">Select business first. Product search and company selection will follow this business.</p>
         </div>
         <div>
             <label class="text-sm text-slate-600">Supplier *</label>
@@ -121,7 +122,8 @@
         
         <p class="text-xs text-slate-500 mt-2">
             <strong>Tip:</strong> Start typing product name to see suggestions from purchase history.
-            For new products, you can select a Category and Company (or create new ones using the + buttons).
+            For a different business, the product can be the same, but the company/brand must be different.
+            If the same company is already used by another business, the system will block it.
         </p>
     </div>
 
@@ -179,11 +181,12 @@ let searchTimeout = null;
 async function searchProductsApi(query) {
     try {
         console.log('🔍 Searching:', query);
+        const businessId = document.querySelector('select[name="business_id"]')?.value || '';
         
         // Get CSRF token
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
-        const response = await fetch(`/inventory/purchases/search-products?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(`/inventory/purchases/search-products?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`, {
             method: 'GET',
             headers: { 
                 'Accept': 'application/json',
@@ -218,8 +221,9 @@ async function searchProductsApi(query) {
         
         // Fallback: search in the injected products array
         const qLower = query.toLowerCase();
+        const selectedBusinessId = document.querySelector('select[name="business_id"]')?.value || '';
         const fallbackResults = products.filter(p => 
-            p.name.toLowerCase().includes(qLower)
+            p.name.toLowerCase().includes(qLower) && (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId))
         ).slice(0, 10);
         
         console.log('🔄 Fallback results:', fallbackResults);
@@ -354,22 +358,11 @@ function updateProductFromInput(rowId, payload) {
             categoryIdInput.value = '';
         }
         
-        if (hasBrand) {
-            // Hide brand input if it has data
-            brandCell.classList.add('hidden');
-            brandDisplay.classList.remove('hidden');
-            brandDisplay.textContent = payload.brand_name || '-';
-            // Populate hidden inputs
-            brandInput.value = payload.brand_name || '';
-            brandIdInput.value = payload.brand_id || '';
-        } else {
-            // Keep brand input visible if empty
-            brandCell.classList.remove('hidden');
-            brandDisplay.classList.add('hidden');
-            // Clear inputs
-            brandInput.value = '';
-            brandIdInput.value = '';
-        }
+        // Keep company editable so the same product can be entered for a different business
+        brandCell.classList.remove('hidden');
+        brandDisplay.classList.add('hidden');
+        brandInput.value = payload.brand_name || '';
+        brandIdInput.value = payload.brand_id || '';
     } else {
         // New product - show all editable fields
         unitSelect.classList.remove('hidden');
@@ -464,6 +457,7 @@ item.style.transition = 'background 0.2s';
                 ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'}
                 ${p.category_name ? `• Category: ${p.category_name}` : ''}
                 ${p.brand_name ? `• Company: ${p.brand_name}` : ''}
+                ${p.business_id ? `• Business ID: ${p.business_id}` : ''}
             </div>
         </div>
         <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">

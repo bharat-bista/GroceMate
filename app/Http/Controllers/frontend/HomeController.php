@@ -6,11 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\EcommerceProduct;
+use App\Models\Slider;
 
 class HomeController extends Controller
 {
     public function home(){
         $topSaleLimit = 12;
+
+        $heroSlides = Slider::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->latest('id')
+            ->limit(8)
+            ->get();
 
         $topSaleProducts = EcommerceProduct::query()
             ->with(['product.category', 'product.brandRelation'])
@@ -84,6 +92,6 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('frontend.home.index', compact('brands', 'categories', 'featuredProducts', 'topSaleProducts'));
+        return view('frontend.home.index', compact('brands', 'categories', 'featuredProducts', 'topSaleProducts', 'heroSlides'));
     }
 }

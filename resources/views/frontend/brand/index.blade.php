@@ -92,7 +92,7 @@
                            class="group bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-purple-300 transition-all duration-200">
                             <div class="aspect-square rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center mb-3 overflow-hidden">
                                 @if($brand->image)
-                                    <img src="{{ Storage::url($brand->image) }}" 
+                                    <img src="{{ asset('assets/img/brands/' . $brand->image) }}" 
                                          alt="{{ $brand->name }}"
                                          class="w-full h-full object-contain p-2">
                                 @else

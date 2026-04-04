@@ -550,8 +550,11 @@
    PROMO BANNERS
    ========================================== */
 .gm-promo-section {
-    padding: 40px 5%;
-    background: var(--gm-light);
+    padding: 28px 5% 44px;
+    background:
+        radial-gradient(circle at top left, rgba(46, 125, 50, 0.10), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(255, 107, 53, 0.09), transparent 30%),
+        linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
 }
 
 .gm-promo-grid {
@@ -564,64 +567,152 @@
 
 .gm-promo-card {
     position: relative;
-    border-radius: var(--gm-radius);
+    border-radius: 28px;
     overflow: hidden;
     height: 250px;
     cursor: pointer;
+    isolation: isolate;
+    box-shadow:
+        0 18px 50px rgba(18, 38, 27, 0.10),
+        0 2px 10px rgba(18, 38, 27, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: #dfe8df;
+    transition: transform 0.45s ease, box-shadow 0.45s ease;
 }
 
 .gm-promo-card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    transition: transform 0.7s ease, filter 0.7s ease;
 }
 
 .gm-promo-card:hover img {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    filter: saturate(1.08) contrast(1.03);
+}
+
+.gm-promo-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 24px 60px rgba(18, 38, 27, 0.14),
+        0 6px 18px rgba(18, 38, 27, 0.06);
 }
 
 .gm-promo-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(46, 125, 50, 0.9) 0%, rgba(46, 125, 50, 0.6) 100%);
+    background:
+        linear-gradient(135deg, rgba(10, 26, 16, 0.72) 0%, rgba(10, 26, 16, 0.32) 55%, rgba(10, 26, 16, 0.78) 100%);
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 30px;
+    justify-content: flex-end;
+    padding: 28px;
     color: var(--gm-white);
 }
 
 .gm-promo-card:nth-child(2) .gm-promo-overlay {
-    background: linear-gradient(135deg, rgba(255, 107, 53, 0.9) 0%, rgba(255, 107, 53, 0.6) 100%);
+    background: linear-gradient(135deg, rgba(28, 37, 77, 0.70) 0%, rgba(28, 37, 77, 0.28) 56%, rgba(28, 37, 77, 0.78) 100%);
 }
 
 .gm-promo-tag {
-    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 10px;
-    opacity: 0.9;
+    margin-bottom: 14px;
+    opacity: 1;
 }
 
 .gm-promo-title {
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-bottom: 15px;
+    font-size: clamp(1.5rem, 2.7vw, 2.3rem);
+    font-weight: 900;
+    line-height: 1.06;
+    margin: 0 0 12px;
+    max-width: 14ch;
+    text-wrap: balance;
+}
+
+.gm-promo-text {
+    margin: 0 0 18px;
+    max-width: 32ch;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.96rem;
+    line-height: 1.55;
+}
+
+.gm-promo-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.gm-promo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .gm-promo-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 10px;
+    width: fit-content;
+    min-height: 46px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     color: var(--gm-white);
-    font-weight: 600;
+    font-weight: 800;
+    letter-spacing: 0.01em;
     text-decoration: none;
-    transition: var(--gm-transition);
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 }
 
 .gm-promo-btn:hover {
-    gap: 15px;
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.30);
+}
+
+.gm-promo-btn i {
+    transition: transform 0.25s ease;
+}
+
+.gm-promo-btn:hover i {
+    transform: translateX(3px);
+}
+
+.gm-promo-ribbon {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 2;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.08));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
 }
 
 /* ==========================================
@@ -793,20 +884,22 @@
 .gm-categories-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 25px;
+    gap: 22px;
     max-width: 1400px;
     margin: 0 auto;
 }
 
 .gm-category-card {
     background: var(--gm-white);
-    border-radius: var(--gm-radius);
-    padding: 30px 20px;
+    border-radius: 24px;
+    padding: 28px 18px 24px;
     text-align: center;
     transition: var(--gm-transition);
     cursor: pointer;
     text-decoration: none;
     display: block;
+    border: 1px solid rgba(20, 30, 25, 0.08);
+    box-shadow: 0 12px 30px rgba(19, 31, 24, 0.05);
 }
 
 .gm-category-card:hover {
@@ -815,12 +908,12 @@
 }
 
 .gm-category-img {
-    width: 80px;
-    height: 80px;
+    width: 104px;
+    height: 104px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 15px;
-    border: 3px solid var(--gm-gray-light);
+    margin-bottom: 18px;
+    border: 4px solid var(--gm-gray-light);
     transition: var(--gm-transition);
 }
 
@@ -830,15 +923,17 @@
 }
 
 .gm-category-name {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--gm-dark);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    line-height: 1.25;
 }
 
 .gm-category-count {
-    font-size: 0.8rem;
+    font-size: 0.92rem;
     color: var(--gm-gray);
+    font-weight: 500;
 }
 
 /* ==========================================
@@ -852,21 +947,22 @@
 .gm-brands-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 25px;
+    gap: 22px;
     max-width: 1400px;
     margin: 0 auto;
 }
 
 .gm-brand-card {
     background: var(--gm-white);
-    border-radius: var(--gm-radius);
-    padding: 30px 20px;
+    border-radius: 24px;
+    padding: 28px 18px 24px;
     text-align: center;
     transition: var(--gm-transition);
     cursor: pointer;
     text-decoration: none;
     display: block;
-    border: 2px solid var(--gm-gray-light);
+    border: 1px solid rgba(20, 30, 25, 0.08);
+    box-shadow: 0 12px 30px rgba(19, 31, 24, 0.05);
 }
 
 .gm-brand-card:hover {
@@ -876,12 +972,12 @@
 }
 
 .gm-brand-img {
-    width: 80px;
-    height: 80px;
+    width: 104px;
+    height: 104px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 15px;
-    border: 3px solid var(--gm-gray-light);
+    margin-bottom: 18px;
+    border: 4px solid var(--gm-gray-light);
     transition: var(--gm-transition);
 }
 
@@ -891,14 +987,15 @@
 }
 
 .gm-brand-name {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--gm-dark);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    line-height: 1.25;
 }
 
 .gm-brand-discount {
-    font-size: 0.8rem;
+    font-size: 0.92rem;
     color: var(--gm-accent);
     font-weight: 600;
 }
@@ -1017,7 +1114,7 @@
     }
     
     .gm-promo-card {
-        height: 200px;
+        min-height: 250px;
     }
     
     .gm-categories-grid {
@@ -1026,6 +1123,10 @@
     
     .gm-brands-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+
+    .gm-promo-card--secondary {
+        min-height: 250px;
     }
 }
 
@@ -1121,6 +1222,28 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
     }
+
+    .gm-category-card,
+    .gm-brand-card {
+        padding: 24px 16px 20px;
+    }
+
+    .gm-category-img,
+    .gm-brand-img {
+        width: 92px;
+        height: 92px;
+        margin-bottom: 16px;
+    }
+
+    .gm-category-name,
+    .gm-brand-name {
+        font-size: 1rem;
+    }
+
+    .gm-category-count,
+    .gm-brand-discount {
+        font-size: 0.88rem;
+    }
     
     .gm-why-grid {
         grid-template-columns: 1fr;
@@ -1170,6 +1293,23 @@
     .gm-product-btns {
         flex-direction: column;
     }
+
+    .gm-promo-overlay {
+        padding: 20px;
+    }
+
+    .gm-promo-title {
+        max-width: 100%;
+    }
+
+    .gm-promo-text {
+        max-width: 100%;
+        font-size: 0.92rem;
+    }
+
+    .gm-promo-btn {
+        width: 100%;
+    }
     
     .gm-categories-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1180,12 +1320,35 @@
     }
     
     .gm-category-card {
-        padding: 20px 15px;
+        padding: 22px 14px 18px;
+    }
+
+    .gm-promo-grid {
+        gap: 14px;
+    }
+
+    .gm-promo-card {
+        min-height: 220px;
     }
     
     .gm-category-img {
-        width: 60px;
-        height: 60px;
+        width: 82px;
+        height: 82px;
+    }
+
+    .gm-brand-img {
+        width: 82px;
+        height: 82px;
+    }
+
+    .gm-category-name,
+    .gm-brand-name {
+        font-size: 0.96rem;
+    }
+
+    .gm-category-count,
+    .gm-brand-discount {
+        font-size: 0.84rem;
     }
 }
 </style>
@@ -1196,82 +1359,61 @@
 <section class="gm-hero">
     <div class="gm-hero-slider">
         <div class="gm-hero-track">
-            <!-- Slide 1 -->
-            <div class="gm-hero-slide">
-                <img src="{{ asset('assets/img/slide/slide1.jpg') }}" alt="Fresh Groceries">
-                <div class="gm-hero-overlay">
-                    <div class="gm-hero-content">
-                        <span class="gm-hero-badge">🌿 Fresh Daily</span>
-                        <h1 class="gm-hero-title">Fresh Groceries Delivered to Your Door</h1>
-                        <p class="gm-hero-text">Get the freshest produce, dairy, and pantry essentials delivered within hours. Quality you can trust!</p>
-                        <div class="gm-hero-btns">
-                            <a href="#" class="gm-btn gm-btn-primary"><i class="fas fa-shopping-cart"></i> Shop Now</a>
-                            <a href="#" class="gm-btn gm-btn-outline"><i class="fas fa-tag"></i> View Deals</a>
+            @if($heroSlides->isNotEmpty())
+                @foreach($heroSlides as $slide)
+                @php
+                    $heroImageUrl = $slide->image ? asset('storage/' . $slide->image) : asset('assets/img/slide/slide1.jpg');
+                @endphp
+                <div class="gm-hero-slide">
+                    <img src="{{ $heroImageUrl }}" alt="{{ $slide->title }}">
+                    <div class="gm-hero-overlay">
+                        <div class="gm-hero-content">
+                            @if($slide->badge)
+                                <span class="gm-hero-badge">{{ $slide->badge }}</span>
+                            @endif
+                            <h1 class="gm-hero-title">{{ $slide->title }}</h1>
+                            @if($slide->subtitle)
+                                <p class="gm-hero-text">{{ $slide->subtitle }}</p>
+                            @endif
+                            <div class="gm-hero-btns">
+                                @if($slide->primary_button_text)
+                                    <a href="{{ $slide->primary_button_link ?: '#' }}" class="gm-btn gm-btn-primary"><i class="fas fa-shopping-cart"></i> {{ $slide->primary_button_text }}</a>
+                                @endif
+                                @if($slide->secondary_button_text)
+                                    <a href="{{ $slide->secondary_button_link ?: '#' }}" class="gm-btn gm-btn-outline"><i class="fas fa-tag"></i> {{ $slide->secondary_button_text }}</a>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Slide 2 -->
-            <div class="gm-hero-slide">
-                <img src="{{ asset('assets/img/slide/slide2.jpg') }}" alt="Special Offers">
-                <div class="gm-hero-overlay">
-                    <div class="gm-hero-content">
-                        <span class="gm-hero-badge">🔥 Hot Deals</span>
-                        <h1 class="gm-hero-title">Up to 40% Off on Fresh Produce</h1>
-                        <p class="gm-hero-text">Limited time offer! Stock up on fruits, vegetables, and organic products at unbeatable prices.</p>
-                        <div class="gm-hero-btns">
-                            <a href="#" class="gm-btn gm-btn-primary"><i class="fas fa-percent"></i> Grab Deals</a>
-                            <a href="#" class="gm-btn gm-btn-outline"><i class="fas fa-info-circle"></i> Learn More</a>
+                @endforeach
+            @else
+                <div class="gm-hero-slide">
+                    <div class="gm-hero-overlay">
+                        <div class="gm-hero-content">
+                            <span class="gm-hero-badge">Slider Not Configured</span>
+                            <h1 class="gm-hero-title">No Active Hero Slides Found</h1>
+                            <p class="gm-hero-text">Create and activate slides from the Slider Image section in the admin panel to display dynamic homepage content.</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Slide 3 -->
-            <div class="gm-hero-slide">
-                <img src="{{ asset('assets/img/slide/slide3.png') }}" alt="Organic Products">
-                <div class="gm-hero-overlay">
-                    <div class="gm-hero-content">
-                        <span class="gm-hero-badge">🥬 100% Organic</span>
-                        <h1 class="gm-hero-title">Farm Fresh Organic Products</h1>
-                        <p class="gm-hero-text">Naturally grown, pesticide-free produce sourced directly from local farms. Healthy living starts here!</p>
-                        <div class="gm-hero-btns">
-                            <a href="#" class="gm-btn gm-btn-primary"><i class="fas fa-leaf"></i> Explore Organic</a>
-                            <a href="#" class="gm-btn gm-btn-outline"><i class="fas fa-seedling"></i> Our Farms</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Slide 4 -->
-            <div class="gm-hero-slide">
-                <img src="{{ asset('assets/img/slide/slide4.webp') }}" alt="Quick Delivery">
-                <div class="gm-hero-overlay">
-                    <div class="gm-hero-content">
-                        <span class="gm-hero-badge">⚡ Express Delivery</span>
-                        <h1 class="gm-hero-title">Same Day Delivery Available</h1>
-                        <p class="gm-hero-text">Order before 2 PM and get your groceries delivered the same day. Fast, reliable, always on time!</p>
-                        <div class="gm-hero-btns">
-                            <a href="#" class="gm-btn gm-btn-primary"><i class="fas fa-truck"></i> Order Now</a>
-                            <a href="#" class="gm-btn gm-btn-outline"><i class="fas fa-map-marker-alt"></i> Delivery Areas</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @endif
         </div>
-        
-        <!-- Navigation Arrows -->
-        <button class="gm-hero-nav gm-hero-prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
-        <button class="gm-hero-nav gm-hero-next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
-        
-        <!-- Dots Navigation -->
-        <div class="gm-hero-dots">
-            <div class="gm-hero-dot active" data-slide="0"></div>
-            <div class="gm-hero-dot" data-slide="1"></div>
-            <div class="gm-hero-dot" data-slide="2"></div>
-            <div class="gm-hero-dot" data-slide="3"></div>
-        </div>
+
+        @if($heroSlides->count() > 1)
+            <!-- Navigation Arrows -->
+            <button class="gm-hero-nav gm-hero-prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
+            <button class="gm-hero-nav gm-hero-next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
+        @endif
+
+        @if($heroSlides->count() > 1)
+            <!-- Dots Navigation -->
+            <div class="gm-hero-dots">
+                @foreach($heroSlides as $index => $slide)
+                    <div class="gm-hero-dot @if($index === 0) active @endif" data-slide="{{ $index }}"></div>
+                @endforeach
+            </div>
+        @endif
     </div>
 </section>
 
@@ -1401,19 +1543,31 @@ document.addEventListener('DOMContentLoaded', function() {
     ========================================== --}}
 <section class="gm-promo-section gm-fade-in">
     <div class="gm-promo-grid">
-        <div class="gm-promo-card">
+        <div class="gm-promo-card gm-promo-card--primary">
+            <div class="gm-promo-ribbon"><i class="fas fa-leaf"></i> Fresh Picks</div>
             <img src="{{ asset('assets/img/slide/slide1.jpg') }}" alt="Fresh Produce">
             <div class="gm-promo-overlay">
                 <span class="gm-promo-tag">Fresh Arrivals</span>
                 <h3 class="gm-promo-title">Farm Fresh Vegetables</h3>
+                <p class="gm-promo-text">Farm-picked daily produce with a clean, premium store feel and fast delivery appeal.</p>
+                <div class="gm-promo-meta">
+                    <span class="gm-promo-pill"><i class="fas fa-truck-fast"></i> Same day delivery</span>
+                    <span class="gm-promo-pill"><i class="fas fa-seedling"></i> New harvest</span>
+                </div>
                 <a href="#" class="gm-promo-btn">Shop Now <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
-        <div class="gm-promo-card">
+        <div class="gm-promo-card gm-promo-card--secondary">
+            <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> Hot Deal</div>
             <img src="{{ asset('assets/img/slide/slide2.jpg') }}" alt="Special Offers">
             <div class="gm-promo-overlay">
                 <span class="gm-promo-tag">Limited Time</span>
                 <h3 class="gm-promo-title">Up to 40% Off on Dairy</h3>
+                <p class="gm-promo-text">Bold promotional banner designed to stand out with modern glass styling and clear CTA.</p>
+                <div class="gm-promo-meta">
+                    <span class="gm-promo-pill"><i class="fas fa-tag"></i> Save more</span>
+                    <span class="gm-promo-pill"><i class="fas fa-clock"></i> Ends soon</span>
+                </div>
                 <a href="#" class="gm-promo-btn">Grab Deal <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
@@ -1512,6 +1666,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>No categories available yet.</p>
                 </div>
             @endforelse
+        </div>
+    </div>
+</section>
+
+{{-- ==========================================
+    PROMO BANNERS
+    ========================================== --}}
+<section class="gm-promo-section gm-fade-in">
+    <div class="gm-promo-grid">
+        <div class="gm-promo-card gm-promo-card--primary">
+            <div class="gm-promo-ribbon"><i class="fas fa-leaf"></i> Fresh Picks</div>
+            <img src="{{ asset('assets/img/slide/slide1.jpg') }}" alt="Fresh Produce">
+            <div class="gm-promo-overlay">
+                <span class="gm-promo-tag">Fresh Arrivals</span>
+                <h3 class="gm-promo-title">Farm Fresh Vegetables</h3>
+                <p class="gm-promo-text">Farm-picked daily produce with a clean, premium store feel and fast delivery appeal.</p>
+                <div class="gm-promo-meta">
+                    <span class="gm-promo-pill"><i class="fas fa-truck-fast"></i> Same day delivery</span>
+                    <span class="gm-promo-pill"><i class="fas fa-seedling"></i> New harvest</span>
+                </div>
+                <a href="#" class="gm-promo-btn">Shop Now <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+        <div class="gm-promo-card gm-promo-card--secondary">
+            <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> Hot Deal</div>
+            <img src="{{ asset('assets/img/slide/slide2.jpg') }}" alt="Special Offers">
+            <div class="gm-promo-overlay">
+                <span class="gm-promo-tag">Limited Time</span>
+                <h3 class="gm-promo-title">Up to 40% Off on Dairy</h3>
+                <p class="gm-promo-text">Bold promotional banner designed to stand out with modern glass styling and clear CTA.</p>
+                <div class="gm-promo-meta">
+                    <span class="gm-promo-pill"><i class="fas fa-tag"></i> Save more</span>
+                    <span class="gm-promo-pill"><i class="fas fa-clock"></i> Ends soon</span>
+                </div>
+                <a href="#" class="gm-promo-btn">Grab Deal <i class="fas fa-arrow-right"></i></a>
+            </div>
         </div>
     </div>
 </section>

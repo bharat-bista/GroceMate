@@ -68,6 +68,15 @@
                         <option value="coming_soon" @selected(old('status') == 'coming_soon')>Coming Soon</option>
                     </select>
                 </div>
+
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Ecommerce Section</label>
+                    <select name="display_section" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
+                        <option value="product_grid" @selected(old('display_section', 'product_grid') == 'product_grid')>Product Grid</option>
+                        <option value="slider_image" @selected(old('display_section') == 'slider_image')>Slider Image</option>
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Use Slider Image for items you want to feature in the homepage slider.</p>
+                </div>
             </div>
         </div>
 

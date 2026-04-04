@@ -1,8 +1,8 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', 'E-commerce Products')
-@section('heading', 'E-commerce Products')
-@section('subtitle', 'Manage products for online store')
+@section('title', $title ?? 'E-commerce Products')
+@section('heading', $title ?? 'E-commerce Products')
+@section('subtitle', $subtitle ?? 'Manage products for online store')
 
 @section('content')
 <div class="space-y-6">
@@ -133,6 +133,7 @@
                             <option value="coming_soon" @selected($status == 'coming_soon')>Coming Soon</option>
                         </select>
                     </div>
+                    <input type="hidden" name="display_section" value="{{ $displaySection ?? '' }}">
                     <div class="md:col-span-2 flex items-end gap-3">
                         <button type="submit"
                                 class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition duration-200">

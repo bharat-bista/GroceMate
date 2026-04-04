@@ -10,7 +10,6 @@ class EcommerceProduct extends Model
         'product_id',
         'sku',
         'status',
-        'ecommerce_stock',
         'previous_price',
         'mrp',
         'discount_percent',
@@ -22,7 +21,6 @@ class EcommerceProduct extends Model
     ];
 
     protected $casts = [
-        'ecommerce_stock' => 'decimal:3',
         'previous_price' => 'decimal:2',
         'mrp' => 'decimal:2',
         'discount_percent' => 'decimal:2',
@@ -33,16 +31,6 @@ class EcommerceProduct extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function images()
-    {
-        return $this->hasMany(EcommerceProductImage::class)->orderBy('sort_order');
-    }
-
-    public function primaryImage()
-    {
-        return $this->hasOne(EcommerceProductImage::class)->where('is_primary', true);
     }
 
     // Calculate display price from MRP and discount

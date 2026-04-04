@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EcommerceProduct;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Business;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,13 +15,19 @@ class EcommerceProductController extends Controller
     public function index(Request $request)
     {
         $q = trim($request->input('search', ''));
+        $status = trim((string) $request->input('status', ''));
+        $businessId = $request->input('business_id');
 
         $ecommerceProducts = EcommerceProduct::query()
-            ->with(['product.category', 'product.brandRelation', 'product.latestPurchaseItem'])
+            ->with(['product.category', 'product.brandRelation', 'product.latestPurchaseItem', 'product.business'])
             ->when($q, function ($query) use ($q) {
                 $query->whereHas('product', function ($q2) use ($q) {
                     $q2->where('name', 'like', "%$q%");
                 })->orWhere('sku', 'like', "%$q%");
+            })
+            ->when($status !== '', fn($query) => $query->where('status', $status))
+            ->when($businessId, function ($query) use ($businessId) {
+                $query->whereHas('product', fn($q2) => $q2->where('business_id', $businessId));
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -29,14 +36,20 @@ class EcommerceProductController extends Controller
         return view('frontend.product.index', [
             'ecommerceProducts' => $ecommerceProducts,
             'q' => $q,
+            'status' => $status,
+            'businesses' => Business::orderBy('business_name')->get(),
+            'selectedBusinessId' => $businessId,
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $businessId = $request->input('business_id');
+
         // Get products that are marked as listed for e-commerce but don't have ecommerce product yet
         $products = Product::where('is_listed', true)
             ->whereDoesntHave('ecommerceProduct')
+            ->when($businessId, fn($query) => $query->where('business_id', $businessId))
             ->with(['category', 'brandRelation', 'latestPurchaseItem'])
             ->orderBy('name')
             ->get();
@@ -46,6 +59,8 @@ class EcommerceProductController extends Controller
         return view('frontend.product.create', [
             'products' => $products,
             'categories' => $categories,
+            'businesses' => Business::orderBy('business_name')->get(),
+            'selectedBusinessId' => $businessId,
         ]);
     }
 

@@ -16,6 +16,14 @@
     </style>
 </head>
 <body>
+    @if(!empty($businessName))
+        <p><strong>Business:</strong> {{ $businessName }}</p>
+    @endif
+    
+    @if($from && $to)
+        <p><strong>Date Range:</strong> {{ \Carbon\Carbon::parse($from)->format('M d, Y') }} - {{ \Carbon\Carbon::parse($to)->format('M d, Y') }}</p>
+    @endif
+
     <table border="1" cellspacing="0" cellpadding="0">
         <thead>
             <tr>

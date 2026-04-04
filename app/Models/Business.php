@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\POS\Income;
+use App\Models\POS\Expense;
 use App\Models\POS\Invoice;
 
 class Business extends Model
@@ -31,6 +32,11 @@ class Business extends Model
     public function incomes(): HasMany
     {
         return $this->hasMany(Income::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     public function purchases(): HasMany

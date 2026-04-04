@@ -133,7 +133,6 @@
                             <option value="coming_soon" @selected($status == 'coming_soon')>Coming Soon</option>
                         </select>
                     </div>
-                    <input type="hidden" name="display_section" value="{{ $displaySection ?? '' }}">
                     <div class="md:col-span-2 flex items-end gap-3">
                         <button type="submit"
                                 class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition duration-200">

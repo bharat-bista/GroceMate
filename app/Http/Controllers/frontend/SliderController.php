@@ -17,7 +17,20 @@ class SliderController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('frontend.slider.index', compact('sliders'));
+        $promoCount = Slider::query()
+            ->where('slider_type', 'promo')
+            ->count();
+
+        $totalSliders = Slider::query()->count();
+        $activeSliders = Slider::query()->where('is_active', true)->count();
+        $heroCount = Slider::query()
+            ->where(function ($query) {
+                $query->where('slider_type', 'hero')
+                    ->orWhereNull('slider_type');
+            })
+            ->count();
+
+        return view('frontend.slider.index', compact('sliders', 'promoCount', 'totalSliders', 'activeSliders', 'heroCount'));
     }
 
     public function create()
@@ -36,17 +49,43 @@ class SliderController extends Controller
             'primary_button_link' => ['nullable', 'string', 'max:255'],
             'secondary_button_text' => ['nullable', 'string', 'max:100'],
             'secondary_button_link' => ['nullable', 'string', 'max:255'],
+            'slider_type' => ['required', 'in:hero,promo'],
+            'promo_slot' => ['nullable', 'integer', 'between:1,4', 'required_if:slider_type,promo'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (($data['slider_type'] ?? 'hero') === 'promo') {
+            $promoCount = Slider::query()->where('slider_type', 'promo')->count();
+            if ($promoCount >= 4) {
+                return back()
+                    ->withErrors(['slider_type' => 'Only 4 promo banners are allowed.'])
+                    ->withInput();
+            }
+
+            $slotTaken = Slider::query()
+                ->where('slider_type', 'promo')
+                ->where('promo_slot', $data['promo_slot'])
+                ->exists();
+
+            if ($slotTaken) {
+                return back()
+                    ->withErrors(['promo_slot' => 'This promo slot is already in use. Choose another slot (1-4).'])
+                    ->withInput();
+            }
+
+            // Promo banners use promo slot as their effective order.
+            $data['sort_order'] = (int) $data['promo_slot'];
+        } else {
+            $data['promo_slot'] = null;
+            $data['sort_order'] = $data['sort_order'] ?? 0;
+        }
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('sliders', 'public');
         }
 
         $data['is_active'] = $request->boolean('is_active', true);
-        $data['sort_order'] = $data['sort_order'] ?? 0;
-
         Slider::create($data);
 
         return redirect()
@@ -75,9 +114,42 @@ class SliderController extends Controller
             'primary_button_link' => ['nullable', 'string', 'max:255'],
             'secondary_button_text' => ['nullable', 'string', 'max:100'],
             'secondary_button_link' => ['nullable', 'string', 'max:255'],
+            'slider_type' => ['required', 'in:hero,promo'],
+            'promo_slot' => ['nullable', 'integer', 'between:1,4', 'required_if:slider_type,promo'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (($data['slider_type'] ?? 'hero') === 'promo') {
+            $promoCount = Slider::query()
+                ->where('slider_type', 'promo')
+                ->where('id', '!=', $slider->id)
+                ->count();
+
+            if ($promoCount >= 4) {
+                return back()
+                    ->withErrors(['slider_type' => 'Only 4 promo banners are allowed.'])
+                    ->withInput();
+            }
+
+            $slotTaken = Slider::query()
+                ->where('slider_type', 'promo')
+                ->where('promo_slot', $data['promo_slot'])
+                ->where('id', '!=', $slider->id)
+                ->exists();
+
+            if ($slotTaken) {
+                return back()
+                    ->withErrors(['promo_slot' => 'This promo slot is already in use. Choose another slot (1-4).'])
+                    ->withInput();
+            }
+
+            // Promo banners use promo slot as their effective order.
+            $data['sort_order'] = (int) $data['promo_slot'];
+        } else {
+            $data['promo_slot'] = null;
+            $data['sort_order'] = $data['sort_order'] ?? 0;
+        }
 
         if ($request->hasFile('image')) {
             if ($slider->image) {
@@ -87,8 +159,6 @@ class SliderController extends Controller
         }
 
         $data['is_active'] = $request->boolean('is_active', true);
-        $data['sort_order'] = $data['sort_order'] ?? 0;
-
         $slider->update($data);
 
         return redirect()

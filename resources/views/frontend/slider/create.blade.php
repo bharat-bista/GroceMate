@@ -12,6 +12,25 @@
 
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div>
+				<label class="block text-sm font-medium text-slate-700 mb-2">Banner Type *</label>
+				<select name="slider_type" id="slider_type" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" required>
+					<option value="hero" @selected(old('slider_type', 'hero') === 'hero')>Hero Slider</option>
+					<option value="promo" @selected(old('slider_type') === 'promo')>Promo Banner</option>
+				</select>
+				@error('slider_type')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+			</div>
+			<div id="promo_slot_wrap" class="{{ old('slider_type') === 'promo' ? '' : 'hidden' }}">
+				<label class="block text-sm font-medium text-slate-700 mb-2">Promo Slot (1-4) *</label>
+				<select name="promo_slot" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+					<option value="">Select Slot</option>
+					@for($slot = 1; $slot <= 4; $slot++)
+						<option value="{{ $slot }}" @selected((int) old('promo_slot') === $slot)>Slot {{ $slot }}</option>
+					@endfor
+				</select>
+				@error('promo_slot')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+			</div>
+
+			<div>
 				<label class="block text-sm font-medium text-slate-700 mb-2">Title *</label>
 				<input name="title" value="{{ old('title') }}" required class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
 				@error('title')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
@@ -42,9 +61,9 @@
 				<label class="block text-sm font-medium text-slate-700 mb-2">Secondary Button Link</label>
 				<input name="secondary_button_link" value="{{ old('secondary_button_link', '#') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
 			</div>
-			<div>
+			<div id="sort_order_wrap">
 				<label class="block text-sm font-medium text-slate-700 mb-2">Sort Order</label>
-				<input name="sort_order" type="number" min="0" value="{{ old('sort_order', 0) }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+				<input id="sort_order" name="sort_order" type="number" min="0" value="{{ old('sort_order', 0) }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
 			</div>
 			<div class="flex items-center gap-3 mt-8">
 				<input id="is_active" type="checkbox" name="is_active" value="1" @checked(old('is_active', true))>
@@ -63,4 +82,25 @@
 		</div>
 	</form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+	const typeSelect = document.getElementById('slider_type');
+	const promoWrap = document.getElementById('promo_slot_wrap');
+	const sortOrderWrap = document.getElementById('sort_order_wrap');
+	const sortOrderInput = document.getElementById('sort_order');
+
+	if (!typeSelect || !promoWrap || !sortOrderWrap || !sortOrderInput) return;
+
+	const togglePromoSlot = () => {
+		const isPromo = typeSelect.value === 'promo';
+		promoWrap.classList.toggle('hidden', !isPromo);
+		sortOrderWrap.classList.toggle('hidden', isPromo);
+		sortOrderInput.disabled = isPromo;
+	};
+
+	typeSelect.addEventListener('change', togglePromoSlot);
+	togglePromoSlot();
+});
+</script>
 @endsection

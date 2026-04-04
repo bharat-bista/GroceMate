@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
-use App\Models\EcommerceProduct;
-use App\Models\Product;
-use App\Models\Category;
 use App\Models\Business;
+use App\Models\EcommerceProduct;
+use App\Models\EcommerceProductImage;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,7 +17,6 @@ class EcommerceProductController extends Controller
         $q = trim($request->input('search', ''));
         $status = trim((string) $request->input('status', ''));
         $businessId = $request->input('business_id');
-        $displaySection = trim((string) $request->input('display_section', ''));
 
         $ecommerceProducts = EcommerceProduct::query()
             ->with(['product.category', 'product.brandRelation', 'product.latestPurchaseItem', 'product.business'])
@@ -27,7 +26,6 @@ class EcommerceProductController extends Controller
                 })->orWhere('sku', 'like', "%$q%");
             })
             ->when($status !== '', fn($query) => $query->where('status', $status))
-            ->when($displaySection !== '', fn($query) => $query->where('display_section', $displaySection))
             ->when($businessId, function ($query) use ($businessId) {
                 $query->whereHas('product', fn($q2) => $q2->where('business_id', $businessId));
             })
@@ -35,16 +33,13 @@ class EcommerceProductController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $title = $displaySection === 'slider_image' ? 'E-commerce Slider Images' : 'E-commerce Products';
-        $subtitle = $displaySection === 'slider_image'
-            ? 'Manage ecommerce products featured in the homepage slider'
-            : 'Manage products for online store';
+        $title = 'E-commerce Products';
+        $subtitle = 'Manage products for online store';
 
         return view('frontend.product.index', [
             'ecommerceProducts' => $ecommerceProducts,
             'q' => $q,
             'status' => $status,
-            'displaySection' => $displaySection,
             'title' => $title,
             'subtitle' => $subtitle,
             'businesses' => Business::orderBy('business_name')->get(),
@@ -54,22 +49,29 @@ class EcommerceProductController extends Controller
 
     public function create(Request $request)
     {
+        $businesses = Business::orderBy('business_name')->get();
         $businessId = $request->input('business_id');
 
-        // Get products that are marked as listed for e-commerce but don't have ecommerce product yet
-        $products = Product::where('is_listed', true)
-            ->whereDoesntHave('ecommerceProduct')
+        if (!$businessId) {
+            $businessId = $businesses->first()?->id;
+        }
+
+        // Load all products for the selected business and flag already-added ecommerce items in the UI.
+        $products = Product::query()
             ->when($businessId, fn($query) => $query->where('business_id', $businessId))
-            ->with(['category', 'brandRelation', 'latestPurchaseItem'])
+            ->with(['category', 'brandRelation', 'latestPurchaseItem', 'stock', 'ecommerceProduct'])
             ->orderBy('name')
             ->get();
 
-        $categories = Category::orderBy('name')->get();
+        $products->each(function ($product) {
+            $totalStock = (float) ($product->stock->quantity ?? 0);
+            $reservedStock = (float) ($product->ecommerceProduct->ecommerce_stock ?? 0);
+            $product->available_stock = max($totalStock - $reservedStock, 0);
+        });
 
         return view('frontend.product.create', [
             'products' => $products,
-            'categories' => $categories,
-            'businesses' => Business::orderBy('business_name')->get(),
+            'businesses' => $businesses,
             'selectedBusinessId' => $businessId,
         ]);
     }
@@ -77,17 +79,36 @@ class EcommerceProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'business_id' => ['required', 'exists:businesses,id'],
             'product_id' => ['required', 'exists:products,id', 'unique:ecommerce_products,product_id'],
             'sku' => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku'],
-            'status' => ['required', 'in:in_stock,out_of_stock,coming_soon'],
-            'display_section' => ['required', 'in:product_grid,slider_image'],
-            'previous_price' => ['nullable', 'numeric', 'min:0'],
             'mrp' => ['required', 'numeric', 'min:0'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ecommerce_stock' => ['required', 'numeric', 'min:0'],
             'meta_keywords' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
-            'thumbnail' => ['nullable', 'image', 'max:2048'],
+            'thumbnails' => ['nullable', 'array'],
+            'thumbnails.*' => ['image', 'max:2048'],
         ]);
+
+        $product = Product::with('latestPurchaseItem')->where('id', $data['product_id'])
+            ->where('business_id', $data['business_id'])
+            ->first();
+
+        if (!$product) {
+            return back()
+                ->withErrors(['product_id' => 'Selected product does not belong to the selected business account.'])
+                ->withInput();
+        }
+
+        $totalStock = (float) ($product->stock->quantity ?? 0);
+        $reservedStock = (float) $data['ecommerce_stock'];
+
+        if ($reservedStock > $totalStock) {
+            return back()
+                ->withErrors(['ecommerce_stock' => 'Ecommerce stock cannot be greater than the available inventory stock.'])
+                ->withInput();
+        }
 
         // Calculate display price
         $discountPercent = $data['discount_percent'] ?? 0;
@@ -95,30 +116,38 @@ class EcommerceProductController extends Controller
         $displayPrice = $mrp - ($mrp * $discountPercent / 100);
 
         // Get purchase price for profit calculation
-        $product = Product::with('latestPurchaseItem')->find($data['product_id']);
         $purchasePrice = $product->latestPurchaseItem->unit_cost ?? 0;
         $profit = $displayPrice - $purchasePrice;
 
-        // Handle thumbnail upload
-        $thumbnailPath = null;
-        if ($request->hasFile('thumbnail')) {
-            $thumbnailPath = $request->file('thumbnail')->store('ecommerce-products', 'public');
+        // Handle thumbnail uploads
+        $thumbnailPaths = [];
+        if ($request->hasFile('thumbnails')) {
+            foreach ($request->file('thumbnails') as $thumbnailFile) {
+                if ($thumbnailFile) {
+                    $thumbnailPaths[] = $thumbnailFile->store('ecommerce-products', 'public');
+                }
+            }
         }
 
-        EcommerceProduct::create([
+        $thumbnailPath = $thumbnailPaths[0] ?? null;
+        $status = $reservedStock > 0 ? 'in_stock' : 'out_of_stock';
+
+        $ecommerceProduct = EcommerceProduct::create([
             'product_id' => $data['product_id'],
             'sku' => $data['sku'],
-            'status' => $data['status'],
-            'display_section' => $data['display_section'],
-            'previous_price' => $data['previous_price'],
+            'status' => $status,
+            'display_section' => 'product_grid',
             'mrp' => $mrp,
             'discount_percent' => $discountPercent,
             'display_price' => $displayPrice,
             'profit' => $profit,
+            'ecommerce_stock' => $reservedStock,
             'meta_keywords' => $data['meta_keywords'],
             'description' => $data['description'],
             'thumbnail' => $thumbnailPath,
         ]);
+
+        $this->saveEcommerceImages($ecommerceProduct, $thumbnailPaths);
 
         return redirect()->route('inventory.ecommerce-products.index')
             ->with('success', 'E-commerce product created successfully.');
@@ -126,13 +155,12 @@ class EcommerceProductController extends Controller
 
     public function edit(EcommerceProduct $ecommerceProduct)
     {
-        $ecommerceProduct->load(['product.category', 'product.brandRelation', 'product.latestPurchaseItem']);
-
-        $categories = Category::orderBy('name')->get();
+        $ecommerceProduct->load(['product.category', 'product.brandRelation', 'product.latestPurchaseItem', 'product.stock', 'images' => function ($query) {
+            $query->orderBy('is_primary', 'desc')->orderBy('sort_order')->orderBy('id');
+        }]);
 
         return view('frontend.product.edit', [
             'ecommerceProduct' => $ecommerceProduct,
-            'categories' => $categories,
         ]);
     }
 
@@ -140,14 +168,13 @@ class EcommerceProductController extends Controller
     {
         $data = $request->validate([
             'sku' => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku,' . $ecommerceProduct->id],
-            'status' => ['required', 'in:in_stock,out_of_stock,coming_soon'],
-            'display_section' => ['required', 'in:product_grid,slider_image'],
-            'previous_price' => ['nullable', 'numeric', 'min:0'],
             'mrp' => ['required', 'numeric', 'min:0'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ecommerce_stock' => ['required', 'numeric', 'min:0'],
             'meta_keywords' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
-            'thumbnail' => ['nullable', 'image', 'max:2048'],
+            'thumbnails' => ['nullable', 'array'],
+            'thumbnails.*' => ['image', 'max:2048'],
         ]);
 
         // Calculate display price
@@ -159,28 +186,49 @@ class EcommerceProductController extends Controller
         $purchasePrice = $ecommerceProduct->product->latestPurchaseItem->unit_cost ?? 0;
         $profit = $displayPrice - $purchasePrice;
 
-        // Handle thumbnail upload
-        if ($request->hasFile('thumbnail')) {
-            // Delete old thumbnail
-            if ($ecommerceProduct->thumbnail) {
-                Storage::disk('public')->delete($ecommerceProduct->thumbnail);
-            }
-            $data['thumbnail'] = $request->file('thumbnail')->store('ecommerce-products', 'public');
+        $totalStock = (float) ($ecommerceProduct->product->stock->quantity ?? 0);
+        $reservedStock = (float) $data['ecommerce_stock'];
+
+        if ($reservedStock > $totalStock) {
+            return back()
+                ->withErrors(['ecommerce_stock' => 'Ecommerce stock cannot be greater than the available inventory stock.'])
+                ->withInput();
         }
+
+        // Handle thumbnail uploads
+        $thumbnailPaths = [];
+        if ($request->hasFile('thumbnails')) {
+            foreach ($request->file('thumbnails') as $thumbnailFile) {
+                if ($thumbnailFile) {
+                    $thumbnailPaths[] = $thumbnailFile->store('ecommerce-products', 'public');
+                }
+            }
+        }
+
+        $thumbnailPath = $ecommerceProduct->thumbnail;
+        if (!empty($thumbnailPaths)) {
+            $thumbnailPath = $thumbnailPaths[0];
+        }
+
+        $status = $reservedStock > 0 ? 'in_stock' : 'out_of_stock';
 
         $ecommerceProduct->update([
             'sku' => $data['sku'],
-            'status' => $data['status'],
-            'display_section' => $data['display_section'],
-            'previous_price' => $data['previous_price'],
+            'status' => $status,
+            'display_section' => 'product_grid',
             'mrp' => $mrp,
             'discount_percent' => $discountPercent,
             'display_price' => $displayPrice,
             'profit' => $profit,
+            'ecommerce_stock' => $reservedStock,
             'meta_keywords' => $data['meta_keywords'],
             'description' => $data['description'],
-            'thumbnail' => $data['thumbnail'] ?? $ecommerceProduct->thumbnail,
+            'thumbnail' => $thumbnailPath,
         ]);
+
+        if (!empty($thumbnailPaths)) {
+            $this->saveEcommerceImages($ecommerceProduct, $thumbnailPaths);
+        }
 
         return redirect()->route('inventory.ecommerce-products.index')
             ->with('success', 'E-commerce product updated successfully.');
@@ -188,14 +236,42 @@ class EcommerceProductController extends Controller
 
     public function destroy(EcommerceProduct $ecommerceProduct)
     {
-        // Delete thumbnail
+        $ecommerceProduct->load('images');
+
+        // Delete thumbnail files and saved ecommerce image records.
         if ($ecommerceProduct->thumbnail) {
             Storage::disk('public')->delete($ecommerceProduct->thumbnail);
+        }
+
+        foreach ($ecommerceProduct->images as $image) {
+            if ($image->image_path) {
+                Storage::disk('public')->delete($image->image_path);
+            }
         }
 
         $ecommerceProduct->delete();
 
         return redirect()->route('inventory.ecommerce-products.index')
             ->with('success', 'E-commerce product deleted successfully.');
+    }
+
+    private function saveEcommerceImages(EcommerceProduct $ecommerceProduct, array $imagePaths): void
+    {
+        if (empty($imagePaths)) {
+            return;
+        }
+
+        $existingCount = $ecommerceProduct->images()->count();
+        $nextSortOrder = (int) $ecommerceProduct->images()->max('sort_order');
+        $isFirstImage = $existingCount === 0;
+
+        foreach ($imagePaths as $index => $imagePath) {
+            EcommerceProductImage::create([
+                'ecommerce_product_id' => $ecommerceProduct->id,
+                'image_path' => $imagePath,
+                'sort_order' => $nextSortOrder + $index + 1,
+                'is_primary' => $isFirstImage && $index === 0,
+            ]);
+        }
     }
 }

@@ -232,12 +232,11 @@ class PurchaseController extends Controller
                         'is_active' => true,
                     ]);
 
-                    // Create stock record
-                    Stock::create([
-                        'product_id' => $product->id,
-                        'quantity' => 0,
-                        'reorder_level' => 0,
-                    ]);
+                    // Ensure stock row exists for the new product without duplicate-key failures.
+                    Stock::firstOrCreate(
+                        ['product_id' => $product->id],
+                        ['quantity' => 0, 'reorder_level' => 0]
+                    );
 
                     $productId = $product->id;
                 }

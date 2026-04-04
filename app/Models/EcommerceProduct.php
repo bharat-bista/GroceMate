@@ -11,6 +11,7 @@ class EcommerceProduct extends Model
         'sku',
         'status',
         'display_section',
+        'ecommerce_stock',
         'previous_price',
         'mrp',
         'discount_percent',
@@ -22,6 +23,7 @@ class EcommerceProduct extends Model
     ];
 
     protected $casts = [
+        'ecommerce_stock' => 'decimal:3',
         'previous_price' => 'decimal:2',
         'mrp' => 'decimal:2',
         'discount_percent' => 'decimal:2',

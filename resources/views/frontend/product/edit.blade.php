@@ -52,24 +52,7 @@
                            placeholder="e.g. PRD-001" />
                 </div>
 
-                <div>
-                    <label class="text-sm font-medium text-slate-700">Product Status *</label>
-                    <select name="status" required 
-                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                        <option value="in_stock" @selected(old('status', $ecommerceProduct->status) == 'in_stock')>In Stock</option>
-                        <option value="out_of_stock" @selected(old('status', $ecommerceProduct->status) == 'out_of_stock')>Out of Stock</option>
-                        <option value="coming_soon" @selected(old('status', $ecommerceProduct->status) == 'coming_soon')>Coming Soon</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-sm font-medium text-slate-700">Ecommerce Section</label>
-                    <select name="display_section" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                        <option value="product_grid" @selected(old('display_section', $ecommerceProduct->display_section ?? 'product_grid') == 'product_grid')>Product Grid</option>
-                        <option value="slider_image" @selected(old('display_section', $ecommerceProduct->display_section ?? 'product_grid') == 'slider_image')>Slider Image</option>
-                    </select>
-                    <p class="text-xs text-slate-500 mt-1">Use Slider Image for items you want to feature in the homepage slider.</p>
-                </div>
+                <input type="hidden" name="display_section" value="product_grid">
             </div>
         </div>
 
@@ -83,16 +66,16 @@
                 </div>
                 <h3 class="text-lg font-semibold text-slate-900">Pricing</h3>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                    <label class="text-sm font-medium text-slate-700">Previous Price</label>
-                    <input name="previous_price" type="number" step="0.01" value="{{ old('previous_price', $ecommerceProduct->previous_price) }}"
-                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
-                           placeholder="0.00" />
+                      <label class="text-sm font-medium text-slate-700">Purchase Price</label>
+                      <input type="text" id="purchase-price-display" readonly
+                          class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500"
+                          value="{{ number_format((float) ($ecommerceProduct->product->latestPurchaseItem->unit_cost ?? 0), 2) }}" />
                 </div>
 
                 <div>
-                    <label class="text-sm font-medium text-slate-700">MRP *</label>
+                      <label class="text-sm font-medium text-slate-700">Sale Price *</label>
                     <input name="mrp" type="number" step="0.01" value="{{ old('mrp', $ecommerceProduct->mrp) }}" required
                            id="mrp-input"
                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400" />
@@ -113,17 +96,34 @@
                 </div>
 
                 <div>
+                    <label class="text-sm font-medium text-slate-700">Ecommerce Stock *</label>
+                    <input name="ecommerce_stock" type="number" step="0.001" min="0" value="{{ old('ecommerce_stock', $ecommerceProduct->ecommerce_stock ?? 0) }}"
+                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
+                           placeholder="0.000" />
+                    <p class="text-xs text-slate-500 mt-1">Reserve how much inventory stock should be available for ecommerce.</p>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Inventory Stock</label>
+                    <input type="text" id="inventory-stock-display" readonly
+                           class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500"
+                           value="{{ number_format((float) ($ecommerceProduct->product->stock->quantity ?? 0), 3) }}" />
+                    <p class="text-xs text-slate-500 mt-1">Total stock available for the selected product.</p>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Stock Left</label>
+                    <input type="text" id="stock-left-display" readonly
+                           class="mt-1 w-full rounded-xl border border-slate-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700"
+                           value="0.000" />
+                    <p class="text-xs text-slate-500 mt-1">Inventory stock minus ecommerce stock.</p>
+                </div>
+
+                <div>
                     <label class="text-sm font-medium text-slate-700">Profit</label>
                     <input type="text" id="profit-display" readonly
                            class="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700" 
                            value="{{ number_format((float) $ecommerceProduct->profit, 2) }}" />
-                </div>
-
-                <div>
-                    <label class="text-sm font-medium text-slate-700">Purchase Price</label>
-                    <input type="text" id="purchase-price-display" readonly
-                           class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500" 
-                           value="{{ number_format((float) ($ecommerceProduct->product->latestPurchaseItem->unit_cost ?? 0), 2) }}" />
                 </div>
             </div>
         </div>
@@ -157,9 +157,9 @@
                 <h3 class="text-lg font-semibold text-slate-900">Product Description</h3>
             </div>
             <div>
-                <textarea name="description" rows="6"
-                          class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
-                          placeholder="Enter detailed product description...">{{ old('description', $ecommerceProduct->description) }}</textarea>
+                <textarea name="description" id="description-input" class="hidden">{{ old('description', $ecommerceProduct->description) }}</textarea>
+                <div id="description-editor"
+                     class="mt-1 rounded-xl border border-slate-300 bg-white text-sm"></div>
             </div>
         </div>
 
@@ -173,17 +173,34 @@
                 </div>
                 <h3 class="text-lg font-semibold text-slate-900">Thumbnail Image</h3>
             </div>
-            <div class="flex items-start gap-6">
-                @if($ecommerceProduct->thumbnail)
-                    <div class="flex-shrink-0">
-                        <img src="{{ Storage::url($ecommerceProduct->thumbnail) }}" 
-                             alt="Current thumbnail"
-                             class="w-32 h-32 rounded-xl object-cover border-2 border-slate-200 shadow-sm">
-                        <p class="text-xs text-slate-500 mt-2 text-center">Current image</p>
-                    </div>
-                @endif
-                <div class="flex-1">
-                    <label class="text-sm font-medium text-slate-700">Upload New Thumbnail</label>
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    @if($ecommerceProduct->thumbnail)
+                        <div>
+                            <img src="{{ Storage::url($ecommerceProduct->thumbnail) }}"
+                                 alt="Current thumbnail"
+                                 class="w-full h-28 rounded-xl object-cover border-2 border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500 mt-2 text-center">Main image</p>
+                        </div>
+                    @endif
+
+                    @forelse($ecommerceProduct->images as $image)
+                        <div>
+                            <img src="{{ Storage::url($image->image_path) }}"
+                                 alt="Product thumbnail"
+                                 class="w-full h-28 rounded-xl object-cover border-2 border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500 mt-2 text-center">
+                                {{ $image->is_primary ? 'Primary thumbnail' : 'Additional image' }}
+                            </p>
+                        </div>
+                    @empty
+                        @if(!$ecommerceProduct->thumbnail)
+                            <div class="col-span-2 md:col-span-4 text-sm text-slate-500">No thumbnails uploaded yet.</div>
+                        @endif
+                    @endforelse
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Upload More Thumbnails</label>
                     <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-xl hover:border-slate-400 transition-all duration-200">
                         <div class="space-y-1 text-center">
                             <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -191,12 +208,12 @@
                             </svg>
                             <div class="flex text-sm text-slate-600">
                                 <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                    <span>Upload a file</span>
-                                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/jpg" class="sr-only" />
+                                    <span>Upload files</span>
+                                    <input type="file" name="thumbnails[]" accept="image/jpeg,image/png,image/jpg" multiple class="sr-only" />
                                 </label>
-                                <p class="pl-1">or drag and drop</p>
+                                <p class="pl-1">or drag and drop multiple images</p>
                             </div>
-                            <p class="text-xs text-slate-500">PNG, JPG up to 2MB | Suggested: 300×475 px</p>
+                            <p class="text-xs text-slate-500">PNG, JPG up to 2MB each</p>
                         </div>
                     </div>
                 </div>
@@ -218,6 +235,13 @@
 </div>
 
 @push('scripts')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<style>
+    #description-editor .ql-editor {
+        min-height: 220px;
+    }
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const mrpInput = document.getElementById('mrp-input');
@@ -225,21 +249,64 @@
         const displayPriceInput = document.getElementById('display-price');
         const profitDisplay = document.getElementById('profit-display');
         const purchasePriceDisplay = document.getElementById('purchase-price-display');
+        const inventoryStockDisplay = document.getElementById('inventory-stock-display');
+        const stockLeftDisplay = document.getElementById('stock-left-display');
+        const ecommerceStockInput = document.querySelector('input[name="ecommerce_stock"]');
+        const descriptionInput = document.getElementById('description-input');
+        const form = mrpInput.closest('form');
+        let descriptionEditor = null;
 
         const purchasePrice = parseFloat(purchasePriceDisplay.value.replace(/,/g, '')) || 0;
+        const inventoryStock = parseFloat(inventoryStockDisplay.value.replace(/,/g, '')) || 0;
+        const currentEcommerceStock = parseFloat(ecommerceStockInput?.value) || 0;
 
         function calculatePrices() {
             const mrp = parseFloat(mrpInput.value) || 0;
             const discount = parseFloat(discountInput.value) || 0;
             const displayPrice = mrp - (mrp * discount / 100);
             const profit = displayPrice - purchasePrice;
+            const ecommerceStock = parseFloat(ecommerceStockInput?.value) || currentEcommerceStock;
+            const stockLeft = inventoryStock - ecommerceStock;
 
             displayPriceInput.value = displayPrice.toFixed(2);
             profitDisplay.value = profit.toFixed(2);
+            if (stockLeftDisplay) {
+                stockLeftDisplay.value = Math.max(stockLeft, 0).toFixed(3);
+            }
         }
 
         mrpInput.addEventListener('input', calculatePrices);
         discountInput.addEventListener('input', calculatePrices);
+        if (ecommerceStockInput) {
+            ecommerceStockInput.addEventListener('input', calculatePrices);
+        }
+
+        if (window.Quill && descriptionInput) {
+            descriptionEditor = new Quill('#description-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['link'],
+                        ['clean']
+                    ]
+                }
+            });
+
+            if (descriptionInput.value) {
+                descriptionEditor.root.innerHTML = descriptionInput.value;
+            }
+
+            if (form) {
+                form.addEventListener('submit', function () {
+                    descriptionInput.value = descriptionEditor.root.innerHTML;
+                });
+            }
+        }
+
+        calculatePrices();
     });
 </script>
 @endpush

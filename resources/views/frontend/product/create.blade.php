@@ -22,12 +22,25 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-slate-700">Business Account</label>
+                    <select id="business-filter"
+                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
+                        <option value="">All Businesses</option>
+                        @foreach($businesses as $business)
+                            <option value="{{ $business->id }}" @selected((string) $selectedBusinessId === (string) $business->id)>{{ $business->business_name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Choose a business to see only its listed products.</p>
+                </div>
+
+                <div class="md:col-span-2">
                     <label class="text-sm font-medium text-slate-700">Select Product *</label>
                     <select name="product_id" required 
                             class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
                         <option value="">Select a product</option>
                         @foreach($products as $product)
                             <option value="{{ $product->id }}" 
+                                    data-business-id="{{ $product->business_id }}"
                                     data-category="{{ $product->category->name ?? 'N/A' }}"
                                     data-brand="{{ $product->brandRelation->name ?? 'N/A' }}"
                                     data-purchase-price="{{ $product->latestPurchaseItem->unit_cost ?? 0 }}"
@@ -195,14 +208,40 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const businessFilter = document.getElementById('business-filter');
         const productSelect = document.querySelector('select[name="product_id"]');
         const mrpInput = document.getElementById('mrp-input');
         const discountInput = document.getElementById('discount-input');
         const displayPriceInput = document.getElementById('display-price');
         const profitDisplay = document.getElementById('profit-display');
         const purchasePriceDisplay = document.getElementById('purchase-price-display');
+        const allProductOptions = Array.from(productSelect.options).slice(1).map(option => option.cloneNode(true));
+        const oldProductId = @json((string) old('product_id', ''));
 
         let purchasePrice = 0;
+
+        function applyBusinessFilter() {
+            const selectedBusinessId = businessFilter.value;
+
+            while (productSelect.options.length > 1) {
+                productSelect.remove(1);
+            }
+
+            allProductOptions.forEach(option => {
+                if (!selectedBusinessId || option.dataset.businessId === selectedBusinessId) {
+                    productSelect.add(option.cloneNode(true));
+                }
+            });
+
+            if (oldProductId && Array.from(productSelect.options).some(opt => opt.value === oldProductId)) {
+                productSelect.value = oldProductId;
+            } else {
+                productSelect.value = '';
+            }
+            purchasePrice = 0;
+            purchasePriceDisplay.value = '0.00';
+            calculatePrices();
+        }
 
         function calculatePrices() {
             const mrp = parseFloat(mrpInput.value) || 0;
@@ -221,10 +260,13 @@
             calculatePrices();
         });
 
+        businessFilter.addEventListener('change', applyBusinessFilter);
+
         mrpInput.addEventListener('input', calculatePrices);
         discountInput.addEventListener('input', calculatePrices);
 
         // Initialize on load
+        applyBusinessFilter();
         if (productSelect.value) {
             const selected = productSelect.options[productSelect.selectedIndex];
             purchasePrice = parseFloat(selected.dataset.purchasePrice) || 0;

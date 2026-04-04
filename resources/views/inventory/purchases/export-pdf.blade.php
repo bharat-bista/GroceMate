@@ -16,6 +16,9 @@
 </head>
 <body>
     <h1>Purchases Report</h1>
+    @if(!empty($businessName))
+        <div class="date-range">Business: {{ $businessName }}</div>
+    @endif
     
     @if($from && $to)
         <div class="date-range">

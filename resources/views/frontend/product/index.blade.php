@@ -92,7 +92,7 @@
                     <p class="text-sm text-slate-600 mt-1">Manage products visible on your online store</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('inventory.ecommerce-products.create') }}"
+                          <a href="{{ route('inventory.ecommerce-products.create', array_filter(['business_id' => $selectedBusinessId])) }}"
                        class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition duration-200">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -106,7 +106,7 @@
         {{-- Search and Filters --}}
         <div class="p-6 bg-slate-50 border-b border-slate-200">
             <form method="GET" action="{{ route('inventory.ecommerce-products.index') }}" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
                         <input type="text" name="search" value="{{ $q }}"
@@ -114,13 +114,23 @@
                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Business</label>
+                        <select name="business_id"
+                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <option value="">All Businesses</option>
+                            @foreach($businesses as $business)
+                                <option value="{{ $business->id }}" @selected((string) $selectedBusinessId === (string) $business->id)>{{ $business->business_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Status</label>
                         <select name="status"
                                 class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                             <option value="">All Status</option>
-                            <option value="in_stock" @selected(request('status') == 'in_stock')>In Stock</option>
-                            <option value="out_of_stock" @selected(request('status') == 'out_of_stock')>Out of Stock</option>
-                            <option value="coming_soon" @selected(request('status') == 'coming_soon')>Coming Soon</option>
+                            <option value="in_stock" @selected($status == 'in_stock')>In Stock</option>
+                            <option value="out_of_stock" @selected($status == 'out_of_stock')>Out of Stock</option>
+                            <option value="coming_soon" @selected($status == 'coming_soon')>Coming Soon</option>
                         </select>
                     </div>
                     <div class="md:col-span-2 flex items-end gap-3">
@@ -151,6 +161,7 @@
                     <tr>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">#</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Product</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">SKU</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">MRP</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Discount</th>
@@ -190,6 +201,10 @@
                                         </div>
                                     </div>
                                 </div>
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-slate-900">{{ $eProduct->product->business->business_name ?? '-' }}</div>
                             </td>
 
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -261,7 +276,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-12 text-center">
+                            <td colspan="10" class="px-6 py-12 text-center">
                                 <div class="text-slate-500">
                                     <svg class="mx-auto h-16 w-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>

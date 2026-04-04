@@ -14,10 +14,22 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
+      <label class="text-sm text-slate-600">Business Account</label>
+      <select name="business_id" class="mt-1 w-full rounded-xl border-slate-200" required>
+        <option value="">Select business account</option>
+        @foreach($businesses as $business)
+          <option value="{{ $business->id }}" @selected(old('business_id', $product->business_id) == $business->id)>{{ $business->business_name }}</option>
+        @endforeach
+      </select>
+      @error('business_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
       <label class="text-sm text-slate-600">Product Name</label>
       <input name="name"
              value="{{ old('name', $product->name) }}"
              class="mt-1 w-full rounded-xl border-slate-200" />
+      @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
@@ -32,6 +44,8 @@
              placeholder="Or type new brand name"
              class="mt-2 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
       <p class="text-xs text-slate-500 mt-1">Select existing brand or type new brand name</p>
+            @error('brand_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            @error('brand_name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>

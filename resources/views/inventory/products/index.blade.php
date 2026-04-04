@@ -27,12 +27,21 @@
 
         <div class="p-6 bg-slate-50 border-b border-slate-200">
             <form method="GET" action="{{ route('inventory.products.index') }}" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
                         <input type="text" name="search" value="{{ request('search', $q) }}"
                                placeholder="Product name..."
                                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Business</label>
+                        <select name="business_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">All Businesses</option>
+                            @foreach($businesses as $business)
+                                <option value="{{ $business->id }}" @selected((string) $selectedBusinessId === (string) $business->id)>{{ $business->business_name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="flex items-end gap-3">
                         <button type="submit"
@@ -54,6 +63,7 @@
                     <tr>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Product</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Price</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
@@ -77,6 +87,9 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-slate-900">{{ $product->brandRelation ? $product->brandRelation->name : '-' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-900">{{ $product->business->business_name ?? '-' }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-slate-900">{{ $product->category->name ?? 'N/A' }}</div>
@@ -120,7 +133,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center">
+                            <td colspan="9" class="px-6 py-12 text-center">
                                 <div class="text-slate-500">
                                     <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"></path>

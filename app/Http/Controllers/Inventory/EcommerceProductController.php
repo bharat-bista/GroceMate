@@ -17,6 +17,7 @@ class EcommerceProductController extends Controller
         $q = trim($request->input('search', ''));
         $status = trim((string) $request->input('status', ''));
         $businessId = $request->input('business_id');
+        $displaySection = trim((string) $request->input('display_section', ''));
 
         $ecommerceProducts = EcommerceProduct::query()
             ->with(['product.category', 'product.brandRelation', 'product.latestPurchaseItem', 'product.business'])
@@ -26,6 +27,7 @@ class EcommerceProductController extends Controller
                 })->orWhere('sku', 'like', "%$q%");
             })
             ->when($status !== '', fn($query) => $query->where('status', $status))
+            ->when($displaySection !== '', fn($query) => $query->where('display_section', $displaySection))
             ->when($businessId, function ($query) use ($businessId) {
                 $query->whereHas('product', fn($q2) => $q2->where('business_id', $businessId));
             })
@@ -33,10 +35,18 @@ class EcommerceProductController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $title = $displaySection === 'slider_image' ? 'E-commerce Slider Images' : 'E-commerce Products';
+        $subtitle = $displaySection === 'slider_image'
+            ? 'Manage ecommerce products featured in the homepage slider'
+            : 'Manage products for online store';
+
         return view('frontend.product.index', [
             'ecommerceProducts' => $ecommerceProducts,
             'q' => $q,
             'status' => $status,
+            'displaySection' => $displaySection,
+            'title' => $title,
+            'subtitle' => $subtitle,
             'businesses' => Business::orderBy('business_name')->get(),
             'selectedBusinessId' => $businessId,
         ]);
@@ -70,6 +80,7 @@ class EcommerceProductController extends Controller
             'product_id' => ['required', 'exists:products,id', 'unique:ecommerce_products,product_id'],
             'sku' => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku'],
             'status' => ['required', 'in:in_stock,out_of_stock,coming_soon'],
+            'display_section' => ['required', 'in:product_grid,slider_image'],
             'previous_price' => ['nullable', 'numeric', 'min:0'],
             'mrp' => ['required', 'numeric', 'min:0'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -98,6 +109,7 @@ class EcommerceProductController extends Controller
             'product_id' => $data['product_id'],
             'sku' => $data['sku'],
             'status' => $data['status'],
+            'display_section' => $data['display_section'],
             'previous_price' => $data['previous_price'],
             'mrp' => $mrp,
             'discount_percent' => $discountPercent,
@@ -129,6 +141,7 @@ class EcommerceProductController extends Controller
         $data = $request->validate([
             'sku' => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku,' . $ecommerceProduct->id],
             'status' => ['required', 'in:in_stock,out_of_stock,coming_soon'],
+            'display_section' => ['required', 'in:product_grid,slider_image'],
             'previous_price' => ['nullable', 'numeric', 'min:0'],
             'mrp' => ['required', 'numeric', 'min:0'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -158,6 +171,7 @@ class EcommerceProductController extends Controller
         $ecommerceProduct->update([
             'sku' => $data['sku'],
             'status' => $data['status'],
+            'display_section' => $data['display_section'],
             'previous_price' => $data['previous_price'],
             'mrp' => $mrp,
             'discount_percent' => $discountPercent,

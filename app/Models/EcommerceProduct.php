@@ -10,6 +10,7 @@ class EcommerceProduct extends Model
         'product_id',
         'sku',
         'status',
+        'display_section',
         'previous_price',
         'mrp',
         'discount_percent',
@@ -31,6 +32,11 @@ class EcommerceProduct extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(EcommerceProductImage::class);
     }
 
     // Calculate display price from MRP and discount

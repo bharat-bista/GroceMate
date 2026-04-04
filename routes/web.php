@@ -7,6 +7,7 @@ use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\OTPController;
+use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'admin'])
 
         // E-commerce Products routes
         Route::resource('ecommerce-products', EcommerceProductController::class);
+        Route::resource('sliders', SliderController::class);
         Route::delete('ecommerce-products/{ecommerce_product}/images/{image}', [EcommerceProductController::class, 'deleteImage'])->name('ecommerce-products.delete-image');
         Route::post('ecommerce-products/{ecommerce_product}/images/{image}/primary', [EcommerceProductController::class, 'setPrimaryImage'])->name('ecommerce-products.set-primary-image');
 

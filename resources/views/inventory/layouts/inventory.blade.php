@@ -42,7 +42,8 @@
         $isEcommerceGroup = request()->routeIs(
           'inventory.ecommerce-products.*',
           'inventory.ecommerce-brands.*',
-          'inventory.ecommerce-categories.*'
+          'inventory.ecommerce-categories.*',
+          'inventory.sliders.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
@@ -193,6 +194,11 @@
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-brands.*')) }}"
         href="{{ route('inventory.ecommerce-brands.index') }}">
         Brand
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.sliders.*')) }}"
+        href="{{ route('inventory.sliders.index') }}">
+        Slider Image
       </a>
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-categories.*')) }}"

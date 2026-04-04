@@ -129,6 +129,7 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Phone</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">VAT Number</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">PAN Number</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business Account</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Total Due</th>
                         <th class="text-right px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -160,6 +161,7 @@
                             <td class="px-6 py-4 text-slate-600">{{ $supplier->phone ?? '—' }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $supplier->vat_number ?? '-' }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $supplier->pan_number ?? '-' }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ $supplier->businessAccount->business_name ?? '-' }}</td>
                             <td class="px-6 py-4">
                                 @if($supplier->calculated_total_due > 0)
                                     <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">
@@ -206,7 +208,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>

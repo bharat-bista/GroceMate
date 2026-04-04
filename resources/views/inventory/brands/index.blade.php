@@ -5,69 +5,102 @@
 @section('subtitle','Create and manage product brands')
 
 @section('content')
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-  <form class="flex gap-2" method="GET" action="{{ route('inventory.brands.index') }}">
-    <input name="q" value="{{ $q }}" placeholder="Search brand..."
-           class="w-full md:w-80 rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200" />
-    <button class="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100">
-      Search
-    </button>
-  </form>
+<div class="space-y-6">
+  @if(session('success'))
+    <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
+      {{ session('success') }}
+    </div>
+  @endif
 
-  <a href="{{ route('inventory.brands.create') }}"
-     class="px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-    + Add Brand
-  </a>
-</div>
+  <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Brand Management</h2>
+          <p class="text-sm text-slate-600 mt-1">Maintain product brands and company discounts</p>
+        </div>
+        <a href="{{ route('inventory.brands.create') }}"
+           class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+          + Add Brand
+        </a>
+      </div>
+    </div>
 
-<div class="mt-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead class="text-slate-500 bg-slate-50">
-      <tr>
-        <th class="text-left px-5 py-3">Order</th>
-        <th class="text-left px-5 py-3">Brand Name</th>
-        <th class="text-left px-5 py-3">Image</th>
-        <th class="text-left px-5 py-3">Company Discount</th>
-        <th class="text-right px-5 py-3">Actions</th>
-      </tr>
-    </thead>
+    <div class="p-6 bg-slate-50 border-b border-slate-200">
+      <form class="space-y-4" method="GET" action="{{ route('inventory.brands.index') }}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+            <input name="q" value="{{ $q }}" placeholder="Search brand by name..."
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+          </div>
+          <div class="flex items-end gap-3">
+            <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+              Search
+            </button>
+            <a href="{{ route('inventory.brands.index') }}" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm font-medium">
+              Clear
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
 
-    <tbody class="divide-y">
-      @forelse($brands as $brand)
-        <tr>
-          <td class="px-5 py-4">{{ $brand->order }}</td>
-          <td class="px-5 py-4 font-semibold">{{ $brand->name }}</td>
-          <td class="px-5 py-4">
-            @if($brand->image)
-              <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="w-12 h-12 object-cover rounded-lg">
-            @else
-              <span class="text-slate-400">No image</span>
-            @endif
-          </td>
-          <td class="px-5 py-4">{{ $brand->company_discount }}%</td>
-          <td class="px-5 py-4 text-right">
-            <div class="inline-flex items-center gap-3">
-              <a class="underline text-slate-800" href="{{ route('inventory.brands.edit',$brand) }}">Edit</a>
+    @if($brands->count() > 0)
+      <div class="text-xs text-slate-500 px-6 pt-4 pb-2">
+        Showing {{ $brands->firstItem() }} to {{ $brands->lastItem() }} of {{ $brands->total() }} results
+      </div>
+    @endif
 
-              <form method="POST" action="{{ route('inventory.brands.destroy',$brand) }}"
-                    onsubmit="return confirm('Delete this brand?');">
-                @csrf
-                @method('DELETE')
-                <button class="text-red-700 underline">Delete</button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      @empty
-        <tr>
-          <td class="px-5 py-6 text-slate-500" colspan="5">No brands found.</td>
-        </tr>
-      @endforelse
-    </tbody>
-  </table>
-</div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 border-b border-slate-200">
+          <tr>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Image</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand Name</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Order</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Discount</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+          @forelse($brands as $brand)
+            <tr class="hover:bg-slate-50">
+              <td class="px-6 py-4">
+                @if($brand->image)
+                  <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="h-10 w-10 object-cover rounded-lg border border-slate-200">
+                @else
+                  <div class="h-10 w-10 bg-slate-100 rounded-lg border border-slate-200"></div>
+                @endif
+              </td>
+              <td class="px-6 py-4 font-medium text-slate-900">{{ $brand->name }}</td>
+              <td class="px-6 py-4 text-slate-600">{{ $brand->order }}</td>
+              <td class="px-6 py-4 text-slate-600">{{ $brand->company_discount }}%</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <div class="flex space-x-3">
+                  <a class="text-emerald-600 hover:text-emerald-900 font-medium" href="{{ route('inventory.brands.edit',$brand) }}">Edit</a>
+                  <form method="POST" action="{{ route('inventory.brands.destroy',$brand) }}" onsubmit="return confirm('Delete this brand?');" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button class="text-red-600 hover:text-red-900 font-medium">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td class="px-6 py-12 text-center text-slate-500" colspan="5">No brands found.</td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
 
-<div class="mt-4">
-  {{ $brands->links() }}
+    @if($brands->hasPages())
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+        {{ $brands->links() }}
+      </div>
+    @endif
+  </div>
 </div>
 @endsection

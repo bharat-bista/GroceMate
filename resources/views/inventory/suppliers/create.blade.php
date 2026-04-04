@@ -66,6 +66,21 @@
                     </select>
                 </div>
 
+                <!-- Business Account -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">Business Account <span class="text-red-500">*</span></label>
+                    <select name="business_account"
+                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm px-4 py-2.5"
+                            required>
+                        <option value="">Select Business Account</option>
+                        @foreach($businesses as $business)
+                            <option value="{{ $business->id }}" {{ old('business_account') == $business->id ? 'selected' : '' }}>
+                                {{ $business->business_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <!-- VAT Number -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">VAT Number (optional)</label>

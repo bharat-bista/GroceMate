@@ -1,8 +1,8 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', 'E-commerce Products')
-@section('heading', 'E-commerce Products')
-@section('subtitle', 'Manage products for online store')
+@section('title', $title ?? 'E-commerce Products')
+@section('heading', $title ?? 'E-commerce Products')
+@section('subtitle', $subtitle ?? 'Manage products for online store')
 
 @section('content')
 <div class="space-y-6">

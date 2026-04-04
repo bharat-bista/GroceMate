@@ -21,7 +21,7 @@ class ProductController extends Controller
     $businessId = $request->input('business_id');
 
     $products = Product::query()
-      ->with(['category','stock','brandRelation','business'])
+      ->with(['category','stock','brandRelation','business','ecommerceProduct'])
       ->when($q, fn($qq) => $qq->where('name','like',"%$q%"))
       ->when($businessId, fn($qq) => $qq->where('business_id', $businessId))
       ->orderBy('name')

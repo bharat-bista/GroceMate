@@ -7,6 +7,7 @@ use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\OTPController;
+use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
 use App\Http\Controllers\POS\IncomeController;
+use App\Http\Controllers\POS\ExpenseController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\BusinessController;
@@ -50,7 +52,9 @@ Route::post('/cart/remove', [CartController::class, 'removeItem'])->name('cart.r
 Route::post('/cart/promo', [CartController::class, 'applyPromoCode'])->name('cart.promo');
 Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
-Route::get('/description', [DescriptionController::class, 'description'])->name('description');
+Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'description'])
+    ->whereNumber('ecommerceProduct')
+    ->name('description');
 
 Route::get('/verify-otp', [OTPController::class, 'index'])->name('Otp.Form');
 
@@ -132,6 +136,7 @@ Route::middleware(['auth', 'admin'])
 
         // E-commerce Products routes
         Route::resource('ecommerce-products', EcommerceProductController::class);
+        Route::resource('sliders', SliderController::class);
         Route::delete('ecommerce-products/{ecommerce_product}/images/{image}', [EcommerceProductController::class, 'deleteImage'])->name('ecommerce-products.delete-image');
         Route::post('ecommerce-products/{ecommerce_product}/images/{image}/primary', [EcommerceProductController::class, 'setPrimaryImage'])->name('ecommerce-products.set-primary-image');
 
@@ -178,6 +183,9 @@ Route::middleware(['auth', 'admin'])
         // Income export routes
         Route::get('/income/export/{type}', [IncomeController::class, 'export'])->name('income.export');
         Route::get('/income/{income}/export/{type}', [IncomeController::class, 'exportIndividual'])->name('income.export-individual');
+
+        // Expense routes
+        Route::resource('expenses', ExpenseController::class);
         
 
         // Supplier Payment routes

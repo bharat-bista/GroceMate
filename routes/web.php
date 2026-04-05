@@ -45,6 +45,7 @@ Route::post('/login', [AccountController::class, 'store'])->name('login.post');
 Route::get('/home', [HomeController::class, 'home'])->middleware('auth')->name('home');
 
 Route::get('/advanced', [AdvancedController::class, 'advanced'])->name('advanced');
+Route::get('/search/suggestions', [AdvancedController::class, 'suggestions'])->name('search.suggestions');
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::post('/cart/add', [CartController::class, 'addToCart'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'updateQuantity'])->name('cart.update');

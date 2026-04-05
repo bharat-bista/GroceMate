@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('frontend.layouts.header', function ($view) {
+            $headerNavCategories = Category::query()
+                ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+                ->orderBy('order')
+                ->orderBy('name')
+                ->limit(8)
+                ->get(['id', 'name']);
+
+            $view->with('headerNavCategories', $headerNavCategories);
+        });
     }
 }

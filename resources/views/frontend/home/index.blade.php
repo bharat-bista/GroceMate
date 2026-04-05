@@ -1505,7 +1505,14 @@ document.addEventListener('DOMContentLoaded', function() {
             @if($product)
                 <div class="gm-product-card gm-ecom-card">
                     <span class="gm-product-badge">{{ rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') }}% OFF</span>
-                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="gm-cart-icon-badge"
+                          data-product-id="{{ $topSaleProduct->id }}"
+                          data-product-name="{{ $product->name }}"
+                          data-product-price="{{ (float) ($topSaleProduct->display_price ?: $topSaleProduct->mrp) }}"
+                          data-product-image="{{ $topSaleProduct->thumbnail ? asset('storage/' . $topSaleProduct->thumbnail) : asset('assets/img/product/product1.jpg') }}"
+                          title="Add to cart">
+                        <i class="fas fa-shopping-cart"></i>
+                    </span>
                     <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($topSaleProduct->thumbnail)
@@ -1599,7 +1606,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             FEATURED
                         @endif
                     </span>
-                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="gm-cart-icon-badge"
+                          data-product-id="{{ $featuredProduct->id }}"
+                          data-product-name="{{ $product->name }}"
+                          data-product-price="{{ (float) ($featuredProduct->display_price ?: $featuredProduct->mrp) }}"
+                          data-product-image="{{ $featuredProduct->thumbnail ? asset('storage/' . $featuredProduct->thumbnail) : asset('assets/img/product/product1.jpg') }}"
+                          title="Add to cart">
+                        <i class="fas fa-shopping-cart"></i>
+                    </span>
 
                     <a href="{{ route('description', $featuredProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
@@ -1646,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         <div class="gm-categories-grid">
             @forelse($categories as $category)
-                <a href="{{ route('advanced') }}?category={{ urlencode($category->name) }}" class="gm-category-card">
+                <a href="{{ route('advanced', ['categories' => [$category->id]]) }}" class="gm-category-card">
                     @if($category->image)
                         <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="gm-category-img">
                     @else
@@ -1709,7 +1723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         <div class="gm-brands-grid">
             @forelse($brands as $brand)
-                <a href="{{ route('advanced') }}?brand={{ urlencode($brand->name) }}" class="gm-brand-card">
+                <a href="{{ route('advanced', ['brand_id' => $brand->id]) }}" class="gm-brand-card">
                     @if($brand->image)
                         <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="gm-brand-img">
                     @else

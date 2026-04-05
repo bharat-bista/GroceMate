@@ -59,9 +59,10 @@
     <!-- Desktop Search -->
     <div class="search-bar-wrapper flex-grow-1 mx-4">
       <div class="position-relative search-container mx-auto" style="max-width: 600px;">
-        <form action="#" method="GET" class="modern-search-bar">
+        <form action="{{ route('advanced') }}" method="GET" class="modern-search-bar" id="global-search-form-desktop">
           <i class="fas fa-search search-icon"></i>
-          <input type="text" name="query" id="global-search-input-desktop" class="search-input"
+          <input type="text" name="q" id="global-search-input-desktop" class="search-input"
+                 value="{{ request('q', '') }}"
                  placeholder="Search for products, brands, and more...">
           <button type="submit" class="search-button">
             Search
@@ -92,8 +93,9 @@
   <!-- Mobile search dropdown -->
   <div class="mobile-search-bar d-lg-none px-3 pt-2" id="mobileSearchBar">
     <div class="position-relative search-container">
-      <form action="#" method="GET" class="d-flex">
-        <input type="text" name="query" id="global-search-input-mobile" class="form-control rounded-0"
+      <form action="{{ route('advanced') }}" method="GET" class="d-flex" id="global-search-form-mobile">
+        <input type="text" name="q" id="global-search-input-mobile" class="form-control rounded-0"
+               value="{{ request('q', '') }}"
                placeholder="Search your products...">
         <button type="submit" class="btn mobile-search-btn"><i class="fas fa-search"></i></button>
       </form>
@@ -272,7 +274,8 @@
   border: none;
   outline: none;
   padding: 12px 16px 12px 45px;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  font-weight: 500;
   background: transparent;
 }
 
@@ -412,6 +415,54 @@
   display: block;
 }
 
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--neutral-border);
+  transition: background 0.2s ease;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: #f1f8e9;
+}
+
+.search-result-name {
+  display: block;
+  color: var(--secondary-navy);
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.search-result-meta {
+  display: block;
+  color: var(--neutral-gray);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.search-result-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--neutral-border);
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.search-result-content {
+  min-width: 0;
+  flex: 1;
+}
+
 /* ==========================================
    MOBILE STYLES (Color Updates Only)
    ========================================== */
@@ -463,6 +514,19 @@
     font-size: 0.7rem !important;
     padding: 2px 5px !important;
     min-width: 18px !important;
+  }
+
+  .search-input,
+  #global-search-input-mobile {
+    font-size: 1rem !important;
+  }
+
+  .search-result-name {
+    font-size: 1rem;
+  }
+
+  .search-result-meta {
+    font-size: 0.88rem;
   }
 }
 
@@ -583,6 +647,148 @@
   const searchToggle   = document.getElementById('searchToggle');
   const mobileSearchBar= document.getElementById('mobileSearchBar');
   const body = document.body;
+  const desktopSearchInput = document.getElementById('global-search-input-desktop');
+  const mobileSearchInput = document.getElementById('global-search-input-mobile');
+  const desktopSearchResults = document.getElementById('global-search-results-desktop');
+  const mobileSearchResults = document.getElementById('global-search-results-mobile');
+  const desktopSearchForm = document.getElementById('global-search-form-desktop');
+  const mobileSearchForm = document.getElementById('global-search-form-mobile');
+  const suggestionsUrl = @json(route('search.suggestions'));
+  const defaultSuggestionImage = @json(asset('assets/img/product/product1.jpg'));
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function createResultItem(item, useListGroup) {
+    const cls = useListGroup
+      ? 'list-group-item list-group-item-action search-result-item'
+      : 'search-result-item';
+    const safeName = escapeHtml(item.name);
+    const safeMeta = escapeHtml(item.meta || item.type || '');
+    const safeUrl = escapeHtml(item.url || '#');
+    const resolvedImage = item.image || (item.type === 'product' ? defaultSuggestionImage : '');
+    const safeImage = escapeHtml(resolvedImage);
+    const thumbHtml = safeImage
+      ? `<img src="${safeImage}" class="search-result-thumb" alt="${safeName}" loading="lazy">`
+      : `<span class="search-result-thumb d-inline-flex align-items-center justify-content-center"><i class="fas fa-tag text-muted"></i></span>`;
+
+    return `
+      <a href="${safeUrl}" class="${cls}">
+        ${thumbHtml}
+        <span class="search-result-content">
+          <span class="search-result-name">${safeName}</span>
+          <span class="search-result-meta">${safeMeta}</span>
+        </span>
+      </a>
+    `;
+  }
+
+  function bindSearch({ input, results, form, desktopMode }) {
+    if (!input || !results || !form) return;
+
+    let debounceTimer = null;
+    let currentRequest = null;
+    const useListGroup = !desktopMode;
+
+    function showResults() {
+      if (desktopMode) {
+        results.classList.add('show');
+      } else {
+        results.style.display = 'block';
+      }
+    }
+
+    function hideResults() {
+      if (desktopMode) {
+        results.classList.remove('show');
+      } else {
+        results.style.display = 'none';
+      }
+    }
+
+    function setLoading() {
+      results.innerHTML = `<div class="${useListGroup ? 'list-group-item' : 'search-result-item'}"><span class="search-result-meta">Searching...</span></div>`;
+      showResults();
+    }
+
+    function renderItems(items) {
+      if (!Array.isArray(items) || items.length === 0) {
+        results.innerHTML = `<div class="${useListGroup ? 'list-group-item' : 'search-result-item'}"><span class="search-result-meta">No matching results</span></div>`;
+        showResults();
+        return;
+      }
+
+      results.innerHTML = items.map((item) => createResultItem(item, useListGroup)).join('');
+      showResults();
+    }
+
+    async function fetchSuggestions(query) {
+      if (currentRequest && typeof currentRequest.abort === 'function') {
+        currentRequest.abort();
+      }
+
+      currentRequest = new AbortController();
+      setLoading();
+
+      try {
+        const url = `${suggestionsUrl}?q=${encodeURIComponent(query)}`;
+        const response = await fetch(url, {
+          headers: { 'Accept': 'application/json' },
+          signal: currentRequest.signal,
+        });
+
+        if (!response.ok) throw new Error('Search request failed');
+
+        const data = await response.json();
+        renderItems(data.items || []);
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        results.innerHTML = `<div class="${useListGroup ? 'list-group-item' : 'search-result-item'}"><span class="search-result-meta">Unable to fetch search results</span></div>`;
+        showResults();
+      }
+    }
+
+    input.addEventListener('input', () => {
+      const query = input.value.trim();
+
+      clearTimeout(debounceTimer);
+      if (query.length < 2) {
+        hideResults();
+        return;
+      }
+
+      debounceTimer = setTimeout(() => fetchSuggestions(query), 250);
+    });
+
+    input.addEventListener('focus', () => {
+      const query = input.value.trim();
+      if (query.length >= 2) {
+        fetchSuggestions(query);
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      const query = input.value.trim();
+      if (!query) {
+        event.preventDefault();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (form.contains(event.target) || results.contains(event.target)) {
+        return;
+      }
+      hideResults();
+    });
+
+    hideResults();
+  }
 
   // Sticky header hide/show functionality
   let lastScrollTop = 0;
@@ -732,5 +938,19 @@
     if (typeof mql.addEventListener === 'function') mql.addEventListener('change', handleViewportChange);
     else mql.addListener(handleViewportChange); // Safari
   }
+
+  bindSearch({
+    input: desktopSearchInput,
+    results: desktopSearchResults,
+    form: desktopSearchForm,
+    desktopMode: true,
+  });
+
+  bindSearch({
+    input: mobileSearchInput,
+    results: mobileSearchResults,
+    form: mobileSearchForm,
+    desktopMode: false,
+  });
 })();
 </script>

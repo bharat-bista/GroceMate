@@ -60,8 +60,14 @@ class AdvancedController extends Controller
         $ecommerceProducts = (clone $baseQuery)
             ->with(['product.category', 'product.brandRelation'])
             ->when($q, function ($query) use ($q) {
-                $query->whereHas('product', function ($productQuery) use ($q) {
-                    $productQuery->where('name', 'like', "%{$q}%");
+                $query->where(function ($searchQuery) use ($q) {
+                    $searchQuery->whereHas('product', function ($productQuery) use ($q) {
+                        $productQuery->where('name', 'like', "%{$q}%");
+                    })->orWhereHas('product.brandRelation', function ($brandQuery) use ($q) {
+                        $brandQuery->where('name', 'like', "%{$q}%");
+                    })->orWhereHas('product.category', function ($categoryQuery) use ($q) {
+                        $categoryQuery->where('name', 'like', "%{$q}%");
+                    });
                 });
             })
             ->when($brandId, function ($query) use ($brandId) {
@@ -103,5 +109,93 @@ class AdvancedController extends Controller
             'selectedMinPrice',
             'selectedMaxPrice'
         ));
+    }
+
+    public function suggestions(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($q) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $products = EcommerceProduct::query()
+            ->whereIn('id', function ($query) {
+                $query->from('ecommerce_products')
+                    ->selectRaw('MAX(id)')
+                    ->groupBy('product_id');
+            })
+            ->with(['product.category:id,name', 'product.brandRelation:id,name'])
+            ->where('status', 'in_stock')
+            ->where(function ($query) use ($q) {
+                $query->whereHas('product', function ($productQuery) use ($q) {
+                    $productQuery->where('name', 'like', "%{$q}%");
+                })->orWhereHas('product.brandRelation', function ($brandQuery) use ($q) {
+                    $brandQuery->where('name', 'like', "%{$q}%");
+                })->orWhereHas('product.category', function ($categoryQuery) use ($q) {
+                    $categoryQuery->where('name', 'like', "%{$q}%");
+                });
+            })
+            ->latest()
+            ->limit(8)
+            ->get();
+
+        $productItems = $products->map(function ($item) {
+            $product = $item->product;
+            if (!$product) {
+                return null;
+            }
+
+            $metaParts = array_filter([
+                $product->brandRelation?->name,
+                $product->category?->name,
+            ]);
+
+            return [
+                'type' => 'product',
+                'name' => $product->name,
+                'meta' => implode(' - ', $metaParts),
+                'url' => route('description', $item->id),
+                'image' => $item->thumbnail
+                    ? asset('storage/' . $item->thumbnail)
+                    : asset('assets/img/product/product1.jpg'),
+            ];
+        })->filter()->values();
+
+        $brands = Brand::query()
+            ->where('name', 'like', "%{$q}%")
+            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+            ->orderBy('name')
+            ->limit(4)
+            ->get(['id', 'name'])
+            ->map(fn ($brand) => [
+                'type' => 'brand',
+                'name' => $brand->name,
+                'meta' => 'Brand',
+                'url' => route('advanced', ['q' => $q, 'brand_id' => $brand->id]),
+                'image' => null,
+            ]);
+
+        $categories = Category::query()
+            ->where('name', 'like', "%{$q}%")
+            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+            ->orderBy('name')
+            ->limit(4)
+            ->get(['id', 'name'])
+            ->map(fn ($category) => [
+                'type' => 'category',
+                'name' => $category->name,
+                'meta' => 'Category',
+                'url' => route('advanced', ['q' => $q, 'categories' => [$category->id]]),
+                'image' => null,
+            ]);
+
+        $items = $productItems
+            ->concat($brands)
+            ->concat($categories)
+            ->take(12)
+            ->values();
+
+        return response()->json(['items' => $items]);
     }
 }

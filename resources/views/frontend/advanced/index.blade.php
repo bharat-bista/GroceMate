@@ -898,275 +898,249 @@
 @extends('frontend.layouts.main')
 @section('main-content')
 
-<!-- ✅ Styles stay the same, keeping your design -->
-
 <div class="container my-5">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-3 col-md-4">
-            <h3 class="category-title">Categories</h3>
+    <form id="advanced-filter-form" method="GET" action="{{ route('advanced') }}">
+        <input type="hidden" name="min_price" id="minPriceInput" value="{{ number_format($selectedMinPrice, 2, '.', '') }}">
+        <input type="hidden" name="max_price" id="maxPriceInput" value="{{ number_format($selectedMaxPrice, 2, '.', '') }}">
 
-            <!-- Price Filter -->
-            <div class="price-filter-section bg-white p-4 rounded-3 shadow-sm mb-4 border border-light">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="fw-bold text-dark" style="font-size: 1.1rem;">
-                        <i class="bi bi-tag-fill text-success me-2"></i>Price Range
-                    </span>
+        <div class="row">
+            <div class="col-lg-3 col-md-4">
+                <h3 class="category-title">Categories</h3>
+
+                <div class="price-filter-section bg-white p-4 rounded-3 shadow-sm mb-4 border border-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold text-dark" style="font-size: 1.1rem;">
+                            <i class="bi bi-tag-fill text-success me-2"></i>Price Range
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span id="price-min" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">
+                            Rs. {{ number_format($selectedMinPrice, 2) }}
+                        </span>
+                        <span id="price-max" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">
+                            Rs. {{ number_format($selectedMaxPrice, 2) }}
+                        </span>
+                    </div>
+                    <div id="price-slider" class="mt-3"></div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span id="price-min" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">Rs. 200</span>
-                    <span id="price-max" class="badge bg-success bg-gradient px-3 py-2" style="font-size: 0.9rem;">Rs. 1000</span>
+
+                <div class="category-list mt-4">
+                    @forelse($categories as $category)
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="categories[]"
+                                value="{{ $category->id }}"
+                                class="category-checkbox"
+                                {{ in_array($category->id, $categoryIds, true) ? 'checked' : '' }}
+                            >
+                            <span>{{ strtoupper($category->name) }}</span>
+                        </label>
+                    @empty
+                        <p class="text-muted mb-0">No categories available.</p>
+                    @endforelse
                 </div>
-                <div id="price-slider" class="mt-3"></div>
             </div>
 
-            <!-- Category Filter -->
-            <div class="category-list mt-4">
-    <label>
-        <input type="checkbox" name="categories[]" value="1" class="category-checkbox">
-        <span>💄 COSMETICS</span>
-    </label>
+            <div class="col-lg-9 col-md-8">
+                <div class="search-filters mb-4">
+                    <input
+                        type="text"
+                        id="product_name"
+                        name="q"
+                        class="form-control"
+                        value="{{ $q }}"
+                        placeholder="Search Product Name..."
+                    >
 
-    <label>
-        <input type="checkbox" name="categories[]" value="2" class="category-checkbox">
-        <span>🌿 AYURVEDIC</span>
-    </label>
+                    <select id="company_name" name="brand_id" class="form-select">
+                        <option value="">Select Any Company</option>
+                        @foreach($brands as $brand)
+                            <option value="{{ $brand->id }}" {{ $brandId === $brand->id ? 'selected' : '' }}>
+                                {{ $brand->name }}
+                            </option>
+                        @endforeach
+                    </select>
 
-    <label>
-        <input type="checkbox" name="categories[]" value="3" class="category-checkbox">
-        <span>👶 BABY CARE</span>
-    </label>
+                    <button type="button" class="btn-search" id="search-btn">
+                        <i class="bi bi-search"></i>
+                        <span>Search</span>
+                    </button>
 
-    <label>
-        <input type="checkbox" name="categories[]" value="4" class="category-checkbox">
-        <span>🧴 PERSONAL CARE</span>
-    </label>
+                    <a href="{{ route('advanced') }}" class="btn-search" style="text-decoration: none; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reset</span>
+                    </a>
+                </div>
 
-    <label>
-        <input type="checkbox" name="categories[]" value="5" class="category-checkbox">
-        <span>🏥 MEDICAL DEVICES</span>
-    </label>
-</div>
+                <div id="product-listing" class="gm-products-grid">
+                    @forelse($ecommerceProducts as $ecommerceProduct)
+                        @php
+                            $product = $ecommerceProduct->product;
+                            $discountPercent = (float) ($ecommerceProduct->discount_percent ?? 0);
+                            $hasOldPrice = !is_null($ecommerceProduct->previous_price) && (float) $ecommerceProduct->previous_price > 0;
+                            $currentPrice = (float) ($ecommerceProduct->display_price ?: $ecommerceProduct->mrp);
+                        @endphp
 
+                        @if($product)
+                            <div class="gm-product-card gm-ecom-card">
+                                <span class="gm-product-badge">
+                                    {{ $discountPercent > 0 ? rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') . '% OFF' : 'FEATURED' }}
+                                </span>
+                                <span class="gm-cart-icon-badge"
+                                      data-product-id="{{ $ecommerceProduct->id }}"
+                                      data-product-name="{{ $product->name }}"
+                                      data-product-price="{{ $currentPrice }}"
+                                      data-product-image="{{ $ecommerceProduct->thumbnail ? asset('storage/' . $ecommerceProduct->thumbnail) : asset('assets/img/product/product1.jpg') }}"
+                                      title="Add to cart">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </span>
+                                <a href="{{ route('description', $ecommerceProduct->id) }}" class="gm-product-card-link">
+                                    <div class="gm-product-img-wrap">
+                                        @if($ecommerceProduct->thumbnail)
+                                            <img src="{{ asset('storage/' . $ecommerceProduct->thumbnail) }}" alt="{{ $product->name }}">
+                                        @else
+                                            <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
+                                        @endif
+                                    </div>
+                                    <div class="gm-product-info">
+                                        <h3 class="gm-product-name">{{ $product->name }}</h3>
+                                        <div class="gm-product-price">
+                                            <span class="gm-price-new">Rs.{{ number_format($currentPrice, 2) }}</span>
+                                        </div>
+                                        <div class="gm-ecom-discount">
+                                            @if($hasOldPrice)
+                                                <span class="gm-price-old">Rs.{{ number_format((float) $ecommerceProduct->previous_price, 2) }}</span>
+                                            @else
+                                                <span class="gm-price-old">Rs.{{ number_format((float) $ecommerceProduct->mrp, 2) }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        @endif
+                    @empty
+                        <div class="gm-product-card gm-ecom-card" style="grid-column: 1 / -1; text-align: center; padding: 30px;">
+                            <p style="margin: 0; color: var(--gm-gray);">No products found for the selected filters.</p>
+                        </div>
+                    @endforelse
+                </div>
 
-        </div>
-
-        <!-- Products -->
-        <div class="col-lg-9 col-md-8">
-            <!-- Top Filters -->
-            <div class="search-filters mb-4">
-                <input type="text" id="product_name" class="form-control" placeholder="🔍 Search Product Name...">
-
-                <select id="company_name" class="form-select">
-                    <option value="">🏢 Select Any Company</option>
-                    <option value="1">Company A</option>
-                    <option value="2">Company B</option>
-                    <option value="3">Company C</option>
-                    <option value="4">Company D</option>
-                </select>
-                
-                <button type="button" class="btn-search" id="search-btn">
-                    <i class="bi bi-search"></i>
-                    <span>Search</span>
-                </button>
+                @if($ecommerceProducts->hasPages())
+                    <div class="mt-4 d-flex justify-content-center">
+                        {{ $ecommerceProducts->links() }}
+                    </div>
+                @endif
             </div>
-
-            <!-- Product Listing -->
-            <div id="product-listing" class="gm-products-grid"></div>
         </div>
-        </div>
-    </div>
+    </form>
 </div>
 
-
-<!-- ✅ Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/nouislider@15.5.1/dist/nouislider.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/nouislider@15.5.1/dist/nouislider.min.css" rel="stylesheet">
 
 <script>
-    let sliderMin = 0;
-    let sliderMax = 50000;
-    let priceSlider;
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('advanced-filter-form');
+    const searchBtn = document.getElementById('search-btn');
+    const productInput = document.getElementById('product_name');
+    const companySelect = document.getElementById('company_name');
+    const categoryChecks = document.querySelectorAll('.category-checkbox');
+    const minInput = document.getElementById('minPriceInput');
+    const maxInput = document.getElementById('maxPriceInput');
+    const minBadge = document.getElementById('price-min');
+    const maxBadge = document.getElementById('price-max');
+    const sliderEl = document.getElementById('price-slider');
 
-    $(document).ready(function () {
+    const rangeMin = Number(@json($availableMinPrice));
+    const rangeMax = Number(@json($availableMaxPrice));
+    const selectedMin = Number(@json($selectedMinPrice));
+    const selectedMax = Number(@json($selectedMaxPrice));
 
-        
+    function formatPrice(value) {
+        return 'Rs. ' + Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
+    }
 
-        // 🔵 Price slider initialization
-        priceSlider = document.getElementById('price-slider');
-        noUiSlider.create(priceSlider, {
-            start: [sliderMin, sliderMax],
-            connect: true,
-            range: {
-                'min': sliderMin,
-                'max': sliderMax
-            },
-            step: 100
-        });
-
-        const priceMin = document.getElementById('price-min');
-        const priceMax = document.getElementById('price-max');
-
-        priceSlider.noUiSlider.on('update', function(values) {
-            sliderMin = Math.round(values[0]);
-            sliderMax = Math.round(values[1]);
-            priceMin.textContent = 'Rs. ' + sliderMin.toLocaleString();
-            priceMax.textContent = 'Rs. ' + sliderMax.toLocaleString();
-        });
-
-        priceSlider.noUiSlider.on('change', fetchProducts);
-
-        // 🔵 Search button click event
-        $('#search-btn').on('click', fetchProducts);
-        
-        // 🔵 Enter key on product name input
-        $('#product_name').on('keypress', function(e) {
-            if (e.which === 13) { // Enter key
-                fetchProducts();
-            }
-        });
-        
-        // 🔵 Company select change event
-        $('#company_name').on('change', fetchProducts);
-        
-        // 🔵 Category checkbox change event
-        $('.category-checkbox').on('change', fetchProducts);
-
-        // 🔵 Initial display
-        fetchProducts();
-        
-        // 🔵 fetchProducts function
-        function fetchProducts() {
-            const productListing = document.getElementById('product-listing');
-            
-            // Sample products data - replace with actual API call
-            const products = [
-                {
-                    id: 1,
-                    name: 'Sunflower Oil Premium Cooking Pack',
-                    image: '{{ asset("assets/img/product/product1.jpg") }}',
-                    price: 80,
-                    oldPrice: 100,
-                    discount: '20%',
-                    badge: '20% OFF',
-                    rating: 4,
-                    reviews: 95,
-                    alt: 'Sugar'
-                },
-                {
-                    id: 2,
-                    name: 'Masoor Dal Healthy Family Pack',
-                    image: '{{ asset("assets/img/product/product3.jpg") }}',
-                    price: 120,
-                    oldPrice: 180,
-                    discount: '33%',
-                    badge: '15% OFF',
-                    rating: 5,
-                    reviews: 156,
-                    alt: 'Masoor Dal'
-                },
-                {
-                    id: 3,
-                    name: 'Olive Oil Healthy Everyday Choice',
-                    image: '{{ asset("assets/img/product/product1.jpg") }}',
-                    price: 350,
-                    oldPrice: 450,
-                    discount: '22%',
-                    badge: '25% OFF',
-                    rating: 4.5,
-                    reviews: 78,
-                    alt: 'Olive Oil'
-                },
-                {
-                    id: 4,
-                    name: 'Basmati Rice Premium Long Grain Pack',
-                    image: '{{ asset("assets/img/product/product2.jpg") }}',
-                    price: 680,
-                    oldPrice: 750,
-                    discount: '9%',
-                    badge: '10% OFF',
-                    rating: 4,
-                    reviews: 203,
-                    alt: 'Basmati Rice'
-                },
-                {
-                    id: 5,
-                    name: 'Chana Dal Nutritious Everyday Pack',
-                    image: '{{ asset("assets/img/product/product3.jpg") }}',
-                    price: 95,
-                    oldPrice: 135,
-                    discount: '30%',
-                    badge: '30% OFF',
-                    rating: 5,
-                    reviews: 89,
-                    alt: 'Chana Dal'
-                },
-                {
-                    id: 6,
-                    name: 'Refined Crystal Sugar for Daily Kitchen Use',
-                    image: '{{ asset("assets/img/product/product2.jpg") }}',
-                    price: 80,
-                    oldPrice: 100,
-                    discount: '20%',
-                    badge: '20% OFF',
-                    rating: 4,
-                    reviews: 95,
-                    alt: 'Sugar'
-                }
-            ];
-            
-            let html = '';
-            products.forEach(product => {
-                const stars = generateStars(product.rating);
-                html += `
-                    <div class="gm-product-card gm-ecom-card">
-                        <span class="gm-product-badge">${product.badge}</span>
-                        <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
-                        <a href="{{ route('description') }}" class="gm-product-card-link">
-                            <div class="gm-product-img-wrap">
-                                <img src="${product.image}" alt="${product.alt}">
-                            </div>
-                            <div class="gm-product-info">
-                                <h3 class="gm-product-name">${product.name}</h3>
-                                <div class="gm-product-price">
-                                    <span class="gm-price-new">Rs.${product.price}</span>
-                                </div>
-                                <div class="gm-ecom-discount"><span class="gm-price-old">Rs.${product.oldPrice}</span> -${product.discount}</div>
-                                <div class="gm-product-rating">
-                                    ${stars}
-                                    <span>(${product.reviews})</span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                `;
-            });
-            
-            productListing.innerHTML = html;
+    function submitFilters() {
+        if (form) {
+            form.submit();
         }
-        
-        // Helper function to generate star rating
-        function generateStars(rating) {
-            let stars = '';
-            const fullStars = Math.floor(rating);
-            const hasHalfStar = rating % 1 !== 0;
-            
-            for (let i = 0; i < fullStars; i++) {
-                stars += '<i class="fas fa-star"></i>';
+    }
+
+    if (searchBtn) {
+        searchBtn.addEventListener('click', submitFilters);
+    }
+
+    if (productInput) {
+        productInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitFilters();
             }
-            
-            if (hasHalfStar) {
-                stars += '<i class="fas fa-star-half-alt"></i>';
-            }
-            
-            const emptyStars = 5 - Math.ceil(rating);
-            for (let i = 0; i < emptyStars; i++) {
-                stars += '<i class="far fa-star"></i>';
-            }
-            
-            return stars;
+        });
+    }
+
+    if (companySelect) {
+        companySelect.addEventListener('change', submitFilters);
+    }
+
+    categoryChecks.forEach(function (checkbox) {
+        checkbox.addEventListener('change', submitFilters);
+    });
+
+    const safeMin = Number.isFinite(rangeMin) ? rangeMin : 0;
+    const safeMax = Number.isFinite(rangeMax) ? rangeMax : safeMin;
+
+    if (!sliderEl || safeMax <= safeMin) {
+        if (minBadge) {
+            minBadge.textContent = formatPrice(selectedMin || safeMin);
+        }
+        if (maxBadge) {
+            maxBadge.textContent = formatPrice(selectedMax || safeMax);
+        }
+        if (minInput) {
+            minInput.value = String(selectedMin || safeMin);
+        }
+        if (maxInput) {
+            maxInput.value = String(selectedMax || safeMax);
+        }
+        return;
+    }
+
+    const startMin = Math.min(Math.max(selectedMin || safeMin, safeMin), safeMax);
+    const startMax = Math.max(Math.min(selectedMax || safeMax, safeMax), safeMin);
+
+    noUiSlider.create(sliderEl, {
+        start: [startMin, startMax],
+        connect: true,
+        range: {
+            min: safeMin,
+            max: safeMax
+        },
+        step: 1
+    });
+
+    sliderEl.noUiSlider.on('update', function (values) {
+        const currentMin = Math.round(Number(values[0]) * 100) / 100;
+        const currentMax = Math.round(Number(values[1]) * 100) / 100;
+
+        if (minBadge) {
+            minBadge.textContent = formatPrice(currentMin);
+        }
+        if (maxBadge) {
+            maxBadge.textContent = formatPrice(currentMax);
+        }
+        if (minInput) {
+            minInput.value = String(currentMin);
+        }
+        if (maxInput) {
+            maxInput.value = String(currentMax);
         }
     });
+
+    sliderEl.noUiSlider.on('change', submitFilters);
+});
 </script>
 
 @endsection
+

@@ -883,7 +883,14 @@
             @if($topSaleItem)
                 <div class="gm-product-card gm-ecom-card">
                     <span class="gm-product-badge">{{ rtrim(rtrim(number_format($topSaleDiscount, 2, '.', ''), '0'), '.') }}% OFF</span>
-                    <span class="gm-cart-icon-badge"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="gm-cart-icon-badge"
+                          data-product-id="{{ $topSaleProduct->id }}"
+                          data-product-name="{{ $topSaleItem->name }}"
+                          data-product-price="{{ (float) ($topSaleProduct->display_price ?: $topSaleProduct->mrp) }}"
+                          data-product-image="{{ $topSaleProduct->thumbnail ? asset('storage/' . $topSaleProduct->thumbnail) : asset('assets/img/product/product1.jpg') }}"
+                          title="Add to cart">
+                        <i class="fas fa-shopping-cart"></i>
+                    </span>
                     <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($topSaleProduct->thumbnail)
@@ -943,32 +950,44 @@ function adjustQty(change) {
 /* Add to Cart (Frontend Only)   */
 /* ----------------------------- */
 function addToLocalCart(product) {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    if (window.GroceMateCart && typeof window.GroceMateCart.addItem === 'function') {
+        const result = window.GroceMateCart.addItem({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            qty: product.qty || 1
+        });
 
-    let exist = cart.find(i => i.id === product.id);
-    if (exist) {
-        exist.qty += product.qty;
-    } else {
-        cart.push(product);
+        if (result.added) {
+            window.GroceMateCart.showToast('Product added to cart', 'success');
+        } else if (result.reason === 'exists') {
+            window.GroceMateCart.showToast('This product is already in cart', 'warning');
+        } else {
+            window.GroceMateCart.showToast('Unable to add product to cart', 'error');
+        }
+
+        window.GroceMateCart.updateBadges();
+        return;
     }
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    alert("Added to cart (Local only)");
+    alert("Cart service unavailable");
 }
 
 /* ----------------------------- */
 /* ADD TO CART BUTTON            */
 /* ----------------------------- */
 document.addEventListener("click", e => {
-    if (e.target.classList.contains("frontend-add-cart")) {
+    const addCartBtn = e.target.closest('.frontend-add-cart');
+    if (addCartBtn) {
 
         const qty = parseInt(document.getElementById("qtyInput").value);
 
         const product = {
-            id: e.target.dataset.id || "999",
-            name: e.target.dataset.name || "Sample Product",
-            price: parseFloat(e.target.dataset.price || 499),
-            image: e.target.dataset.image || "https://via.placeholder.com/500x500?text=Product",
+            id: addCartBtn.dataset.id || "999",
+            name: addCartBtn.dataset.name || "Sample Product",
+            price: parseFloat(addCartBtn.dataset.price || 499),
+            image: addCartBtn.dataset.image || "https://via.placeholder.com/500x500?text=Product",
             qty: qty
         };
 
@@ -980,15 +999,16 @@ document.addEventListener("click", e => {
 /* BUY NOW (Frontend Only)       */
 /* ----------------------------- */
 document.addEventListener("click", e => {
-    if (e.target.classList.contains("frontend-buy-now")) {
+    const buyNowBtn = e.target.closest('.frontend-buy-now');
+    if (buyNowBtn) {
 
         const qty = parseInt(document.getElementById("qtyInput").value);
 
         const product = {
-            id: e.target.dataset.id || "999",
-            name: e.target.dataset.name || "Sample Product",
-            price: parseFloat(e.target.dataset.price || 499),
-            image: e.target.dataset.image || "https://via.placeholder.com/500x500?text=Product",
+            id: buyNowBtn.dataset.id || "999",
+            name: buyNowBtn.dataset.name || "Sample Product",
+            price: parseFloat(buyNowBtn.dataset.price || 499),
+            image: buyNowBtn.dataset.image || "https://via.placeholder.com/500x500?text=Product",
             qty: qty
         };
 

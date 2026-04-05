@@ -26,18 +26,16 @@
 
     <!-- Center Logo -->
     <div class="logo mx-auto text-center">
-      <a href="{{ url('/') }}">
+      <a href="{{ route('home') }}">
         <img src="{{ asset('assets/img/logo/logo.png') }}" alt="Logo" style="max-height:36px;">
       </a>
     </div>
 
     <div class="d-flex align-items-center gap-2">
       <!-- Cart -->
-      <a href="#" class="text-dark position-relative" aria-label="Cart">
+      <a href="{{ route('cart') }}" class="text-dark position-relative" aria-label="Cart">
         <i class="fas fa-shopping-cart"></i>
-        <span class="cart-badge position-absolute top-0 start-100 translate-middle badge rounded-pill">
-          {{-- {{ $totalCartQuantity ?? 0 }} --}}
-        </span>
+        <span class="cart-badge position-absolute top-0 start-100 translate-middle badge rounded-pill gm-cart-count">0</span>
       </a>
 
       <!-- User Dropdown (mobile) -->
@@ -53,7 +51,7 @@
   <div class="container-fluid d-none d-lg-flex align-items-center justify-content-between px-4 py-3 main-header">
     <!-- Logo -->
     <div class="logo-section">
-      <a href="{{ url('/') }}" class="logo-link">
+      <a href="{{ route('home') }}" class="logo-link">
         <img src="{{ asset('assets/img/logo/logo.png') }}" alt="GroceMate Logo" class="main-logo">
       </a>
     </div>
@@ -77,10 +75,10 @@
     <!-- Desktop Actions -->
     <div class="d-flex align-items-center header-actions gap-3">
       <!-- Cart Button -->
-      <a href="#" class="header-icon-btn cart-btn" aria-label="Shopping Cart">
+      <a href="{{ route('cart') }}" class="header-icon-btn cart-btn" aria-label="Shopping Cart">
         <i class="fas fa-shopping-cart"></i>
         <span class="icon-label">Cart</span>
-        <span class="cart-badge">3</span>
+        <span class="cart-badge gm-cart-count">0</span>
       </a>
 
       <!-- User Button -->
@@ -104,27 +102,25 @@
     </div>
   </div>
 
+@php
+  $selectedHeaderCategoryIds = collect((array) request()->input('categories', []))
+      ->map(fn ($id) => (int) $id)
+      ->filter(fn ($id) => $id > 0)
+      ->values()
+      ->all();
+@endphp
+
 <nav class="main-nav d-none d-lg-block">
     <div class="container-fluid px-4">
         <div class="nav-inner d-flex align-items-center py-2">
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Fruits & Vegetables
-            </a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Dairy & Eggs
-            </a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Snacks & Beverages
-            </a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Bakery
-            </a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Personal Care
-            </a>
-            <a href="{{ route('advanced') }}" class="nav-link-item">
-                Household
-            </a>
+            @forelse($headerNavCategories ?? [] as $headerCategory)
+                <a href="{{ route('advanced', ['categories' => [$headerCategory->id]]) }}"
+                   class="nav-link-item {{ in_array($headerCategory->id, $selectedHeaderCategoryIds, true) ? 'active' : '' }}">
+                    {{ $headerCategory->name }}
+                </a>
+            @empty
+                <a href="{{ route('advanced') }}" class="nav-link-item">Browse Products</a>
+            @endforelse
         </div>
     </div>
 </nav>
@@ -139,12 +135,14 @@
       <button class="close-btn" id="closeNav" aria-label="Close menu">&times;</button>
     </div>
     <div class="mobile-nav-body">
-      <a class="mobile-nav-link" href="#">Fruits & Vegetables</a>
-    <a class="mobile-nav-link" href="#">Dairy & Eggs</a>
-    <a class="mobile-nav-link" href="#">Snacks & Beverages</a>
-    <a class="mobile-nav-link" href="#">Bakery</a>
-    <a class="mobile-nav-link" href="#">Personal Care</a>
-    <a class="mobile-nav-link" href="#">Household</a>
+      @forelse($headerNavCategories ?? [] as $headerCategory)
+        <a class="mobile-nav-link"
+           href="{{ route('advanced', ['categories' => [$headerCategory->id]]) }}">
+          {{ $headerCategory->name }}
+        </a>
+      @empty
+        <a class="mobile-nav-link" href="{{ route('advanced') }}">Browse Products</a>
+      @endforelse
     </div>
   </aside>
 </header>

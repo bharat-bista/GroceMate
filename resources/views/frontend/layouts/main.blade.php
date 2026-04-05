@@ -146,5 +146,158 @@ html, body {
     @yield('main-content')
     @include('frontend.layouts.footer')
 
+<script>
+(function () {
+    const CART_KEY = 'gm_cart_items';
+
+    function parseCart(raw) {
+        try {
+            const parsed = JSON.parse(raw || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function getItems() {
+        return parseCart(localStorage.getItem(CART_KEY));
+    }
+
+    function saveItems(items) {
+        localStorage.setItem(CART_KEY, JSON.stringify(items));
+        window.dispatchEvent(new CustomEvent('gm-cart-updated', { detail: { count: items.length } }));
+    }
+
+    function normalizeId(value) {
+        return String(value ?? '').trim();
+    }
+
+    function showToast(title, icon) {
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: icon,
+                title: title,
+                showConfirmButton: false,
+                timer: 1800,
+                timerProgressBar: true,
+            });
+            return;
+        }
+
+        alert(title);
+    }
+
+    function updateBadges() {
+        const count = getItems().length;
+        document.querySelectorAll('.gm-cart-count').forEach((badge) => {
+            badge.textContent = String(count);
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        });
+    }
+
+    function addItem(item) {
+        const items = getItems();
+        const id = normalizeId(item?.id);
+
+        if (!id) {
+            return { added: false, reason: 'invalid' };
+        }
+
+        const exists = items.some((existing) => normalizeId(existing.id) === id);
+        if (exists) {
+            return { added: false, reason: 'exists' };
+        }
+
+        items.push({
+            id: id,
+            name: String(item?.name || 'Product'),
+            price: Number(item?.price || 0),
+            image: String(item?.image || ''),
+            qty: Number(item?.qty || 1),
+        });
+
+        saveItems(items);
+        return { added: true };
+    }
+
+    function removeItem(itemId) {
+        const id = normalizeId(itemId);
+        const items = getItems().filter((item) => normalizeId(item.id) !== id);
+        saveItems(items);
+    }
+
+    function updateQty(itemId, qty) {
+        const id = normalizeId(itemId);
+        const parsedQty = Math.max(1, Number(qty || 1));
+        const items = getItems();
+        const target = items.find((item) => normalizeId(item.id) === id);
+        if (!target) {
+            return;
+        }
+        target.qty = parsedQty;
+        saveItems(items);
+    }
+
+    function setItems(items) {
+        saveItems(Array.isArray(items) ? items : []);
+    }
+
+    window.GroceMateCart = {
+        getItems,
+        setItems,
+        addItem,
+        removeItem,
+        updateQty,
+        updateBadges,
+        showToast,
+    };
+
+    function readDatasetItem(source) {
+        return {
+            id: normalizeId(source.dataset.productId || source.dataset.id),
+            name: source.dataset.productName || source.dataset.name || 'Product',
+            price: Number(source.dataset.productPrice || source.dataset.price || 0),
+            image: source.dataset.productImage || source.dataset.image || '',
+            qty: 1,
+        };
+    }
+
+    document.addEventListener('click', function (event) {
+        const cartIconBtn = event.target.closest('.gm-cart-icon-badge[data-product-id], .gm-cart-icon-badge[data-id]');
+        if (!cartIconBtn) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const product = readDatasetItem(cartIconBtn);
+        const result = addItem(product);
+
+        if (result.added) {
+            showToast('Product added to cart', 'success');
+        } else if (result.reason === 'exists') {
+            showToast('This product is already in cart', 'warning');
+        } else {
+            showToast('Unable to add product to cart', 'error');
+        }
+
+        updateBadges();
+    });
+
+    window.addEventListener('storage', function (event) {
+        if (event.key === CART_KEY) {
+            updateBadges();
+        }
+    });
+
+    window.addEventListener('gm-cart-updated', updateBadges);
+    document.addEventListener('DOMContentLoaded', updateBadges);
+    updateBadges();
+})();
+</script>
+
 </body>
 </html>

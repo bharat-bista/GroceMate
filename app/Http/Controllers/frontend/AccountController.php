@@ -22,6 +22,12 @@ class AccountController extends Controller
     // =========================
     public function login()
     {
+        if (Auth::check()) {
+            return auth()->user()->isAdmin()
+                ? redirect()->route('inventory.dashboard')
+                : redirect()->route('home');
+        }
+
         return view('frontend.account.login');
     }
 
@@ -159,33 +165,54 @@ class AccountController extends Controller
     // =========================
     public function googleRedirect()
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        return Socialite::driver('google')
+            ->stateless()
+            ->with([
+                'prompt' => 'select_account',
+            ])
+            ->redirect();
     }
 
-    public function googleCallback()
+    public function googleCallback(Request $request)
     {
+        if ($request->filled('error')) {
+            return redirect()->route('page-login')
+                ->with('popup_error', 'Google sign-in was canceled.');
+        }
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')->with('popup_error', 'Google login failed.');
+            return redirect()->route('page-login')->with('popup_error', 'Google login failed.');
         }
 
-        $user = User::where('email', $googleUser->getEmail())->first();
+        $email = $googleUser->getEmail();
+
+        if (!$email) {
+            return redirect()->route('page-login')
+                ->with('popup_error', 'Google account email is unavailable.');
+        }
+
+        $user = User::where('email', $email)->first();
 
         if ($user && $user->status !== 'Y') {
-            return redirect()->route('login')
+            return redirect()->route('page-login')
                 ->with('popup_error', 'Your account is not verified.');
         }
 
         if (!$user) {
             $user = User::create([
                 'full_name' => $googleUser->getName() ?? 'Google User',
-                'email'     => $googleUser->getEmail(),
+                'email'     => $email,
                 'google_id' => $googleUser->getId(),
                 'gender'    => 'other',
                 'role_id'   => 2,
                 'status'    => 'Y',
                 'password'  => Str::random(32),
+            ]);
+        } elseif (!$user->google_id && $googleUser->getId()) {
+            $user->update([
+                'google_id' => $googleUser->getId(),
             ]);
         }
 

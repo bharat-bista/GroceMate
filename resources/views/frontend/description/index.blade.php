@@ -349,28 +349,77 @@
     .thumbnail-container {
         display: flex;
         gap: 10px;
-        justify-content: center;
         margin-top: 15px;
+        padding-bottom: 4px;
+    }
+
+    .thumbnail-container.thumbs-fit {
+        justify-content: center;
+    }
+
+    .thumbnail-container.thumbs-scroll {
+        justify-content: flex-start;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--gm-primary) #dfe5df;
+        scroll-behavior: smooth;
+        scroll-snap-type: x proximity;
+    }
+
+    .thumbnail-container.thumbs-scroll::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .thumbnail-container.thumbs-scroll::-webkit-scrollbar-track {
+        background: #dfe5df;
+        border-radius: 999px;
+    }
+
+    .thumbnail-container.thumbs-scroll::-webkit-scrollbar-thumb {
+        background: var(--gm-primary);
+        border-radius: 999px;
+    }
+
+    .thumb-btn {
+        flex: 0 0 82px;
+        width: 82px;
+        height: 82px;
+        padding: 0;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .thumbnail-container.thumbs-scroll .thumb-btn {
+        scroll-snap-align: start;
     }
 
     .product-thumb {
-        width: 80px;
-        height: 80px;
         object-fit: cover;
+        width: 100%;
+        height: 100%;
         border-radius: 8px;
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
+        display: block;
     }
 
-    .product-thumb:hover {
+    .thumb-btn:hover {
         border-color: var(--gm-primary);
         transform: scale(1.05);
     }
 
-    .active-thumb {
+    .thumb-btn.active-thumb {
         border-color: var(--gm-primary);
         box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
+    }
+
+    .image-zoom-container.single-image-gallery .main-product-image {
+        object-fit: contain;
+        background: #fff;
     }
 
     .qty-control {
@@ -517,9 +566,10 @@
             gap: 8px;
         }
 
-        .product-thumb {
-            width: 60px;
-            height: 60px;
+        .thumb-btn {
+            flex-basis: 68px;
+            width: 68px;
+            height: 68px;
         }
 
         .btn-group-wrapper {
@@ -767,6 +817,15 @@
     $brandName = $product?->brandRelation?->name ?? 'N/A';
     $mainImagePath = $galleryPaths->first();
     $mainImageUrl = $mainImagePath ? asset('storage/' . $mainImagePath) : asset('assets/img/product/product1.jpg');
+    $galleryImageUrls = $galleryPaths->map(fn ($path) => asset('storage/' . $path));
+
+    if ($galleryImageUrls->isEmpty()) {
+        $galleryImageUrls = collect([$mainImageUrl]);
+    }
+
+    $galleryImageCount = $galleryImageUrls->count();
+    $isSingleGalleryImage = $galleryImageCount === 1;
+    $thumbLayoutClass = $galleryImageCount > 3 ? 'thumbs-scroll' : 'thumbs-fit';
 @endphp
 
 <section class="product-detail-section py-5">
@@ -775,22 +834,23 @@
 
             <div class="col-lg-4 mb-4">
                 <div class="text-center mb-3">
-                    <div class="image-zoom-container">
+                    <div class="image-zoom-container {{ $isSingleGalleryImage ? 'single-image-gallery' : '' }}">
                         <img id="mainProductImage"
                              src="{{ $mainImageUrl }}"
                              class="img-fluid rounded shadow-sm main-product-image"
                              alt="{{ $product?->name ?? 'Product' }}">
 
-                        <div class="thumbnail-container mt-3">
-                            @forelse($galleryPaths as $galleryIndex => $galleryPath)
-                                <img src="{{ asset('storage/' . $galleryPath) }}"
-                                     class="product-thumb {{ $galleryIndex === 0 ? 'active-thumb' : '' }}"
-                                     alt="{{ $product?->name ?? 'Product image' }}">
-                            @empty
-                                <img src="{{ $mainImageUrl }}"
-                                     class="product-thumb active-thumb"
-                                     alt="{{ $product?->name ?? 'Product image' }}">
-                            @endforelse
+                        <div class="thumbnail-container {{ $thumbLayoutClass }} mt-3">
+                            @foreach($galleryImageUrls as $galleryIndex => $galleryImageUrl)
+                                <button type="button"
+                                        class="thumb-btn {{ $galleryIndex === 0 ? 'active-thumb' : '' }}"
+                                        data-image-src="{{ $galleryImageUrl }}"
+                                        aria-label="View image {{ $galleryIndex + 1 }}">
+                                    <img src="{{ $galleryImageUrl }}"
+                                         class="product-thumb"
+                                         alt="{{ $product?->name ?? 'Product image' }}">
+                                </button>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -925,13 +985,21 @@
 /* ----------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
     const mainImage = document.getElementById('mainProductImage');
-    const thumbs = document.querySelectorAll('.product-thumb');
+    const thumbButtons = document.querySelectorAll('.thumb-btn');
 
-    thumbs.forEach(t => {
-        t.addEventListener('click', function () {
-            mainImage.src = this.src;
-            thumbs.forEach(x => x.classList.remove('active-thumb'));
+    thumbButtons.forEach((button) => {
+        button.addEventListener('click', function () {
+            const imageSrc = this.dataset.imageSrc;
+            if (imageSrc) {
+                mainImage.src = imageSrc;
+            }
+
+            thumbButtons.forEach((item) => item.classList.remove('active-thumb'));
             this.classList.add('active-thumb');
+
+            if (this.parentElement?.classList.contains('thumbs-scroll')) {
+                this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
         });
     });
 });

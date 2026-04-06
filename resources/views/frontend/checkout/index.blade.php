@@ -1,6 +1,13 @@
 @extends('frontend.layouts.main')
 
 @section('main-content')
+@php
+  $authUser = auth()->user();
+  $defaultName = old('full_name', $authUser->name ?? '');
+  $defaultPhone = old('phone', $authUser->phone ?? '');
+  $defaultAddress = old('address', $authUser->address ?? '');
+@endphp
+
 <style>
   .checkout-container {
     background-color: #fff;
@@ -15,6 +22,7 @@
     margin-bottom: 20px;
     background: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
   }
 
   .checkout-container h4 {
@@ -38,55 +46,66 @@
     gap: 15px;
   }
 
- .checkout-container .payment-box {
-  flex: 1 1 45%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  background-color: #fafafa;
-  cursor: pointer;
-  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.3s;
-  color: #000;
-}
+  .checkout-container .payment-box {
+    flex: 1 1 45%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.3s;
+    color: #000;
+    text-align: center;
+  }
 
-.checkout-container .payment-box:hover {
-  background-color: #0A0F2C;
-  color: #fff;
-}
+  .checkout-container .payment-box:hover {
+    background-color: #0A0F2C;
+    color: #fff;
+  }
+
   .checkout-container .payment-box img {
     height: 30px;
     margin-right: 10px;
   }
-/* Selected payment option */
-.checkout-container .payment-box.selected {
-  background-color: #0A0F2C;
-  color: #fff;
-  border-color: #0A0F2C;
-}
-.checkout-container .payment-box.selected img {
-  filter: brightness(0) invert(1); /* Makes logos visible on dark bg */
-}
+
+  .checkout-container .payment-box.selected {
+    background-color: #0A0F2C;
+    color: #fff;
+    border-color: #0A0F2C;
+  }
+
+  .checkout-container .payment-box.selected img {
+    filter: brightness(0) invert(1);
+  }
+
   .checkout-container .place-order-btn {
     width: 100%;
     padding: 15px;
-    background-color:#0A0F2C;
+    background-color: #0A0F2C;
     color: white;
     font-weight: bold;
     font-size: 18px;
     border: none;
     margin-top: 20px;
     transition: background-color 0.3s ease;
+    border-radius: 10px;
   }
 
   .checkout-container .place-order-btn:hover {
-    color:#0A0F2C;
-    background:goldenrod;
+    color: #0A0F2C;
+    background: goldenrod;
   }
 
-  /* Fonepay info box */
+  .checkout-container .place-order-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    background: #6c757d;
+    color: #fff;
+  }
+
   .checkout-container .fonepay-info {
     margin-top: 20px;
     padding: 15px;
@@ -95,184 +114,471 @@
     text-align: center;
     display: none;
   }
+
   .checkout-container .fonepay-info img {
     max-width: 200px;
     margin-bottom: 10px;
+  }
+
+  .checkout-order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .checkout-order-item {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
+    border: 1px solid #e8ecef;
+    border-radius: 10px;
+    padding: 8px;
+    background: #fcfdfd;
+  }
+
+  .checkout-order-item-img {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e8ecef;
+    background: #fff;
+  }
+
+  .checkout-order-item-title {
+    margin: 0;
+    font-size: 0.93rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+  }
+
+  .checkout-order-item-meta {
+    font-size: 0.84rem;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  .checkout-summary-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.98rem;
+  }
+
+  .checkout-summary-line span:first-child {
+    color: #4b5563;
+  }
+
+  .checkout-summary-line strong {
+    color: #111827;
+  }
+
+  .checkout-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .checkout-summary-total span {
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .checkout-summary-total strong {
+    font-size: 1.35rem;
+    color: #e55a2b;
+  }
+
+  .checkout-empty-order {
+    margin-bottom: 12px;
+    border-radius: 8px;
   }
 
   @media (max-width: 768px) {
     .checkout-container .payment-box {
       flex: 1 1 100%;
     }
+
+    .checkout-order-items {
+      max-height: none;
+    }
   }
 </style>
 
 <div class="container checkout-container">
   <div class="row">
-
-    <!-- Left Column -->
     <div class="col-lg-6">
       <div class="order-summary">
         <h4>Billing & Shipping Address</h4>
-        <form>
+        <form id="checkout-address-form" novalidate>
           <div class="form-group mb-3">
-            <label>Full Name *</label>
-            <input type="text" class="form-control" name="full_name" required>
+            <label for="checkout-full-name">Full Name *</label>
+            <input
+              type="text"
+              class="form-control"
+              id="checkout-full-name"
+              name="full_name"
+              value="{{ $defaultName }}"
+              required
+            >
           </div>
 
           <div class="form-group mb-3">
-            <label>Phone *</label>
-            <input type="text" name="phone" class="form-control" required>
+            <label for="checkout-phone">Phone *</label>
+            <input
+              type="text"
+              id="checkout-phone"
+              name="phone"
+              class="form-control"
+              value="{{ $defaultPhone }}"
+              required
+            >
           </div>
 
           <div class="form-group mb-3">
-            <label>Enter your Address/Landmark here *</label>
-            <input type="text" name="address" class="form-control" required>
+            <label for="checkout-address">Enter your Address/Landmark here *</label>
+            <input
+              type="text"
+              id="checkout-address"
+              name="address"
+              class="form-control"
+              value="{{ $defaultAddress }}"
+              required
+            >
           </div>
 
           <div class="form-group mb-3">
             <label>Delivery *</label>
             <div>
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="delivery" value="inside" checked>
+                <input class="form-check-input" type="radio" name="delivery" value="inside" data-charge="100" checked>
                 <label class="form-check-label">Inside Valley: Rs. 100</label>
               </div>
 
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="delivery" value="outside">
-                <label class="form-check-label">Outside Valley: <i>(May vary)</i> Rs. 200</label>
+                <input class="form-check-input" type="radio" name="delivery" value="outside" data-charge="200">
+                <label class="form-check-label">Outside Valley: Rs. 200</label>
               </div>
 
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="delivery" value="pickup">
+                <input class="form-check-input" type="radio" name="delivery" value="pickup" data-charge="0">
                 <label class="form-check-label">Store Pickup: Free</label>
               </div>
             </div>
           </div>
 
           <div class="form-group mt-3" style="height:200px;">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18..."
+            <iframe
+              src="https://maps.google.com/maps?q=Kathmandu&t=&z=13&ie=UTF8&iwloc=&output=embed"
               style="width:100%; height:100%; border:0;"
-              allowfullscreen loading="lazy"></iframe>
+              loading="lazy"
+            ></iframe>
           </div>
-
         </form>
       </div>
     </div>
 
-    <!-- Right Column -->
     <div class="col-lg-6">
-
       <div class="payment-section">
         <h4>Choose Payment Options</h4>
 
         <div class="payment-methods">
-
           <div class="payment-box" data-method="fonepay">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVm2cDdqOxx_Y_7HzvD6sh_QYx3Nrp-xi07Q&s">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVm2cDdqOxx_Y_7HzvD6sh_QYx3Nrp-xi07Q&s" alt="Fonepay">
             <span>Fonepay</span>
           </div>
 
           <div class="payment-box" data-method="connectips">
-            <img src="https://via.placeholder.com/80x40?text=ConnectIPS">
+            <img src="https://via.placeholder.com/80x40?text=ConnectIPS" alt="Connect IPS">
             <span>Connect IPS</span>
           </div>
 
           <div class="payment-box" data-method="cod">
             <span>Cash on Delivery</span>
           </div>
-
         </div>
 
-        <!-- Fonepay Info -->
         <div class="fonepay-info" id="fonepayInfo">
-          <img src="https://via.placeholder.com/200x200?text=Fonepay+QR">
-          <p>Please put your <b>Name</b> & <b>Phone Number</b> in remarks.<br>
+          <img src="https://via.placeholder.com/200x200?text=Fonepay+QR" alt="Fonepay QR">
+          <p>
+            Please put your <b>Name</b> and <b>Phone Number</b> in remarks.<br>
             Send screenshot on WhatsApp: <b>+977 9849433139</b>
           </p>
         </div>
 
-        <!-- ConnectIPS Info -->
         <div class="fonepay-info" id="connectInfo">
-          <img src="https://via.placeholder.com/200x200?text=ConnectIPS+QR">
-          <p>Please put your <b>Name</b> & <b>Phone Number</b> in remarks.<br>
+          <img src="https://via.placeholder.com/200x200?text=ConnectIPS+QR" alt="Connect IPS QR">
+          <p>
+            Please put your <b>Name</b> and <b>Phone Number</b> in remarks.<br>
             Send screenshot on WhatsApp: <b>+977 9849433139</b>
           </p>
         </div>
 
         <div class="form-check mt-4">
           <input class="form-check-input" type="checkbox" id="termsCheck">
-          <label class="form-check-label">I agree to the terms & conditions *</label>
+          <label class="form-check-label" for="termsCheck">I agree to the terms and conditions *</label>
         </div>
 
-        <button class="place-order-btn">Place Order</button>
+        <button type="button" class="place-order-btn" id="place-order-btn">Place Order</button>
       </div>
 
-      <!-- Mock Order Summary -->
       <div class="order-summary mt-3">
         <h4>Your Order</h4>
 
-        <p><strong>Product:</strong> Fresh Apples (x2) - Rs. 300.00</p>
-        <p><strong>Product:</strong> Organic Potatoes (x1) - Rs. 120.00</p>
+        <div id="checkout-empty-order" class="alert alert-warning checkout-empty-order d-none">
+          Your cart is empty. Please add items before checkout.
+        </div>
 
-        <p><strong>Subtotal:</strong> Rs. 420.00</p>
-        <p><strong>Delivery Charge:</strong> Rs. 100.00</p>
+        <div id="checkout-order-items" class="checkout-order-items"></div>
 
-        <hr>
-        <p><strong>Total:</strong> Rs. 520.00 <small>(Tax inclusive)</small></p>
+        <div class="checkout-summary-line">
+          <span>Items:</span>
+          <strong id="checkout-item-count">0</strong>
+        </div>
+
+        <div class="checkout-summary-line">
+          <span>Subtotal:</span>
+          <strong id="checkout-subtotal">Rs. 0.00</strong>
+        </div>
+
+        <div class="checkout-summary-line">
+          <span>Delivery Charge:</span>
+          <strong id="checkout-delivery">Rs. 0.00</strong>
+        </div>
+
+        <div class="checkout-summary-total">
+          <span>Total:</span>
+          <strong id="checkout-total">Rs. 0.00</strong>
+        </div>
       </div>
-
     </div>
   </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
+  const CART_KEY = 'gm_cart_items';
+  const CHECKOUT_DRAFT_KEY = 'gm_checkout_draft';
 
-  const paymentBoxes = document.querySelectorAll(".payment-box");
-  const fonepayInfo = document.getElementById("fonepayInfo");
-  const connectInfo = document.getElementById("connectInfo");
+  const paymentBoxes = document.querySelectorAll('.payment-box');
+  const fonepayInfo = document.getElementById('fonepayInfo');
+  const connectInfo = document.getElementById('connectInfo');
+  const placeOrderBtn = document.getElementById('place-order-btn');
+  const orderItemsWrap = document.getElementById('checkout-order-items');
+  const emptyOrderEl = document.getElementById('checkout-empty-order');
+  const subtotalEl = document.getElementById('checkout-subtotal');
+  const deliveryEl = document.getElementById('checkout-delivery');
+  const totalEl = document.getElementById('checkout-total');
+  const itemCountEl = document.getElementById('checkout-item-count');
+  const deliveryInputs = document.querySelectorAll('input[name="delivery"]');
+  const nameInput = document.getElementById('checkout-full-name');
+  const phoneInput = document.getElementById('checkout-phone');
+  const addressInput = document.getElementById('checkout-address');
+  const fallbackProductImage = @json(asset('assets/img/product/product1.jpg'));
+
   let selectedPaymentMethod = null;
 
-  // Handle payment selection
-  paymentBoxes.forEach(box => {
-    box.addEventListener("click", () => {
-      paymentBoxes.forEach(b => b.classList.remove("selected"));
-      box.classList.add("selected");
+  function formatCurrency(value) {
+    return 'Rs. ' + Number(value || 0).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function readCartItems() {
+    if (window.GroceMateCart && typeof window.GroceMateCart.getItems === 'function') {
+      return window.GroceMateCart.getItems();
+    }
+
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function getSelectedDeliveryCharge() {
+    const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
+    return Number(selectedDelivery?.dataset?.charge || 0);
+  }
+
+  function saveCheckoutDraft() {
+    const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
+
+    const draft = {
+      full_name: nameInput?.value?.trim() || '',
+      phone: phoneInput?.value?.trim() || '',
+      address: addressInput?.value?.trim() || '',
+      delivery: selectedDelivery?.value || 'inside',
+    };
+
+    localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function restoreCheckoutDraft() {
+    try {
+      const draft = JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}');
+
+      if (draft && typeof draft === 'object') {
+        if (nameInput && !nameInput.value && draft.full_name) nameInput.value = draft.full_name;
+        if (phoneInput && !phoneInput.value && draft.phone) phoneInput.value = draft.phone;
+        if (addressInput && !addressInput.value && draft.address) addressInput.value = draft.address;
+
+        if (draft.delivery) {
+          const target = document.querySelector(`input[name="delivery"][value="${draft.delivery}"]`);
+          if (target) target.checked = true;
+        }
+      }
+    } catch (_) {
+      // Ignore invalid draft data
+    }
+  }
+
+  function renderOrderSummary() {
+    const cartItems = readCartItems();
+    const hasItems = cartItems.length > 0;
+
+    const subtotal = cartItems.reduce((sum, item) => {
+      const price = Number(item?.price || 0);
+      const qty = Math.max(1, Number(item?.qty || 1));
+      return sum + (price * qty);
+    }, 0);
+
+    const deliveryCharge = getSelectedDeliveryCharge();
+    const total = subtotal + deliveryCharge;
+
+    itemCountEl.textContent = String(cartItems.length);
+    subtotalEl.textContent = formatCurrency(subtotal);
+    deliveryEl.textContent = formatCurrency(deliveryCharge);
+    totalEl.textContent = formatCurrency(total);
+
+    if (!hasItems) {
+      emptyOrderEl.classList.remove('d-none');
+      orderItemsWrap.innerHTML = '';
+      placeOrderBtn.disabled = true;
+      return;
+    }
+
+    emptyOrderEl.classList.add('d-none');
+    placeOrderBtn.disabled = false;
+
+    orderItemsWrap.innerHTML = cartItems.map((item) => {
+      const safeName = escapeHtml(item?.name || 'Product');
+      const safeImage = escapeHtml(item?.image || fallbackProductImage);
+      const qty = Math.max(1, Number(item?.qty || 1));
+      const unitPrice = Number(item?.price || 0);
+      const lineTotal = unitPrice * qty;
+
+      return `
+        <div class="checkout-order-item">
+          <img src="${safeImage}" class="checkout-order-item-img" alt="${safeName}">
+          <div>
+            <p class="checkout-order-item-title">${safeName}</p>
+            <div class="checkout-order-item-meta">
+              Qty: ${qty} x ${formatCurrency(unitPrice)} = <strong>${formatCurrency(lineTotal)}</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  paymentBoxes.forEach((box) => {
+    box.addEventListener('click', () => {
+      paymentBoxes.forEach((item) => item.classList.remove('selected'));
+      box.classList.add('selected');
       selectedPaymentMethod = box.dataset.method;
 
-      fonepayInfo.style.display = selectedPaymentMethod === "fonepay" ? "block" : "none";
-      connectInfo.style.display = selectedPaymentMethod === "connectips" ? "block" : "none";
+      fonepayInfo.style.display = selectedPaymentMethod === 'fonepay' ? 'block' : 'none';
+      connectInfo.style.display = selectedPaymentMethod === 'connectips' ? 'block' : 'none';
     });
   });
 
-  // Place order (Frontend only)
-  document.querySelector(".place-order-btn").addEventListener("click", () => {
-
-    const name = document.querySelector('input[name="full_name"]').value.trim();
-    const phone = document.querySelector('input[name="phone"]').value.trim();
-    const address = document.querySelector('input[name="address"]').value.trim();
-
-    // Basic validations
-    if (!name || !phone || !address) {
-      alert("Please fill all required fields.");
-      return;
-    }
-    if (!selectedPaymentMethod) {
-      alert("Please select a payment method.");
-      return;
-    }
-    if (!document.getElementById("termsCheck").checked) {
-      alert("Please agree to terms and conditions.");
-      return;
-    }
-
-    // Mock success
-    alert("Order placed successfully! (No backend used)");
+  deliveryInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      saveCheckoutDraft();
+      renderOrderSummary();
+    });
   });
 
+  [nameInput, phoneInput, addressInput].forEach((input) => {
+    if (!input) return;
+    input.addEventListener('input', saveCheckoutDraft);
+  });
+
+  placeOrderBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const address = addressInput.value.trim();
+    const cartItems = readCartItems();
+
+    if (!name || !phone || !address) {
+      alert('Please fill all required fields.');
+      return;
+    }
+
+    if (!selectedPaymentMethod) {
+      alert('Please select a payment method.');
+      return;
+    }
+
+    if (!document.getElementById('termsCheck').checked) {
+      alert('Please agree to terms and conditions.');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      alert('Your cart is empty. Please add products before checkout.');
+      return;
+    }
+
+    const subtotal = cartItems.reduce((sum, item) => {
+      const price = Number(item?.price || 0);
+      const qty = Math.max(1, Number(item?.qty || 1));
+      return sum + (price * qty);
+    }, 0);
+    const total = subtotal + getSelectedDeliveryCharge();
+
+    saveCheckoutDraft();
+
+    alert(
+      `Order placed successfully! (No backend used)\n` +
+      `Items: ${cartItems.length}\n` +
+      `Total: ${formatCurrency(total)}`
+    );
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === CART_KEY) {
+      renderOrderSummary();
+    }
+  });
+
+  window.addEventListener('gm-cart-updated', renderOrderSummary);
+
+  restoreCheckoutDraft();
+  renderOrderSummary();
 });
 </script>
-
 
 @endsection

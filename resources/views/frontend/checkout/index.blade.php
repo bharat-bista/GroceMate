@@ -6,118 +6,333 @@
   $defaultName = old('full_name', $authUser->name ?? '');
   $defaultPhone = old('phone', $authUser->phone ?? '');
   $defaultAddress = old('address', $authUser->address ?? '');
+  $isBuyNowPage = request()->query('mode') === 'buy-now';
 @endphp
 
 <style>
+  .checkout-page {
+    --gm-primary: #2e7d32;
+    --gm-primary-dark: #1b5e20;
+    --gm-primary-soft: #e9f5ea;
+    --gm-accent: #ff6b35;
+    --gm-text: #1f2937;
+    --gm-muted: #6b7280;
+    --gm-border: #dce8dd;
+    --gm-white: #ffffff;
+    --gm-surface: #f5faf6;
+    --gm-shadow: 0 14px 35px rgba(46, 125, 50, 0.12);
+    font-size: 17px;
+    padding: 28px 0 46px;
+    background: radial-gradient(circle at top right, #e4f3e6 0%, #f9fcf9 48%, #f3f9f4 100%);
+  }
+
   .checkout-container {
-    background-color: #fff;
-    padding: 20px;
-    font-size: 16px;
+    max-width: 1220px;
+    padding: 0 18px;
   }
 
-  .checkout-container .order-summary,
-  .checkout-container .payment-section {
-    border: 1px solid #ddd;
-    padding: 20px;
-    margin-bottom: 20px;
-    background: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
+  .checkout-hero {
+    background: linear-gradient(130deg, rgba(46, 125, 50, 0.96), rgba(27, 94, 32, 0.95));
+    border-radius: 22px;
+    color: #fff;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+    box-shadow: var(--gm-shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
   }
 
-  .checkout-container h4 {
-    margin-bottom: 20px;
-    font-weight: bold;
-    font-size: 20px;
+  .checkout-hero h2 {
+    margin: 0;
+    font-size: clamp(1.45rem, 2.4vw, 1.95rem);
+    font-weight: 700;
   }
 
-  .checkout-container .form-control,
-  .checkout-container .form-check-input {
-    border-radius: 8px;
+  .checkout-hero p {
+    margin: 6px 0 0;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.88);
   }
 
-  .checkout-container .form-check-label {
-    font-size: 15px;
+  .checkout-mode-badge {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #fff;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .checkout-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  .checkout-card {
+    background: var(--gm-white);
+    border: 1px solid var(--gm-border);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 8px 28px rgba(28, 76, 45, 0.08);
+  }
+
+  .checkout-card h4 {
+    margin-bottom: 18px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--gm-text);
+  }
+
+  .checkout-card h4 i {
+    color: var(--gm-primary);
+    margin-right: 8px;
+  }
+
+  .checkout-card label {
+    color: var(--gm-text);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 7px;
+  }
+
+  .checkout-card .form-control {
+    border: 1px solid var(--gm-border);
+    border-radius: 12px;
+    min-height: 46px;
+    font-size: 1.12rem;
+    padding: 10px 13px;
+  }
+
+  .checkout-card .form-control::placeholder {
+    font-size: 1.04rem !important;
+    opacity: 1;
+  }
+
+  .checkout-card .form-control::-webkit-input-placeholder {
+    font-size: 1.04rem !important;
+  }
+
+  .checkout-card .form-control::-moz-placeholder {
+    font-size: 1.04rem !important;
+    opacity: 1;
+  }
+
+  .checkout-card .form-control:-ms-input-placeholder {
+    font-size: 1.04rem !important;
+  }
+
+  .checkout-card .form-control::-ms-input-placeholder {
+    font-size: 1.04rem !important;
+  }
+
+  .checkout-card .form-control:focus {
+    border-color: var(--gm-primary);
+    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.15);
+  }
+
+  .delivery-options {
+    display: grid;
+    gap: 10px;
+  }
+
+  .delivery-option {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    border: 1px solid var(--gm-border);
+    border-radius: 12px;
+    padding: 11px 12px;
+    background: #fbfefb;
+    transition: 0.2s ease;
+  }
+
+  .delivery-option:hover {
+    border-color: #b8d4bb;
+    background: var(--gm-primary-soft);
+  }
+
+  .delivery-option .form-check-input {
+    margin-top: 0;
+    border-color: #b0cbb3;
+  }
+
+  .delivery-option .form-check-input:checked {
+    background-color: var(--gm-primary);
+    border-color: var(--gm-primary);
+  }
+
+  .delivery-option-text {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    font-size: 1.08rem;
+    color: var(--gm-muted);
+  }
+
+  .delivery-option-text strong {
+    color: var(--gm-text);
+    font-size: 1.18rem;
+  }
+
+  .checkout-map-wrap {
+    height: 220px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--gm-border);
+    background: #eef6ef;
+    margin-top: 6px;
+  }
+
+  .checkout-map-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .checkout-side-stack {
+    display: grid;
+    gap: 18px;
   }
 
   .checkout-container .payment-methods {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .checkout-container .payment-box {
-    flex: 1 1 45%;
+    border: 1px solid var(--gm-border);
+    border-radius: 14px;
+    padding: 12px;
+    background: #fafdfa;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: var(--gm-text);
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 15px;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    background-color: #fafafa;
-    cursor: pointer;
-    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.3s;
-    color: #000;
-    text-align: center;
+    gap: 10px;
+    min-height: 62px;
   }
 
   .checkout-container .payment-box:hover {
-    background-color: #0A0F2C;
-    color: #fff;
-  }
-
-  .checkout-container .payment-box img {
-    height: 30px;
-    margin-right: 10px;
+    border-color: var(--gm-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(46, 125, 50, 0.12);
   }
 
   .checkout-container .payment-box.selected {
-    background-color: #0A0F2C;
+    background: linear-gradient(135deg, var(--gm-primary) 0%, var(--gm-primary-dark) 100%);
     color: #fff;
-    border-color: #0A0F2C;
+    border-color: transparent;
   }
 
-  .checkout-container .payment-box.selected img {
-    filter: brightness(0) invert(1);
+  .payment-box-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(46, 125, 50, 0.14);
+    color: var(--gm-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.08rem;
+  }
+
+  .payment-box.selected .payment-box-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .payment-box-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .payment-box-text strong {
+    font-size: 1.14rem;
+    font-weight: 700;
+  }
+
+  .payment-box-text small {
+    color: var(--gm-muted);
+    font-size: 0.98rem;
+  }
+
+  .payment-box.selected .payment-box-text small {
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .checkout-container .fonepay-info {
+    margin-top: 14px;
+    border: 1px dashed #bfd8c1;
+    background: var(--gm-surface);
+    border-radius: 14px;
+    padding: 14px;
+    display: none;
+    color: var(--gm-text);
+  }
+
+  .payment-note-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--gm-primary-dark);
+  }
+
+  .payment-note-title i {
+    color: var(--gm-primary);
+  }
+
+  .checkout-container .fonepay-info p {
+    margin: 0;
+    font-size: 1.02rem;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+
+  .checkout-container .form-check-label {
+    font-size: 1.08rem;
+    margin-bottom: 0;
   }
 
   .checkout-container .place-order-btn {
     width: 100%;
-    padding: 15px;
-    background-color: #0A0F2C;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
     border: none;
-    margin-top: 20px;
-    transition: background-color 0.3s ease;
-    border-radius: 10px;
+    border-radius: 13px;
+    min-height: 58px;
+    margin-top: 18px;
+    background: linear-gradient(135deg, var(--gm-primary) 0%, var(--gm-primary-dark) 100%);
+    color: #fff;
+    font-size: 1.18rem;
+    font-weight: 700;
+    transition: all 0.25s ease;
   }
 
   .checkout-container .place-order-btn:hover {
-    color: #0A0F2C;
-    background: goldenrod;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(46, 125, 50, 0.25);
   }
 
   .checkout-container .place-order-btn:disabled {
-    opacity: 0.65;
+    opacity: 0.72;
     cursor: not-allowed;
-    background: #6c757d;
-    color: #fff;
-  }
-
-  .checkout-container .fonepay-info {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px dashed #0A0F2C;
-    border-radius: 10px;
-    text-align: center;
-    display: none;
-  }
-
-  .checkout-container .fonepay-info img {
-    max-width: 200px;
-    margin-bottom: 10px;
+    background: #89a88e;
+    box-shadow: none;
   }
 
   .checkout-order-items {
@@ -125,41 +340,41 @@
     flex-direction: column;
     gap: 10px;
     margin-bottom: 14px;
-    max-height: 280px;
+    max-height: 290px;
     overflow-y: auto;
     padding-right: 4px;
   }
 
   .checkout-order-item {
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr);
     gap: 10px;
-    border: 1px solid #e8ecef;
-    border-radius: 10px;
+    border: 1px solid var(--gm-border);
+    border-radius: 12px;
     padding: 8px;
-    background: #fcfdfd;
+    background: #fbfefb;
   }
 
   .checkout-order-item-img {
-    width: 52px;
-    height: 52px;
+    width: 58px;
+    height: 58px;
     object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid #e8ecef;
+    border-radius: 10px;
+    border: 1px solid var(--gm-border);
     background: #fff;
   }
 
   .checkout-order-item-title {
     margin: 0;
-    font-size: 0.93rem;
-    font-weight: 600;
-    color: #1f2937;
-    line-height: 1.3;
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: var(--gm-text);
+    line-height: 1.35;
   }
 
   .checkout-order-item-meta {
-    font-size: 0.84rem;
-    color: #6b7280;
+    font-size: 0.99rem;
+    color: var(--gm-muted);
     margin-top: 2px;
   }
 
@@ -168,7 +383,7 @@
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 8px;
-    font-size: 0.98rem;
+    font-size: 1.12rem;
   }
 
   .checkout-summary-line span:first-child {
@@ -184,42 +399,121 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e5e7eb;
+    margin-top: 13px;
+    padding-top: 13px;
+    border-top: 1px dashed #c9dacb;
   }
 
   .checkout-summary-total span {
     font-weight: 700;
-    color: #111827;
+    color: var(--gm-text);
+    font-size: 1.16rem;
   }
 
   .checkout-summary-total strong {
-    font-size: 1.35rem;
-    color: #e55a2b;
+    font-size: 1.62rem;
+    color: var(--gm-accent);
   }
 
   .checkout-empty-order {
     margin-bottom: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
+    border: 1px solid #ffe6b6;
+    background: #fff9ec;
+    color: #8a6118;
+    font-size: 1.06rem;
   }
 
-  @media (max-width: 768px) {
-    .checkout-container .payment-box {
-      flex: 1 1 100%;
+  @media (max-width: 1199px) {
+    .checkout-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .checkout-side-stack {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 991px) {
+    .checkout-page {
+      font-size: 16px;
+      padding-top: 20px;
+    }
+
+    .checkout-hero {
+      border-radius: 16px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+    }
+
+    .checkout-card {
+      padding: 16px;
+      border-radius: 15px;
+    }
+
+    .checkout-side-stack {
+      grid-template-columns: 1fr;
+    }
+
+    .checkout-container .payment-methods {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .checkout-container {
+      padding: 0 12px;
+    }
+
+    .checkout-mode-badge {
+      width: 100%;
+      text-align: center;
+    }
+
+    .delivery-option {
+      padding: 10px;
+    }
+
+    .delivery-option-text {
+      font-size: 1rem;
+    }
+
+    .checkout-card h4 {
+      font-size: 1.25rem;
+    }
+
+    .checkout-card label,
+    .checkout-card .form-control,
+    .checkout-summary-line {
+      font-size: 1rem;
     }
 
     .checkout-order-items {
       max-height: none;
     }
+
+    .checkout-map-wrap {
+      height: 185px;
+    }
   }
 </style>
 
-<div class="container checkout-container">
-  <div class="row">
-    <div class="col-lg-6">
-      <div class="order-summary">
-        <h4>Billing & Shipping Address</h4>
+<div class="checkout-page">
+  <div class="container checkout-container">
+    <div class="checkout-hero">
+      <div>
+        <h2><i class="fas fa-lock"></i> Secure Checkout</h2>
+        <p>Review delivery details, select payment, and confirm your order in one step.</p>
+      </div>
+      <div class="checkout-mode-badge">
+        {{ $isBuyNowPage ? 'Direct Buy Checkout' : 'Cart Checkout' }}
+      </div>
+    </div>
+
+    <div class="checkout-layout">
+      <div class="checkout-card">
+        <h4><i class="fas fa-map-marker-alt"></i> Billing & Shipping Address</h4>
         <form id="checkout-address-form" novalidate>
           <div class="form-group mb-3">
             <label for="checkout-full-name">Full Name *</label>
@@ -229,6 +523,7 @@
               id="checkout-full-name"
               name="full_name"
               value="{{ $defaultName }}"
+              placeholder="Enter your full name"
               required
             >
           </div>
@@ -241,124 +536,147 @@
               name="phone"
               class="form-control"
               value="{{ $defaultPhone }}"
+              placeholder="Enter your phone number"
               required
             >
           </div>
 
           <div class="form-group mb-3">
-            <label for="checkout-address">Enter your Address/Landmark here *</label>
+            <label for="checkout-address">Address / Landmark *</label>
             <input
               type="text"
               id="checkout-address"
               name="address"
               class="form-control"
               value="{{ $defaultAddress }}"
+              placeholder="Enter complete address or landmark"
               required
             >
           </div>
 
           <div class="form-group mb-3">
-            <label>Delivery *</label>
-            <div>
-              <div class="form-check">
+            <label>Delivery Type *</label>
+            <div class="delivery-options">
+              <label class="delivery-option">
                 <input class="form-check-input" type="radio" name="delivery" value="inside" data-charge="100" checked>
-                <label class="form-check-label">Inside Valley: Rs. 100</label>
-              </div>
+                <span class="delivery-option-text">
+                  <strong>Inside Valley</strong>
+                  <span>Rs. 100</span>
+                </span>
+              </label>
 
-              <div class="form-check">
+              <label class="delivery-option">
                 <input class="form-check-input" type="radio" name="delivery" value="outside" data-charge="200">
-                <label class="form-check-label">Outside Valley: Rs. 200</label>
-              </div>
+                <span class="delivery-option-text">
+                  <strong>Outside Valley</strong>
+                  <span>Rs. 200</span>
+                </span>
+              </label>
 
-              <div class="form-check">
+              <label class="delivery-option">
                 <input class="form-check-input" type="radio" name="delivery" value="pickup" data-charge="0">
-                <label class="form-check-label">Store Pickup: Free</label>
-              </div>
+                <span class="delivery-option-text">
+                  <strong>Store Pickup</strong>
+                  <span>Free</span>
+                </span>
+              </label>
             </div>
           </div>
 
-          <div class="form-group mt-3" style="height:200px;">
-            <iframe
-              src="https://maps.google.com/maps?q=Kathmandu&t=&z=13&ie=UTF8&iwloc=&output=embed"
-              style="width:100%; height:100%; border:0;"
-              loading="lazy"
-            ></iframe>
+          <div class="form-group">
+            <label>Location Preview</label>
+            <div class="checkout-map-wrap">
+              <iframe
+                src="https://maps.google.com/maps?q=Kathmandu&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                loading="lazy"
+              ></iframe>
+            </div>
           </div>
         </form>
       </div>
-    </div>
 
-    <div class="col-lg-6">
-      <div class="payment-section">
-        <h4>Choose Payment Options</h4>
+      <div class="checkout-side-stack">
+        <div class="payment-section checkout-card">
+          <h4><i class="fas fa-credit-card"></i> Choose Payment Option</h4>
 
-        <div class="payment-methods">
-          <div class="payment-box" data-method="fonepay">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVm2cDdqOxx_Y_7HzvD6sh_QYx3Nrp-xi07Q&s" alt="Fonepay">
-            <span>Fonepay</span>
+          <div class="payment-methods">
+            <div class="payment-box" data-method="fonepay">
+              <span class="payment-box-icon"><i class="fas fa-qrcode"></i></span>
+              <span class="payment-box-text">
+                <strong>Fonepay</strong>
+                <small>QR payment</small>
+              </span>
+            </div>
+
+            <div class="payment-box" data-method="connectips">
+              <span class="payment-box-icon"><i class="fas fa-building-columns"></i></span>
+              <span class="payment-box-text">
+                <strong>Connect IPS</strong>
+                <small>Bank transfer</small>
+              </span>
+            </div>
+
+            <div class="payment-box" data-method="cod">
+              <span class="payment-box-icon"><i class="fas fa-money-bill-wave"></i></span>
+              <span class="payment-box-text">
+                <strong>Cash on Delivery</strong>
+                <small>Pay at doorstep</small>
+              </span>
+            </div>
           </div>
 
-          <div class="payment-box" data-method="connectips">
-            <img src="https://via.placeholder.com/80x40?text=ConnectIPS" alt="Connect IPS">
-            <span>Connect IPS</span>
+          <div class="fonepay-info" id="fonepayInfo">
+            <div class="payment-note-title"><i class="fas fa-info-circle"></i> Fonepay Instructions</div>
+            <p>
+              Add your <b>Name</b> and <b>Phone Number</b> in remarks while paying.
+              Then share payment screenshot on WhatsApp: <b>+977 9849433139</b>
+            </p>
           </div>
 
-          <div class="payment-box" data-method="cod">
-            <span>Cash on Delivery</span>
+          <div class="fonepay-info" id="connectInfo">
+            <div class="payment-note-title"><i class="fas fa-info-circle"></i> Connect IPS Instructions</div>
+            <p>
+              Add your <b>Name</b> and <b>Phone Number</b> in remarks while paying.
+              Then share payment screenshot on WhatsApp: <b>+977 9849433139</b>
+            </p>
           </div>
+
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="termsCheck">
+            <label class="form-check-label" for="termsCheck">I agree to the terms and conditions *</label>
+          </div>
+
+          <button type="button" class="place-order-btn" id="place-order-btn">Place Order</button>
         </div>
 
-        <div class="fonepay-info" id="fonepayInfo">
-          <img src="https://via.placeholder.com/200x200?text=Fonepay+QR" alt="Fonepay QR">
-          <p>
-            Please put your <b>Name</b> and <b>Phone Number</b> in remarks.<br>
-            Send screenshot on WhatsApp: <b>+977 9849433139</b>
-          </p>
-        </div>
+        <div class="order-summary checkout-card">
+          <h4><i class="fas fa-receipt"></i> Your Order</h4>
 
-        <div class="fonepay-info" id="connectInfo">
-          <img src="https://via.placeholder.com/200x200?text=ConnectIPS+QR" alt="Connect IPS QR">
-          <p>
-            Please put your <b>Name</b> and <b>Phone Number</b> in remarks.<br>
-            Send screenshot on WhatsApp: <b>+977 9849433139</b>
-          </p>
-        </div>
+          <div id="checkout-empty-order" class="alert checkout-empty-order d-none">
+            Your cart is empty. Please add items before checkout.
+          </div>
 
-        <div class="form-check mt-4">
-          <input class="form-check-input" type="checkbox" id="termsCheck">
-          <label class="form-check-label" for="termsCheck">I agree to the terms and conditions *</label>
-        </div>
+          <div id="checkout-order-items" class="checkout-order-items"></div>
 
-        <button type="button" class="place-order-btn" id="place-order-btn">Place Order</button>
-      </div>
+          <div class="checkout-summary-line">
+            <span>Items:</span>
+            <strong id="checkout-item-count">0</strong>
+          </div>
 
-      <div class="order-summary mt-3">
-        <h4>Your Order</h4>
+          <div class="checkout-summary-line">
+            <span>Subtotal:</span>
+            <strong id="checkout-subtotal">Rs. 0.00</strong>
+          </div>
 
-        <div id="checkout-empty-order" class="alert alert-warning checkout-empty-order d-none">
-          Your cart is empty. Please add items before checkout.
-        </div>
+          <div class="checkout-summary-line">
+            <span>Delivery Charge:</span>
+            <strong id="checkout-delivery">Rs. 0.00</strong>
+          </div>
 
-        <div id="checkout-order-items" class="checkout-order-items"></div>
-
-        <div class="checkout-summary-line">
-          <span>Items:</span>
-          <strong id="checkout-item-count">0</strong>
-        </div>
-
-        <div class="checkout-summary-line">
-          <span>Subtotal:</span>
-          <strong id="checkout-subtotal">Rs. 0.00</strong>
-        </div>
-
-        <div class="checkout-summary-line">
-          <span>Delivery Charge:</span>
-          <strong id="checkout-delivery">Rs. 0.00</strong>
-        </div>
-
-        <div class="checkout-summary-total">
-          <span>Total:</span>
-          <strong id="checkout-total">Rs. 0.00</strong>
+          <div class="checkout-summary-total">
+            <span>Total:</span>
+            <strong id="checkout-total">Rs. 0.00</strong>
+          </div>
         </div>
       </div>
     </div>

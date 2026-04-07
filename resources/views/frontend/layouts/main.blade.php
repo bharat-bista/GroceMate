@@ -149,6 +149,8 @@ html, body {
 <script>
 (function () {
     const CART_KEY = 'gm_cart_items';
+    const BUY_NOW_KEY = 'gm_buy_now_item';
+    const LEGACY_BUY_NOW_KEY = 'buynow';
 
     function parseCart(raw) {
         try {
@@ -156,6 +158,15 @@ html, body {
             return Array.isArray(parsed) ? parsed : [];
         } catch (_) {
             return [];
+        }
+    }
+
+    function parseBuyNow(raw) {
+        try {
+            const parsed = JSON.parse(raw || '{}');
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+        } catch (_) {
+            return null;
         }
     }
 
@@ -170,6 +181,16 @@ html, body {
 
     function normalizeId(value) {
         return String(value ?? '').trim();
+    }
+
+    function normalizeProduct(item) {
+        return {
+            id: normalizeId(item?.id),
+            name: String(item?.name || 'Product'),
+            price: Number(item?.price || 0),
+            image: String(item?.image || ''),
+            qty: Math.max(1, Number(item?.qty || 1)),
+        };
     }
 
     function showToast(title, icon) {
@@ -199,7 +220,8 @@ html, body {
 
     function addItem(item) {
         const items = getItems();
-        const id = normalizeId(item?.id);
+        const normalized = normalizeProduct(item);
+        const id = normalized.id;
 
         if (!id) {
             return { added: false, reason: 'invalid' };
@@ -210,13 +232,7 @@ html, body {
             return { added: false, reason: 'exists' };
         }
 
-        items.push({
-            id: id,
-            name: String(item?.name || 'Product'),
-            price: Number(item?.price || 0),
-            image: String(item?.image || ''),
-            qty: Number(item?.qty || 1),
-        });
+        items.push(normalized);
 
         saveItems(items);
         return { added: true };
@@ -244,6 +260,35 @@ html, body {
         saveItems(Array.isArray(items) ? items : []);
     }
 
+    function getBuyNowItem() {
+        const directItem = parseBuyNow(localStorage.getItem(BUY_NOW_KEY));
+        const legacyItem = parseBuyNow(localStorage.getItem(LEGACY_BUY_NOW_KEY));
+        const selected = directItem?.id ? directItem : legacyItem;
+
+        if (!selected || !selected.id) {
+            return null;
+        }
+
+        return normalizeProduct(selected);
+    }
+
+    function setBuyNowItem(item) {
+        const normalized = normalizeProduct(item);
+
+        if (!normalized.id) {
+            return { saved: false, reason: 'invalid' };
+        }
+
+        localStorage.setItem(BUY_NOW_KEY, JSON.stringify(normalized));
+        localStorage.removeItem(LEGACY_BUY_NOW_KEY);
+        return { saved: true, item: normalized };
+    }
+
+    function clearBuyNowItem() {
+        localStorage.removeItem(BUY_NOW_KEY);
+        localStorage.removeItem(LEGACY_BUY_NOW_KEY);
+    }
+
     window.GroceMateCart = {
         getItems,
         setItems,
@@ -252,6 +297,9 @@ html, body {
         updateQty,
         updateBadges,
         showToast,
+        getBuyNowItem,
+        setBuyNowItem,
+        clearBuyNowItem,
     };
 
     function readDatasetItem(source) {

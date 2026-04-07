@@ -368,7 +368,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const CART_KEY = 'gm_cart_items';
+  const BUY_NOW_KEY = 'gm_buy_now_item';
+  const LEGACY_BUY_NOW_KEY = 'buynow';
   const CHECKOUT_DRAFT_KEY = 'gm_checkout_draft';
+  const isBuyNowMode = new URLSearchParams(window.location.search).get('mode') === 'buy-now';
 
   const paymentBoxes = document.querySelectorAll('.payment-box');
   const fonepayInfo = document.getElementById('fonepayInfo');
@@ -417,6 +420,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function normalizeCheckoutItem(item) {
+    return {
+      id: String(item?.id ?? '').trim(),
+      name: String(item?.name || 'Product'),
+      price: Number(item?.price || 0),
+      image: String(item?.image || ''),
+      qty: Math.max(1, Number(item?.qty || 1)),
+    };
+  }
+
+  function readBuyNowItem() {
+    if (window.GroceMateCart && typeof window.GroceMateCart.getBuyNowItem === 'function') {
+      return window.GroceMateCart.getBuyNowItem();
+    }
+
+    try {
+      const directItem = JSON.parse(localStorage.getItem(BUY_NOW_KEY) || 'null');
+      const legacyItem = JSON.parse(localStorage.getItem(LEGACY_BUY_NOW_KEY) || 'null');
+      const selected = directItem?.id ? directItem : legacyItem;
+      if (!selected || !selected.id) {
+        return null;
+      }
+      return normalizeCheckoutItem(selected);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getCheckoutItems() {
+    if (!isBuyNowMode) {
+      return readCartItems();
+    }
+
+    const buyNowItem = readBuyNowItem();
+    return buyNowItem ? [buyNowItem] : [];
+  }
+
+  function clearBuyNowItem() {
+    if (window.GroceMateCart && typeof window.GroceMateCart.clearBuyNowItem === 'function') {
+      window.GroceMateCart.clearBuyNowItem();
+      return;
+    }
+
+    localStorage.removeItem(BUY_NOW_KEY);
+    localStorage.removeItem(LEGACY_BUY_NOW_KEY);
+  }
+
   function getSelectedDeliveryCharge() {
     const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
     return Number(selectedDelivery?.dataset?.charge || 0);
@@ -455,10 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderOrderSummary() {
-    const cartItems = readCartItems();
-    const hasItems = cartItems.length > 0;
+    const checkoutItems = getCheckoutItems();
+    const hasItems = checkoutItems.length > 0;
 
-    const subtotal = cartItems.reduce((sum, item) => {
+    const subtotal = checkoutItems.reduce((sum, item) => {
       const price = Number(item?.price || 0);
       const qty = Math.max(1, Number(item?.qty || 1));
       return sum + (price * qty);
@@ -467,13 +517,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const deliveryCharge = getSelectedDeliveryCharge();
     const total = subtotal + deliveryCharge;
 
-    itemCountEl.textContent = String(cartItems.length);
+    itemCountEl.textContent = String(checkoutItems.length);
     subtotalEl.textContent = formatCurrency(subtotal);
     deliveryEl.textContent = formatCurrency(deliveryCharge);
     totalEl.textContent = formatCurrency(total);
 
     if (!hasItems) {
       emptyOrderEl.classList.remove('d-none');
+      emptyOrderEl.textContent = isBuyNowMode
+        ? 'No product selected for direct checkout. Please click Buy Now on a product.'
+        : 'Your cart is empty. Please add items before checkout.';
       orderItemsWrap.innerHTML = '';
       placeOrderBtn.disabled = true;
       return;
@@ -482,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     emptyOrderEl.classList.add('d-none');
     placeOrderBtn.disabled = false;
 
-    orderItemsWrap.innerHTML = cartItems.map((item) => {
+    orderItemsWrap.innerHTML = checkoutItems.map((item) => {
       const safeName = escapeHtml(item?.name || 'Product');
       const safeImage = escapeHtml(item?.image || fallbackProductImage);
       const qty = Math.max(1, Number(item?.qty || 1));
@@ -530,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = nameInput.value.trim();
     const phone = phoneInput.value.trim();
     const address = addressInput.value.trim();
-    const cartItems = readCartItems();
+    const checkoutItems = getCheckoutItems();
 
     if (!name || !phone || !address) {
       alert('Please fill all required fields.');
@@ -547,12 +600,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (cartItems.length === 0) {
-      alert('Your cart is empty. Please add products before checkout.');
+    if (checkoutItems.length === 0) {
+      alert(
+        isBuyNowMode
+          ? 'No product selected for direct checkout.'
+          : 'Your cart is empty. Please add products before checkout.'
+      );
       return;
     }
 
-    const subtotal = cartItems.reduce((sum, item) => {
+    const subtotal = checkoutItems.reduce((sum, item) => {
       const price = Number(item?.price || 0);
       const qty = Math.max(1, Number(item?.qty || 1));
       return sum + (price * qty);
@@ -560,16 +617,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const total = subtotal + getSelectedDeliveryCharge();
 
     saveCheckoutDraft();
+    if (isBuyNowMode) {
+      clearBuyNowItem();
+    }
 
     alert(
       `Order placed successfully! (No backend used)\n` +
-      `Items: ${cartItems.length}\n` +
+      `Items: ${checkoutItems.length}\n` +
       `Total: ${formatCurrency(total)}`
     );
   });
 
   window.addEventListener('storage', (event) => {
-    if (event.key === CART_KEY) {
+    if (event.key === CART_KEY || event.key === BUY_NOW_KEY || event.key === LEGACY_BUY_NOW_KEY) {
       renderOrderSummary();
     }
   });

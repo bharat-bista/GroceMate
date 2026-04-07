@@ -1080,9 +1080,18 @@ document.addEventListener("click", e => {
             qty: qty
         };
 
-        localStorage.setItem("buynow", JSON.stringify(product));
+        if (window.GroceMateCart && typeof window.GroceMateCart.setBuyNowItem === 'function') {
+            const result = window.GroceMateCart.setBuyNowItem(product);
+            if (!result.saved) {
+                window.GroceMateCart.showToast('Unable to start direct checkout', 'error');
+                return;
+            }
+        } else {
+            localStorage.setItem('gm_buy_now_item', JSON.stringify(product));
+            localStorage.setItem('buynow', JSON.stringify(product));
+        }
 
-        window.location.href = "{{ route('checkout') }}";
+        window.location.href = "{{ route('checkout') }}?mode=buy-now";
     }
 });
 

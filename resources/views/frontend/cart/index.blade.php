@@ -994,8 +994,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const cartApi = window.GroceMateCart || null;
 
-    function parsePrice(text) {
-        return parseFloat(String(text || '').replace(/[^\d.]/g, '')) || 0;
+    function parsePrice(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+        return parseFloat(String(value || '').replace(/[^\d.]/g, '')) || 0;
     }
 
     function getRowQty(row) {
@@ -1032,10 +1035,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const storageItems = cartApi.getItems();
-        const domIds = domItems.map((item) => String(item.id)).sort().join(',');
-        const storageIds = storageItems.map((item) => String(item.id)).sort().join(',');
+        const storageById = new Map(
+            storageItems.map((item) => [String(item.id || ''), item])
+        );
+        let shouldSync = storageItems.length === 0 || domItems.length !== storageItems.length;
 
-        if (storageItems.length === 0 || domIds !== storageIds) {
+        if (!shouldSync) {
+            for (const domItem of domItems) {
+                const stored = storageById.get(String(domItem.id));
+
+                if (!stored) {
+                    shouldSync = true;
+                    break;
+                }
+
+                const storedPrice = parsePrice(stored.price);
+                const storedQty = Math.max(1, Number(stored.qty || 1));
+                const priceDrift = Math.abs(storedPrice - domItem.price);
+
+                if (priceDrift > 0.01 || storedQty !== domItem.qty) {
+                    shouldSync = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldSync) {
             cartApi.setItems(domItems);
         }
     }

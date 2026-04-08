@@ -183,11 +183,23 @@ html, body {
         return String(value ?? '').trim();
     }
 
+    function toMoney(value) {
+        return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+    }
+
+    function normalizePrice(value) {
+        if (typeof value === 'number') {
+            return toMoney(value);
+        }
+        const numeric = String(value ?? '').replace(/[^0-9.-]/g, '');
+        return toMoney(Number.parseFloat(numeric) || 0);
+    }
+
     function normalizeProduct(item) {
         return {
             id: normalizeId(item?.id),
             name: String(item?.name || 'Product'),
-            price: Number(item?.price || 0),
+            price: normalizePrice(item?.price),
             image: String(item?.image || ''),
             qty: Math.max(1, Number(item?.qty || 1)),
         };
@@ -257,7 +269,10 @@ html, body {
     }
 
     function setItems(items) {
-        saveItems(Array.isArray(items) ? items : []);
+        const normalizedItems = Array.isArray(items)
+            ? items.map(normalizeProduct).filter((item) => item.id)
+            : [];
+        saveItems(normalizedItems);
     }
 
     function getBuyNowItem() {
@@ -306,7 +321,7 @@ html, body {
         return {
             id: normalizeId(source.dataset.productId || source.dataset.id),
             name: source.dataset.productName || source.dataset.name || 'Product',
-            price: Number(source.dataset.productPrice || source.dataset.price || 0),
+            price: normalizePrice(source.dataset.productPrice || source.dataset.price || 0),
             image: source.dataset.productImage || source.dataset.image || '',
             qty: 1,
         };

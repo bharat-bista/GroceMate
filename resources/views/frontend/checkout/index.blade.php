@@ -378,6 +378,13 @@
     margin-top: 2px;
   }
 
+  .checkout-order-item-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   .checkout-summary-line {
     display: flex;
     justify-content: space-between;
@@ -413,6 +420,21 @@
   .checkout-summary-total strong {
     font-size: 1.62rem;
     color: var(--gm-accent);
+  }
+
+  .checkout-calc-note {
+    margin-top: 8px;
+    border: 1px dashed #c9dacb;
+    border-radius: 10px;
+    background: #f8fcf8;
+    color: #4b5563;
+    font-size: 0.97rem;
+    line-height: 1.4;
+    padding: 9px 10px;
+  }
+
+  .checkout-calc-note strong {
+    color: #111827;
   }
 
   .checkout-empty-order {
@@ -659,23 +681,32 @@
           <div id="checkout-order-items" class="checkout-order-items"></div>
 
           <div class="checkout-summary-line">
-            <span>Items:</span>
+            <span>Products:</span>
+            <strong id="checkout-product-count">0</strong>
+          </div>
+
+          <div class="checkout-summary-line">
+            <span>Total Qty:</span>
             <strong id="checkout-item-count">0</strong>
           </div>
 
           <div class="checkout-summary-line">
             <span>Subtotal:</span>
-            <strong id="checkout-subtotal">Rs. 0.00</strong>
+            <strong id="checkout-subtotal">Rs. 0</strong>
           </div>
 
           <div class="checkout-summary-line">
-            <span>Delivery Charge:</span>
-            <strong id="checkout-delivery">Rs. 0.00</strong>
+            <span>Delivery Charge (flat):</span>
+            <strong id="checkout-delivery">Rs. 0</strong>
           </div>
 
           <div class="checkout-summary-total">
             <span>Total:</span>
-            <strong id="checkout-total">Rs. 0.00</strong>
+            <strong id="checkout-total">Rs. 0</strong>
+          </div>
+
+          <div class="checkout-calc-note" id="checkout-calc-note">
+            Calculation: <strong>Rs. 0 + Rs. 0 = Rs. 0</strong>
           </div>
         </div>
       </div>
@@ -700,7 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const subtotalEl = document.getElementById('checkout-subtotal');
   const deliveryEl = document.getElementById('checkout-delivery');
   const totalEl = document.getElementById('checkout-total');
+  const productCountEl = document.getElementById('checkout-product-count');
   const itemCountEl = document.getElementById('checkout-item-count');
+  const calcNoteEl = document.getElementById('checkout-calc-note');
   const deliveryInputs = document.querySelectorAll('input[name="delivery"]');
   const nameInput = document.getElementById('checkout-full-name');
   const phoneInput = document.getElementById('checkout-phone');
@@ -710,10 +743,30 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedPaymentMethod = null;
 
   function formatCurrency(value) {
-    return 'Rs. ' + Number(value || 0).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
+    const amount = Number(value || 0);
+    const hasFraction = Math.abs(amount - Math.trunc(amount)) > 0.000001;
+
+    return 'Rs. ' + amount.toLocaleString('en-US', {
+      minimumFractionDigits: hasFraction ? 2 : 0,
       maximumFractionDigits: 2
     });
+  }
+
+  function parsePrice(value) {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+    const numeric = String(value ?? '').replace(/[^0-9.-]/g, '');
+    const parsed = Number.parseFloat(numeric);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function toPaise(value) {
+    return Math.round((parsePrice(value) + Number.EPSILON) * 100);
+  }
+
+  function fromPaise(value) {
+    return Number(value || 0) / 100;
   }
 
   function escapeHtml(value) {
@@ -742,9 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       id: String(item?.id ?? '').trim(),
       name: String(item?.name || 'Product'),
-      price: Number(item?.price || 0),
+      price: parsePrice(item?.price),
       image: String(item?.image || ''),
-      qty: Math.max(1, Number(item?.qty || 1)),
+      qty: Math.max(1, Math.floor(Number(item?.qty || 1) || 1)),
     };
   }
 
@@ -768,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getCheckoutItems() {
     if (!isBuyNowMode) {
-      return readCartItems();
+      return readCartItems().map(normalizeCheckoutItem);
     }
 
     const buyNowItem = readBuyNowItem();
@@ -787,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getSelectedDeliveryCharge() {
     const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
-    return Number(selectedDelivery?.dataset?.charge || 0);
+    return parsePrice(selectedDelivery?.dataset?.charge || 0);
   }
 
   function saveCheckoutDraft() {
@@ -826,19 +879,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkoutItems = getCheckoutItems();
     const hasItems = checkoutItems.length > 0;
 
-    const subtotal = checkoutItems.reduce((sum, item) => {
-      const price = Number(item?.price || 0);
-      const qty = Math.max(1, Number(item?.qty || 1));
-      return sum + (price * qty);
-    }, 0);
+    const summary = checkoutItems.reduce((acc, item) => {
+      const unitPricePaise = toPaise(item?.price);
+      const qty = Math.max(1, Math.floor(Number(item?.qty || 1) || 1));
+      const lineTotalPaise = unitPricePaise * qty;
 
-    const deliveryCharge = getSelectedDeliveryCharge();
-    const total = subtotal + deliveryCharge;
+      acc.products += 1;
+      acc.qty += qty;
+      acc.subtotalPaise += lineTotalPaise;
 
-    itemCountEl.textContent = String(checkoutItems.length);
+      return acc;
+    }, { products: 0, qty: 0, subtotalPaise: 0 });
+
+    const deliveryPaise = toPaise(getSelectedDeliveryCharge());
+    const subtotal = fromPaise(summary.subtotalPaise);
+    const deliveryCharge = fromPaise(deliveryPaise);
+    const total = fromPaise(summary.subtotalPaise + deliveryPaise);
+
+    productCountEl.textContent = String(summary.products);
+    itemCountEl.textContent = String(summary.qty);
     subtotalEl.textContent = formatCurrency(subtotal);
     deliveryEl.textContent = formatCurrency(deliveryCharge);
     totalEl.textContent = formatCurrency(total);
+    calcNoteEl.innerHTML = `Calculation: <strong>${formatCurrency(subtotal)} + ${formatCurrency(deliveryCharge)} = ${formatCurrency(total)}</strong>`;
 
     if (!hasItems) {
       emptyOrderEl.classList.remove('d-none');
@@ -856,9 +919,11 @@ document.addEventListener('DOMContentLoaded', () => {
     orderItemsWrap.innerHTML = checkoutItems.map((item) => {
       const safeName = escapeHtml(item?.name || 'Product');
       const safeImage = escapeHtml(item?.image || fallbackProductImage);
-      const qty = Math.max(1, Number(item?.qty || 1));
-      const unitPrice = Number(item?.price || 0);
-      const lineTotal = unitPrice * qty;
+      const qty = Math.max(1, Math.floor(Number(item?.qty || 1) || 1));
+      const unitPricePaise = toPaise(item?.price);
+      const lineTotalPaise = unitPricePaise * qty;
+      const unitPrice = fromPaise(unitPricePaise);
+      const lineTotal = fromPaise(lineTotalPaise);
 
       return `
         <div class="checkout-order-item">
@@ -866,7 +931,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <div>
             <p class="checkout-order-item-title">${safeName}</p>
             <div class="checkout-order-item-meta">
-              Qty: ${qty} x ${formatCurrency(unitPrice)} = <strong>${formatCurrency(lineTotal)}</strong>
+              Unit Price: <strong>${formatCurrency(unitPrice)}</strong>
+            </div>
+            <div class="checkout-order-item-meta checkout-order-item-meta-row">
+              <span>Qty: ${qty}</span>
+              <span>Line Total: <strong>${formatCurrency(lineTotal)}</strong></span>
             </div>
           </div>
         </div>
@@ -928,11 +997,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const subtotal = checkoutItems.reduce((sum, item) => {
-      const price = Number(item?.price || 0);
-      const qty = Math.max(1, Number(item?.qty || 1));
-      return sum + (price * qty);
+      const unitPricePaise = toPaise(item?.price);
+      const qty = Math.max(1, Math.floor(Number(item?.qty || 1) || 1));
+      return sum + (unitPricePaise * qty);
     }, 0);
-    const total = subtotal + getSelectedDeliveryCharge();
+    const deliveryPaise = toPaise(getSelectedDeliveryCharge());
+    const deliveryCharge = fromPaise(deliveryPaise);
+    const total = fromPaise(subtotal + deliveryPaise);
 
     saveCheckoutDraft();
     if (isBuyNowMode) {
@@ -941,7 +1012,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     alert(
       `Order placed successfully! (No backend used)\n` +
-      `Items: ${checkoutItems.length}\n` +
+      `Products: ${checkoutItems.length}\n` +
+      `Delivery: ${formatCurrency(deliveryCharge)}\n` +
       `Total: ${formatCurrency(total)}`
     );
   });

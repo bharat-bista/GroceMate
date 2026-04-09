@@ -274,7 +274,7 @@
     color: rgba(255, 255, 255, 0.86);
   }
 
-  .checkout-container .fonepay-info {
+  .checkout-container .esewa-info {
     margin-top: 14px;
     border: 1px dashed #bfd8c1;
     background: var(--gm-surface);
@@ -298,7 +298,7 @@
     color: var(--gm-primary);
   }
 
-  .checkout-container .fonepay-info p {
+  .checkout-container .esewa-info p {
     margin: 0;
     font-size: 1.02rem;
     color: #4b5563;
@@ -523,6 +523,20 @@
 
 <div class="checkout-page">
   <div class="container checkout-container">
+    @if(session('success'))
+    <div style="background: #f0fdf4; border: 1px solid #22c55e; color: #15803d; padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+      <i class="fas fa-check-circle" style="font-size: 20px;"></i>
+      <div>{{ session('success') }}</div>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div style="background: #fef2f2; border: 1px solid #ef4444; color: #dc2626; padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+      <i class="fas fa-exclamation-circle" style="font-size: 20px;"></i>
+      <div>{{ session('error') }}</div>
+    </div>
+    @endif
+
     <div class="checkout-hero">
       <div>
         <h2><i class="fas fa-lock"></i> Secure Checkout</h2>
@@ -605,13 +619,20 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Location Preview</label>
+          <div class="form-group" id="store-pickup-map-group" style="display: none;">
+            <label>Store Location</label>
             <div class="checkout-map-wrap">
               <iframe
-                src="https://maps.google.com/maps?q=Kathmandu&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=27.700462,85.318181&t=&z=15&ie=UTF8&iwloc=&output=embed"
                 loading="lazy"
+                style="border: 0; width: 100%; height: 300px;"
+                allowfullscreen
               ></iframe>
+              <div style="margin-top: 12px; padding: 12px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+                <small style="color: #15803d; font-weight: 600;">
+                  <i class="fas fa-store"></i> Visit our store to pick up your order
+                </small>
+              </div>
             </div>
           </div>
         </form>
@@ -622,11 +643,11 @@
           <h4><i class="fas fa-credit-card"></i> Choose Payment Option</h4>
 
           <div class="payment-methods">
-            <div class="payment-box" data-method="fonepay">
+            <div class="payment-box" data-method="esewa">
               <span class="payment-box-icon"><i class="fas fa-qrcode"></i></span>
               <span class="payment-box-text">
-                <strong>Fonepay</strong>
-                <small>QR payment</small>
+                <strong>eSewa</strong>
+                <small>Mobile wallet payment</small>
               </span>
             </div>
 
@@ -647,20 +668,55 @@
             </div>
           </div>
 
-          <div class="fonepay-info" id="fonepayInfo">
-            <div class="payment-note-title"><i class="fas fa-info-circle"></i> Fonepay Instructions</div>
+          <div class="esewa-info" id="esewaInfo">
+            <div class="payment-note-title"><i class="fas fa-info-circle"></i> eSewa Payment</div>
             <p>
-              Add your <b>Name</b> and <b>Phone Number</b> in remarks while paying.
-              Then share payment screenshot on WhatsApp: <b>+977 9849433139</b>
+              Click "Place Order" to be redirected to eSewa for secure payment processing.
+              You will be able to complete the payment using your eSewa wallet.
             </p>
+            <div style="margin-top: 12px; padding: 12px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+              <small style="color: #15803d; font-weight: 600;">
+                <i class="fas fa-shield-alt"></i> Secure Payment Gateway
+              </small>
+            </div>
           </div>
 
-          <div class="fonepay-info" id="connectInfo">
+          <div class="esewa-info" id="connectInfo">
             <div class="payment-note-title"><i class="fas fa-info-circle"></i> Connect IPS Instructions</div>
             <p>
               Add your <b>Name</b> and <b>Phone Number</b> in remarks while paying.
               Then share payment screenshot on WhatsApp: <b>+977 9849433139</b>
             </p>
+            <div style="margin-top: 15px; text-align: center;">
+              <img src="{{ asset('assets/img/business/Bank.jpeg') }}" alt="Bank QR Code" style="max-width: 200px; border-radius: 10px; border: 2px solid #dce8dd;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <div style="display: none; padding: 20px; background: #f5faf6; border-radius: 10px; border: 2px dashed #bfd8c1;">
+                <i class="fas fa-university" style="font-size: 36px; color: #2e7d32;"></i>
+                <p style="color: #4b5563; font-size: 0.9rem; margin-top: 8px;">Bank QR Code</p>
+                <p style="color: #6b7280; font-size: 0.8rem;">Scan to pay via Connect IPS</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connect IPS Payment Slip Upload Section -->
+          <div class="connect-ips-upload" id="connectIpsUpload" style="display: none; margin-top: 14px;">
+            <div class="payment-note-title"><i class="fas fa-file-upload"></i> Upload Payment Slip</div>
+            <div style="border: 2px dashed #bfd8c1; border-radius: 14px; padding: 20px; text-align: center; background: #f5faf6;">
+              <input type="file" id="payment-slip-input" accept="image/*,.pdf" style="display: none;">
+              <label for="payment-slip-input" style="cursor: pointer; display: block;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 36px; color: #2e7d32; margin-bottom: 10px;"></i>
+                <div style="color: #4b5563; font-size: 1rem;">
+                  Click to upload payment screenshot<br>
+                  <small style="color: #6b7280;">(JPG, PNG, PDF - Max 5MB)</small>
+                </div>
+              </label>
+              <div id="payment-slip-preview" style="margin-top: 15px; display: none;">
+                <img id="payment-slip-img" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #dce8dd;">
+                <button type="button" id="remove-slip-btn" style="display: block; margin: 10px auto 0; padding: 6px 16px; background: #dc2626; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+                  <i class="fas fa-times"></i> Remove
+                </button>
+              </div>
+            </div>
+            <input type="hidden" id="payment-slip-data" name="payment_slip">
           </div>
 
           <div class="form-check mt-4">
@@ -715,15 +771,38 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+// Debug: Log all localStorage changes to catch any clearing
+(function() {
+    var originalSetItem = localStorage.setItem;
+    var originalRemoveItem = localStorage.removeItem;
+    var originalClear = localStorage.clear;
+    
+    localStorage.setItem = function(key, value) {
+        console.log('[localStorage SET]', key, value ? value.substring(0, 200) : value);
+        originalSetItem.call(this, key, value);
+    };
+    
+    localStorage.removeItem = function(key) {
+        console.log('[localStorage REMOVE]', key);
+        originalRemoveItem.call(this, key);
+    };
+    
+    localStorage.clear = function() {
+        console.log('[localStorage CLEAR]');
+        originalClear.call(this);
+    };
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
   const CART_KEY = 'gm_cart_items';
   const BUY_NOW_KEY = 'gm_buy_now_item';
   const LEGACY_BUY_NOW_KEY = 'buynow';
   const CHECKOUT_DRAFT_KEY = 'gm_checkout_draft';
+  const SELECTED_ITEMS_KEY = 'gm_checkout_selected_items';
   const isBuyNowMode = new URLSearchParams(window.location.search).get('mode') === 'buy-now';
 
   const paymentBoxes = document.querySelectorAll('.payment-box');
-  const fonepayInfo = document.getElementById('fonepayInfo');
+  const esewaInfo = document.getElementById('esewaInfo');
   const connectInfo = document.getElementById('connectInfo');
   const placeOrderBtn = document.getElementById('place-order-btn');
   const orderItemsWrap = document.getElementById('checkout-order-items');
@@ -780,26 +859,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function readCartItems() {
     if (window.GroceMateCart && typeof window.GroceMateCart.getItems === 'function') {
-      return window.GroceMateCart.getItems();
+      const items = window.GroceMateCart.getItems();
+      console.log('Cart items from GroceMateCart API:', items);
+      return items;
     }
 
     try {
-      const parsed = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+      const raw = localStorage.getItem(CART_KEY);
+      console.log('Raw cart items from localStorage:', raw);
+      const parsed = JSON.parse(raw || '[]');
+      console.log('Parsed cart items:', parsed);
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
+      console.log('Error reading cart items');
       return [];
     }
   }
 
-  function normalizeCheckoutItem(item) {
-    return {
-      id: String(item?.id ?? '').trim(),
-      name: String(item?.name || 'Product'),
-      price: parsePrice(item?.price),
-      image: String(item?.image || ''),
-      qty: Math.max(1, Math.floor(Number(item?.qty || 1) || 1)),
-    };
+  function readSelectedItems() {
+    console.log('=== readSelectedItems called ===');
+    try {
+      var raw = localStorage.getItem(SELECTED_ITEMS_KEY);
+      console.log('Raw selected items from localStorage:', raw);
+      console.log('typeof raw:', typeof raw);
+      console.log('raw === null:', raw === null);
+      console.log('raw === "null":', raw === 'null');
+      
+      if (raw === null || raw === 'null') {
+        console.log('Selected items key is null - checking all localStorage keys:');
+        for (var i = 0; i < localStorage.length; i++) {
+          var key = localStorage.key(i);
+          console.log('  Key:', key, 'Value:', localStorage.getItem(key));
+        }
+      }
+      
+      // Also check all relevant keys
+      console.log('Checking localStorage keys:');
+      console.log('  gm_cart_items:', localStorage.getItem('gm_cart_items'));
+      console.log('  gm_buy_now_item:', localStorage.getItem('gm_buy_now_item'));
+      console.log('  buynow:', localStorage.getItem('buynow'));
+      console.log('  gm_checkout_selected_items:', localStorage.getItem('gm_checkout_selected_items'));
+      
+      var parsed = (raw && raw !== 'null') ? JSON.parse(raw) : [];
+      console.log('Parsed selected items:', parsed);
+      console.log('Is array:', Array.isArray(parsed));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.log('Error reading selected items:', e.message);
+      return [];
+    }
   }
+function normalizeCheckoutItem(item) {
+    console.log('Normalizing checkout item:', item);
+    let price = parsePrice(item?.price);
+
+    // Sanity guard: if price looks like it's stored in paise (e.g. 12000 for Rs.120)
+    // and is unreasonably large, convert back. Adjust threshold to your max product price.
+    // Conversely, if price is < 1 it was likely stored as a fraction — flag it.
+    if (price > 0 && price < 1) {
+        // Price stored as a fraction (e.g. 0.12) — likely a paise/unit error upstream.
+        // Multiply by 1000 to recover: 0.12 * 1000 = 120? No — this is unreliable.
+        // Better: trust nothing below 1 rupee for a grocery store.
+        console.warn('[Checkout] Suspicious price detected:', price, 'for item:', item?.name);
+    }
+
+    const normalized = {
+        id: String(item?.id ?? '').trim(),
+        name: String(item?.name || 'Product'),
+        price: price,
+        image: String(item?.image || ''),
+        qty: Math.max(1, Math.floor(Number(item?.qty || 1) || 1)),
+    };
+    console.log('Normalized item:', normalized);
+    return normalized;
+}
 
   function readBuyNowItem() {
     if (window.GroceMateCart && typeof window.GroceMateCart.getBuyNowItem === 'function') {
@@ -820,11 +953,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getCheckoutItems() {
+    console.log('getCheckoutItems called, isBuyNowMode:', isBuyNowMode);
+    
     if (!isBuyNowMode) {
-      return readCartItems().map(normalizeCheckoutItem);
+      // First try to get selected items from cart
+      const selectedItems = readSelectedItems();
+      console.log('Selected items from storage:', selectedItems);
+      
+      if (selectedItems.length > 0) {
+        console.log('Using selected items');
+        return selectedItems.map(normalizeCheckoutItem);
+      }
+      
+      // Fall back to all cart items if no selected items
+      const cartItems = readCartItems();
+      console.log('Cart items from storage:', cartItems);
+      console.log('Using cart items as fallback');
+      return cartItems.map(normalizeCheckoutItem);
     }
 
     const buyNowItem = readBuyNowItem();
+    console.log('Buy now item:', buyNowItem);
     return buyNowItem ? [buyNowItem] : [];
   }
 
@@ -836,6 +985,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     localStorage.removeItem(BUY_NOW_KEY);
     localStorage.removeItem(LEGACY_BUY_NOW_KEY);
+  }
+
+  function clearSelectedItems() {
+    localStorage.removeItem(SELECTED_ITEMS_KEY);
   }
 
   function getSelectedDeliveryCharge() {
@@ -877,6 +1030,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderOrderSummary() {
     const checkoutItems = getCheckoutItems();
+    console.log('Checkout items retrieved:', checkoutItems);
+    console.log('Number of items:', checkoutItems.length);
     const hasItems = checkoutItems.length > 0;
 
     const summary = checkoutItems.reduce((acc, item) => {
@@ -943,25 +1098,108 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  paymentBoxes.forEach((box) => {
-    box.addEventListener('click', () => {
-      paymentBoxes.forEach((item) => item.classList.remove('selected'));
+  paymentBoxes.forEach(function(box) {
+    box.addEventListener('click', function() {
+      paymentBoxes.forEach(function(item) { item.classList.remove('selected'); });
       box.classList.add('selected');
       selectedPaymentMethod = box.dataset.method;
 
-      fonepayInfo.style.display = selectedPaymentMethod === 'fonepay' ? 'block' : 'none';
+      esewaInfo.style.display = selectedPaymentMethod === 'esewa' ? 'block' : 'none';
       connectInfo.style.display = selectedPaymentMethod === 'connectips' ? 'block' : 'none';
+      
+      // Show/hide payment slip upload for Connect IPS
+      var connectIpsUpload = document.getElementById('connectIpsUpload');
+      if (connectIpsUpload) {
+        connectIpsUpload.style.display = selectedPaymentMethod === 'connectips' ? 'block' : 'none';
+      }
     });
   });
 
-  deliveryInputs.forEach((input) => {
-    input.addEventListener('change', () => {
+  deliveryInputs.forEach(function(input) {
+    input.addEventListener('change', function() {
+      console.log('Delivery changed to:', input.value);
       saveCheckoutDraft();
       renderOrderSummary();
+      
+      // Toggle map visibility based on delivery selection
+      var storePickupMap = document.getElementById('store-pickup-map-group');
+      
+      console.log('Store pickup map element:', storePickupMap);
+      console.log('Address input element:', addressInput);
+      
+      if (input.value === 'pickup') {
+        // Show map and hide address field for store pickup
+        console.log('Showing store pickup map');
+        storePickupMap.style.display = 'block';
+        if (addressInput) {
+          addressInput.parentElement.style.display = 'none';
+          addressInput.required = false;
+        }
+      } else {
+        // Hide map and show address field for delivery
+        console.log('Hiding store pickup map');
+        storePickupMap.style.display = 'none';
+        if (addressInput) {
+          addressInput.parentElement.style.display = 'block';
+          addressInput.required = true;
+        }
+      }
     });
   });
 
-  [nameInput, phoneInput, addressInput].forEach((input) => {
+  // Payment slip upload handling
+  var paymentSlipInput = document.getElementById('payment-slip-input');
+  var paymentSlipPreview = document.getElementById('payment-slip-preview');
+  var paymentSlipImg = document.getElementById('payment-slip-img');
+  var paymentSlipData = document.getElementById('payment-slip-data');
+  var removeSlipBtn = document.getElementById('remove-slip-btn');
+
+  if (paymentSlipInput) {
+    paymentSlipInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      var validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a valid image (JPG, PNG) or PDF file.');
+        paymentSlipInput.value = '';
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB.');
+        paymentSlipInput.value = '';
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var result = e.target.result;
+        paymentSlipData.value = result;
+        
+        if (file.type === 'application/pdf') {
+          paymentSlipImg.src = '{{ asset("assets/img/pdf-icon.png") }}';
+        } else {
+          paymentSlipImg.src = result;
+        }
+        paymentSlipPreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (removeSlipBtn) {
+    removeSlipBtn.addEventListener('click', function() {
+      paymentSlipInput.value = '';
+      paymentSlipData.value = '';
+      paymentSlipPreview.style.display = 'none';
+      paymentSlipImg.src = '';
+    });
+  }
+
+  [nameInput, phoneInput, addressInput].forEach(function(input) {
     if (!input) return;
     input.addEventListener('input', saveCheckoutDraft);
   });
@@ -972,7 +1210,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const address = addressInput.value.trim();
     const checkoutItems = getCheckoutItems();
 
-    if (!name || !phone || !address) {
+    const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
+    const isStorePickup = selectedDelivery && selectedDelivery.value === 'pickup';
+    
+    if (!name || !phone || (!address && !isStorePickup)) {
       alert('Please fill all required fields.');
       return;
     }
@@ -980,6 +1221,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!selectedPaymentMethod) {
       alert('Please select a payment method.');
       return;
+    }
+
+    // Validate payment slip for Connect IPS
+    if (selectedPaymentMethod === 'connectips') {
+      var paymentSlipData = document.getElementById('payment-slip-data');
+      if (!paymentSlipData || !paymentSlipData.value) {
+        alert('Please upload your payment slip before placing the order.');
+        return;
+      }
     }
 
     if (!document.getElementById('termsCheck').checked) {
@@ -1005,20 +1255,71 @@ document.addEventListener('DOMContentLoaded', () => {
     const deliveryCharge = fromPaise(deliveryPaise);
     const total = fromPaise(subtotal + deliveryPaise);
 
-    saveCheckoutDraft();
-    if (isBuyNowMode) {
-      clearBuyNowItem();
-    }
+    // Handle different payment methods
+    if (selectedPaymentMethod === 'esewa') {
+      // Create form data for eSewa payment
+      const formData = new FormData();
+      formData.append('full_name', name);
+      formData.append('phone', phone);
+      formData.append('address', isStorePickup ? 'Store Pickup' : address);
+      formData.append('delivery', document.querySelector('input[name="delivery"]:checked').value);
+      formData.append('amount', total);
 
-    alert(
-      `Order placed successfully! (No backend used)\n` +
-      `Products: ${checkoutItems.length}\n` +
-      `Delivery: ${formatCurrency(deliveryCharge)}\n` +
-      `Total: ${formatCurrency(total)}`
-    );
+      // Show loading state
+      placeOrderBtn.disabled = true;
+      placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting to eSewa...';
+
+      // Submit to eSewa initiation endpoint
+      fetch('{{ route("frontend.checkout.esewa.initiate") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text();
+      })
+      .then(html => {
+        // Create a new window and write the HTML response
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(html);
+          newWindow.document.close();
+        } else {
+          // Fallback: open the redirect URL directly
+          window.location.href = '{{ route("frontend.checkout.esewa.initiate") }}';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = 'Place Order';
+        alert('Error initiating payment. Please try again.');
+      });
+    } else {
+      // Handle other payment methods (COD, Connect IPS)
+      saveCheckoutDraft();
+      if (isBuyNowMode) {
+        clearBuyNowItem();
+      } else {
+        clearSelectedItems();
+      }
+
+      alert(
+        `Order placed successfully!\n` +
+        `Products: ${checkoutItems.length}\n` +
+        `Delivery: ${formatCurrency(deliveryCharge)}\n` +
+        `Total: ${formatCurrency(total)}\n` +
+        `Payment Method: ${selectedPaymentMethod === 'cod' ? 'Cash on Delivery' : 'Connect IPS'}`
+      );
+    }
   });
 
-  window.addEventListener('storage', (event) => {
+  window.addEventListener('storage', function(event) {
     if (event.key === CART_KEY || event.key === BUY_NOW_KEY || event.key === LEGACY_BUY_NOW_KEY) {
       renderOrderSummary();
     }
@@ -1028,7 +1329,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   restoreCheckoutDraft();
   renderOrderSummary();
+  
+  
+  // Initialize map visibility state based on current delivery selection
+  var currentDelivery = document.querySelector('input[name="delivery"]:checked');
+  var storePickupMap = document.getElementById('store-pickup-map-group');
+  
+  if (currentDelivery && currentDelivery.value === 'pickup') {
+    // Show map and hide address field for store pickup
+    storePickupMap.style.display = 'block';
+    if (addressInput) {
+      addressInput.parentElement.style.display = 'none';
+      addressInput.required = false;
+    }
+  } else {
+    // Hide map and show address field for delivery
+    storePickupMap.style.display = 'none';
+    if (addressInput) {
+      addressInput.parentElement.style.display = 'block';
+      addressInput.required = true;
+    }
+  }
 });
+
 </script>
 
 @endsection

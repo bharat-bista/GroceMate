@@ -53,6 +53,8 @@ Route::post('/cart/remove', [CartController::class, 'removeItem'])->name('cart.r
 Route::post('/cart/promo', [CartController::class, 'applyPromoCode'])->name('cart.promo');
 Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+Route::post('/checkout/esewa/initiate', [CheckoutController::class, 'initiateEsewa'])->name('frontend.checkout.esewa.initiate');
+Route::get('/checkout/esewa/callback', [CheckoutController::class, 'esewaCallback'])->name('frontend.checkout.esewa.callback');
 Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'description'])
     ->whereNumber('ecommerceProduct')
     ->name('description');

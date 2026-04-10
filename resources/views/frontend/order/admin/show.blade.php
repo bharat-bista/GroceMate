@@ -1,0 +1,247 @@
+@extends('inventory.layouts.inventory')
+
+@section('title', 'Order Details - Ecommerce')
+@section('heading', 'Order Details')
+@section('subtitle', 'View and manage order')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex items-center gap-4">
+        <a href="{{ route('inventory.orders.index') }}" class="flex items-center gap-2 text-slate-600 hover:text-slate-900">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+
+    @if(session('success'))
+        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Order Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Order {{ $order->order_number }}</h2>
+                            <p class="text-sm text-slate-500 mt-1">Placed on {{ $order->created_at->format('M d, Y at h:i A') }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            @if($order->delivery_status !== 'cancelled' && $order->delivery_status !== 'delivered')
+                                <button onclick="document.getElementById('deliveryModal').showModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                                    <i class="fas fa-truck mr-2"></i> Update Delivery
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Order Items</h3>
+                    <div class="space-y-4">
+                        @foreach($order->items as $item)
+                            <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <img src="{{ $item->image ?? asset('assets/img/product/product1.jpg') }}" alt="{{ $item->product_name }}" class="w-16 h-16 object-cover rounded-lg">
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-slate-900">{{ $item->product_name }}</h4>
+                                    <p class="text-sm text-slate-500">Rs. {{ number_format($item->price, 0) }} x {{ $item->quantity }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-semibold text-slate-900">Rs. {{ number_format($item->subtotal, 0) }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="mt-6 flex justify-end">
+                        <div class="w-64 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-600">Subtotal</span>
+                                <span class="font-medium">Rs. {{ number_format($order->subtotal, 0) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-600">Delivery</span>
+                                <span class="font-medium">Rs. {{ number_format($order->delivery_charge, 0) }}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-200 pt-2">
+                                <span class="font-semibold">Total</span>
+                                <span class="font-bold text-emerald-600">Rs. {{ number_format($order->total_amount, 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Slip Verification (for Connect IPS) -->
+            @if($order->payment_method === 'connectips' && $order->payment_slip)
+                <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-900">Payment Slip</h3>
+                    </div>
+                    <div class="p-6">
+                        <img src="{{ $order->payment_slip }}" alt="Payment Slip" class="max-w-xs rounded-lg border border-slate-200 mb-4">
+                        
+                        @if($order->payment_status === 'pending')
+                            <form method="POST" action="{{ route('inventory.orders.verify-slip', $order) }}" class="flex gap-3">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="payment_status" value="verified">
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                                    <i class="fas fa-check mr-2"></i> Verify Payment
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ route('inventory.orders.verify-slip', $order) }}" class="inline">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="payment_status" value="failed">
+                                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium ml-2">
+                                    <i class="fas fa-times mr-2"></i> Reject
+                                </button>
+                            </form>
+                        @else
+                            <div class="mt-4">
+                                @if($order->payment_status === 'verified')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-2"></i> Payment Verified
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-2"></i> Payment Rejected
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Customer Info -->
+            <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-900">Customer Details</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
+                        <span class="font-medium text-slate-900">{{ $order->customer_name }}</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Phone</label>
+                        <span class="font-medium text-slate-900">{{ $order->customer_phone }}</span>
+                    </div>
+                    @if($order->customer_email)
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Email</label>
+                        <span class="font-medium text-slate-900">{{ $order->customer_email }}</span>
+                    </div>
+                    @endif
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Delivery Address</label>
+                        <span class="text-slate-700">{{ $order->delivery_address }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Cards -->
+            <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-900">Status</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-2">Delivery Status</label>
+                        @if($order->delivery_status == 'pending')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                        @elseif($order->delivery_status == 'processing')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Processing</span>
+                        @elseif($order->delivery_status == 'shipped')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">Shipped</span>
+                        @elseif($order->delivery_status == 'delivered')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Delivered</span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">Cancelled</span>
+                        @endif
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-2">Payment Status</label>
+                        @if($order->payment_status == 'verified')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Verified</span>
+                        @elseif($order->payment_status == 'pending')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                        @elseif($order->payment_status == 'failed')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">Failed</span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">Cash on Delivery</span>
+                        @endif
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Payment Method</label>
+                        <span class="font-medium text-slate-900">
+                            @if($order->payment_method === 'esewa')
+                                <i class="fas fa-mobile-alt mr-1"></i> eSewa
+                            @elseif($order->payment_method === 'connectips')
+                                <i class="fas fa-university mr-1"></i> Connect IPS
+                            @else
+                                <i class="fas fa-money-bill-wave mr-1"></i> Cash on Delivery
+                            @endif
+                        </span>
+                    </div>
+
+                    @if($order->transaction_id)
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Transaction ID</label>
+                        <span class="text-sm text-slate-700 font-mono">{{ $order->transaction_id }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Status Modal -->
+<dialog id="deliveryModal" class="modal p-6 rounded-2xl shadow-2xl border border-slate-200 max-w-md">
+    <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-slate-900">Update Delivery Status</h3>
+        <form method="POST" action="{{ route('inventory.orders.delivery-status', $order) }}">
+            @csrf
+            @method('PATCH')
+            <div class="space-y-3">
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="delivery_status" value="pending" class="text-emerald-600">
+                    <span>Pending</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="delivery_status" value="processing" class="text-emerald-600">
+                    <span>Processing</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="delivery_status" value="shipped" class="text-emerald-600">
+                    <span>Shipped</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="delivery_status" value="delivered" class="text-emerald-600">
+                    <span>Delivered</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="delivery_status" value="cancelled" class="text-red-600">
+                    <span class="text-red-600">Cancelled</span>
+                </label>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium">Update</button>
+                <button type="button" onclick="document.getElementById('deliveryModal').close()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">Cancel</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+@endsection

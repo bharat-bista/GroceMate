@@ -212,6 +212,11 @@
         Category
       </a>
 
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.orders.*')) }}"
+        href="{{ route('inventory.orders.index') }}">
+        Orders
+      </a>
+
     </div>
   </div>
   <!-- Dashboard -->

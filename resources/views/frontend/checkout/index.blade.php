@@ -578,6 +578,18 @@
           </div>
 
           <div class="form-group mb-3">
+            <label for="checkout-email">Email (for order notifications)</label>
+            <input
+              type="email"
+              id="checkout-email"
+              name="email"
+              class="form-control"
+              value="{{ old('email', $authUser->email ?? '') }}"
+              placeholder="Enter your email address"
+            >
+          </div>
+
+          <div class="form-group mb-3">
             <label for="checkout-address">Address / Landmark *</label>
             <input
               type="text"
@@ -816,6 +828,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const deliveryInputs = document.querySelectorAll('input[name="delivery"]');
   const nameInput = document.getElementById('checkout-full-name');
   const phoneInput = document.getElementById('checkout-phone');
+  const emailInput = document.getElementById('checkout-email');
   const addressInput = document.getElementById('checkout-address');
   const fallbackProductImage = @json(asset('assets/img/product/product1.jpg'));
 
@@ -1204,10 +1217,11 @@ function normalizeCheckoutItem(item) {
     input.addEventListener('input', saveCheckoutDraft);
   });
 
-  placeOrderBtn.addEventListener('click', () => {
-    const name = nameInput.value.trim();
-    const phone = phoneInput.value.trim();
-    const address = addressInput.value.trim();
+  placeOrderBtn.addEventListener('click', function() {
+    var name = nameInput.value.trim();
+    var phone = phoneInput.value.trim();
+    var email = emailInput ? emailInput.value.trim() : '';
+    var address = addressInput.value.trim();
     const checkoutItems = getCheckoutItems();
 
     const selectedDelivery = document.querySelector('input[name="delivery"]:checked');
@@ -1303,19 +1317,67 @@ function normalizeCheckoutItem(item) {
     } else {
       // Handle other payment methods (COD, Connect IPS)
       saveCheckoutDraft();
-      if (isBuyNowMode) {
-        clearBuyNowItem();
-      } else {
-        clearSelectedItems();
-      }
+      
+      // Prepare order data
+      var orderData = {
+        full_name: name,
+        phone: phone,
+        email: email,
+        address: isStorePickup ? 'Store Pickup' : address,
+        delivery: document.querySelector('input[name="delivery"]:checked').value,
+        payment_method: selectedPaymentMethod,
+        amount: total,
+        items: JSON.stringify(checkoutItems),
+        payment_slip: selectedPaymentMethod === 'connectips' ? document.getElementById('payment-slip-data').value : null,
+        _token: '{{ csrf_token() }}'
+      };
 
-      alert(
-        `Order placed successfully!\n` +
-        `Products: ${checkoutItems.length}\n` +
-        `Delivery: ${formatCurrency(deliveryCharge)}\n` +
-        `Total: ${formatCurrency(total)}\n` +
-        `Payment Method: ${selectedPaymentMethod === 'cod' ? 'Cash on Delivery' : 'Connect IPS'}`
-      );
+      // Show loading
+      placeOrderBtn.disabled = true;
+      placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Order...';
+
+      // Save order via AJAX
+      fetch('{{ route("frontend.order.store") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(orderData)
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          // Clear cart after successful order
+          if (isBuyNowMode) {
+            clearBuyNowItem();
+          } else {
+            clearSelectedItems();
+          }
+
+          // Show success and redirect to orders page
+          alert(
+            'Order placed successfully!\n' +
+            'Order #: ' + data.order_number + '\n' +
+            'Products: ' + checkoutItems.length + '\n' +
+            'Delivery: ' + formatCurrency(deliveryCharge) + '\n' +
+            'Total: ' + formatCurrency(total) + '\n' +
+            'Payment: ' + (selectedPaymentMethod === 'cod' ? 'Cash on Delivery' : 'Connect IPS')
+          );
+
+          window.location.href = '{{ route("orders") }}';
+        } else {
+          alert('Error: ' + (data.message || 'Something went wrong'));
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.innerHTML = 'Place Order';
+        }
+      })
+      .catch(function(error) {
+        console.error('Error:', error);
+        alert('Error placing order. Please try again.');
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = 'Place Order';
+      });
     }
   });
 

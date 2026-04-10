@@ -830,161 +830,65 @@
         </div>
     </div>
 
-    {{-- Check if cart has items --}}
-    @php
-        // Temporary cart data - Replace with actual cart session/database data
-        $cartItems = [
-            [
-                'id' => 1,
-                'name' => 'Sunflower Oil Premium Quality Cooking Oil',
-                'brand' => 'Sunflow',
-                'image' => 'assets/img/product/product1.jpg',
-                'price' => 120,
-                'original_price' => 180,
-                'discount' => 18,
-                'quantity' => 1,
-                'rating' => 4.5,
-                'reviews' => 128
-            ],
-            [
-                'id' => 2,
-                'name' => 'Sugar White Crystal Pure & Sweet',
-                'brand' => 'Sunny',
-                'image' => 'assets/img/product/product2.jpg',
-                'price' => 80,
-                'original_price' => 100,
-                'discount' => 20,
-                'quantity' => 2,
-                'rating' => 4,
-                'reviews' => 95
-            ],
-            [
-                'id' => 3,
-                'name' => 'Masoor Dal Red Lentils Premium',
-                'brand' => 'Rani',
-                'image' => 'assets/img/product/product3.jpg',
-                'price' => 120,
-                'original_price' => 180,
-                'discount' => 15,
-                'quantity' => 1,
-                'rating' => 5,
-                'reviews' => 156
-            ],
-        ];
-        
-        $hasItems = count($cartItems) > 0;
-    @endphp
-
-    @if($hasItems)
-        <div class="cart-layout">
-            <!-- Cart Items Section -->
-            <div class="cart-items-section">
-                <div class="cart-items-header">
-                    <h2>Cart Items</h2>
-                    <span class="cart-items-count">({{ count($cartItems) }} items)</span>
-                </div>
-
-                <!-- Select All Bar -->
-                <div class="select-all-bar">
-                    <input type="checkbox" id="select-all">
-                    <label for="select-all">Select All</label>
-                    <button class="delete-selected"><i class="fas fa-trash-alt"></i> Delete Selected</button>
-                </div>
-
-                <!-- Cart Items List -->
-                <div class="cart-items-list">
-                    @foreach($cartItems as $item)
-                    <div class="cart-item" data-item-id="{{ $item['id'] }}" data-price="{{ $item['price'] }}">
-                        <div class="item-checkbox">
-                            <input type="checkbox" class="item-check" data-price="{{ $item['price'] }}" data-qty="{{ $item['quantity'] }}">
-                        </div>
-                        
-                        <div class="item-image">
-                            <img src="{{ asset($item['image']) }}" alt="{{ $item['name'] }}">
-                        </div>
-                        
-                        <div class="item-details">
-                            <div>
-                                <div class="item-brand">{{ $item['brand'] }}</div>
-                                <h3 class="item-title">{{ $item['name'] }}</h3>
-                                <div class="item-rating">
-                                    <div class="stars">
-                                        @for($i = 0; $i < 5; $i++)
-                                            @if($i < floor($item['rating']))
-                                                <i class="fas fa-star"></i>
-                                            @elseif($i < $item['rating'])
-                                                <i class="fas fa-star-half-alt"></i>
-                                            @else
-                                                <i class="far fa-star"></i>
-                                            @endif
-                                        @endfor
-                                    </div>
-                                    <span class="count">({{ $item['reviews'] }})</span>
-                                </div>
-                            </div>
-                            
-                            <div class="item-price-section">
-                                <span class="item-price">Rs.{{ $item['price'] }}</span>
-                                <span class="item-original-price">Rs.{{ $item['original_price'] }}</span>
-                                <span class="item-discount">-{{ $item['discount'] }}%</span>
-                            </div>
-                            
-                            <div class="item-actions">
-                                <div class="item-quantity">
-                                    <button class="qty-btn qty-minus" data-item-id="{{ $item['id'] }}">-</button>
-                                    <input type="text" class="qty-input" value="{{ $item['quantity'] }}" readonly>
-                                    <button class="qty-btn qty-plus" data-item-id="{{ $item['id'] }}">+</button>
-                                </div>
-                                <button class="item-remove" data-item-id="{{ $item['id'] }}">
-                                    <i class="fas fa-trash-alt"></i> Remove
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
+    <!-- Dynamic Cart Content - populated by JavaScript from localStorage -->
+    <div class="cart-layout" id="cart-layout-section" style="display:none;">
+        <!-- Cart Items Section -->
+        <div class="cart-items-section">
+            <div class="cart-items-header">
+                <h2>Cart Items</h2>
+                <span class="cart-items-count" id="cart-items-count">(0 items)</span>
             </div>
 
-            <!-- Order Summary Sidebar -->
-            <div class="order-summary">
-                <h3>Order Summary</h3>
+            <!-- Select All Bar -->
+            <div class="select-all-bar">
+                <input type="checkbox" id="select-all">
+                <label for="select-all">Select All</label>
+                <button class="delete-selected" id="delete-selected-btn"><i class="fas fa-trash-alt"></i> Delete Selected</button>
+            </div>
 
-                <div class="summary-total">
-                    <span class="label">Total</span>
-                    <span class="value" id="total">Rs.0</span>
-                </div>
-                
-                <button class="checkout-btn" onclick="window.location.href='{{ route('checkout') }}'">
-                    <i class="fas fa-lock"></i> Proceed to Checkout
-                </button>
-                
-                <button class="continue-shopping" onclick="window.location.href='{{ route('home') }}'">
-                    <i class="fas fa-arrow-left"></i> Continue Shopping
-                </button>
-                
-                <!-- Promo Code Section -->
-                <div class="promo-code">
-                    <h4>Have a promo code?</h4>
-                    <div class="promo-input-group">
-                        <input type="text" placeholder="Enter code" id="promo-code-input">
-                        <button id="apply-promo">Apply</button>
-                    </div>
+            <!-- Cart Items List -->
+            <div class="cart-items-list" id="cart-items-list"></div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+
+            <div class="summary-total">
+                <span class="label">Total</span>
+                <span class="value" id="total">Rs.0</span>
+            </div>
+            
+            <button class="checkout-btn" id="checkout-btn">
+                <i class="fas fa-lock"></i> Proceed to Checkout
+            </button>
+            
+            <button class="continue-shopping" onclick="window.location.href='{{ route('home') }}'">
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+            </button>
+            
+            <!-- Promo Code Section -->
+            <div class="promo-code">
+                <h4>Have a promo code?</h4>
+                <div class="promo-input-group">
+                    <input type="text" placeholder="Enter code" id="promo-code-input">
+                    <button id="apply-promo">Apply</button>
                 </div>
             </div>
         </div>
-    @else
-        <!-- Empty Cart -->
-        <div class="empty-cart">
-            <div class="empty-cart-icon">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-            <h2>Your Cart is Empty</h2>
-            <p>Looks like you haven't added anything to your cart yet</p>
-            <a href="{{ route('home') }}" class="empty-cart-btn">
-                <i class="fas fa-shopping-bag"></i> Start Shopping
-            </a>
+    </div>
+
+    <!-- Empty Cart -->
+    <div class="empty-cart" id="empty-cart-section" style="display:none;">
+        <div class="empty-cart-icon">
+            <i class="fas fa-shopping-cart"></i>
         </div>
-    @endif
+        <h2>Your Cart is Empty</h2>
+        <p>Looks like you haven't added anything to your cart yet</p>
+        <a href="{{ route('home') }}" class="empty-cart-btn">
+            <i class="fas fa-shopping-bag"></i> Start Shopping
+        </a>
+    </div>
 </div>
 
 {{-- ==========================================
@@ -992,243 +896,293 @@
     ========================================== --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const CART_KEY = 'gm_cart_items';
+    const SELECTED_ITEMS_KEY = 'gm_checkout_selected_items';
     const cartApi = window.GroceMateCart || null;
+    const fallbackImage = @json(asset('assets/img/product/product1.jpg'));
 
-    function parsePrice(value) {
-        if (typeof value === 'number') {
-            return value;
+    const cartLayoutSection = document.getElementById('cart-layout-section');
+    const emptyCartSection = document.getElementById('empty-cart-section');
+    const cartItemsList = document.getElementById('cart-items-list');
+    const cartItemsCount = document.getElementById('cart-items-count');
+    const totalEl = document.getElementById('total');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+    const applyPromoBtn = document.getElementById('apply-promo');
+
+    function getCartItems() {
+        if (cartApi && typeof cartApi.getItems === 'function') {
+            return cartApi.getItems();
         }
-        return parseFloat(String(value || '').replace(/[^\d.]/g, '')) || 0;
-    }
-
-    function getRowQty(row) {
-        const qtyInput = row.querySelector('.qty-input');
-        return parseInt(qtyInput?.value || '1', 10) || 1;
-    }
-
-    function syncQtyToStorage(row) {
-        if (!cartApi) {
-            return;
-        }
-        const itemId = row?.dataset?.itemId;
-        if (!itemId) {
-            return;
-        }
-        cartApi.updateQty(itemId, getRowQty(row));
-    }
-
-    function syncStorageFromDomWhenDifferent() {
-        if (!cartApi) {
-            return;
-        }
-
-        const domItems = Array.from(document.querySelectorAll('.cart-item')).map((row) => ({
-            id: String(row.dataset.itemId || ''),
-            name: row.querySelector('.item-title')?.textContent?.trim() || 'Product',
-            price: parsePrice(row.querySelector('.item-price')?.textContent || '0'),
-            image: row.querySelector('.item-image img')?.getAttribute('src') || '',
-            qty: getRowQty(row),
-        })).filter((item) => item.id);
-
-        if (domItems.length === 0) {
-            return;
-        }
-
-        const storageItems = cartApi.getItems();
-        const storageById = new Map(
-            storageItems.map((item) => [String(item.id || ''), item])
-        );
-        let shouldSync = storageItems.length === 0 || domItems.length !== storageItems.length;
-
-        if (!shouldSync) {
-            for (const domItem of domItems) {
-                const stored = storageById.get(String(domItem.id));
-
-                if (!stored) {
-                    shouldSync = true;
-                    break;
-                }
-
-                const storedPrice = parsePrice(stored.price);
-                const storedQty = Math.max(1, Number(stored.qty || 1));
-                const priceDrift = Math.abs(storedPrice - domItem.price);
-
-                if (priceDrift > 0.01 || storedQty !== domItem.qty) {
-                    shouldSync = true;
-                    break;
-                }
-            }
-        }
-
-        if (shouldSync) {
-            cartApi.setItems(domItems);
+        try {
+            return JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+        } catch (_) {
+            return [];
         }
     }
 
-    function updateEmptyCartState() {
-        const cartRows = document.querySelectorAll('.cart-item');
-        if (cartRows.length > 0) {
-            return;
+    function saveCartItems(items) {
+        if (cartApi && typeof cartApi.setItems === 'function') {
+            cartApi.setItems(items);
+        } else {
+            localStorage.setItem(CART_KEY, JSON.stringify(items));
         }
-
-        const list = document.querySelector('.cart-items-list');
-        if (list) {
-            list.innerHTML = '<div style="padding: 18px; text-align: center; color: var(--gm-gray);">Your cart is empty.</div>';
-        }
-
-        const selectAllBar = document.querySelector('.select-all-bar');
-        if (selectAllBar) {
-            selectAllBar.remove();
+        if (cartApi && typeof cartApi.updateBadges === 'function') {
+            cartApi.updateBadges();
         }
     }
 
-    // Calculate totals
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderCart() {
+        const items = getCartItems();
+
+        if (items.length === 0) {
+            cartLayoutSection.style.display = 'none';
+            emptyCartSection.style.display = '';
+            return;
+        }
+
+        cartLayoutSection.style.display = '';
+        emptyCartSection.style.display = 'none';
+        cartItemsCount.textContent = '(' + items.length + ' item' + (items.length !== 1 ? 's' : '') + ')';
+
+        cartItemsList.innerHTML = items.map(function(item) {
+            var safeName = escapeHtml(item.name);
+            var safeImage = escapeHtml(item.image || fallbackImage);
+            var price = Number(item.price) || 0;
+            var qty = Math.max(1, Number(item.qty) || 1);
+            var id = escapeHtml(String(item.id));
+
+            return '<div class="cart-item" data-item-id="' + id + '" data-price="' + price + '">' +
+                '<div class="item-checkbox">' +
+                    '<input type="checkbox" class="item-check" data-price="' + price + '" data-qty="' + qty + '">' +
+                '</div>' +
+                '<div class="item-image">' +
+                    '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'">' +
+                '</div>' +
+                '<div class="item-details">' +
+                    '<div>' +
+                        '<h3 class="item-title">' + safeName + '</h3>' +
+                    '</div>' +
+                    '<div class="item-price-section">' +
+                        '<span class="item-price">Rs.' + price + '</span>' +
+                    '</div>' +
+                    '<div class="item-actions">' +
+                        '<div class="item-quantity">' +
+                            '<button class="qty-btn qty-minus" data-item-id="' + id + '">-</button>' +
+                            '<input type="text" class="qty-input" value="' + qty + '" readonly>' +
+                            '<button class="qty-btn qty-plus" data-item-id="' + id + '">+</button>' +
+                        '</div>' +
+                        '<button class="item-remove" data-item-id="' + id + '">' +
+                            '<i class="fas fa-trash-alt"></i> Remove' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        calculateTotals();
+    }
+
     function calculateTotals() {
-        let total = 0;
-        
-        document.querySelectorAll('.item-check:checked').forEach(checkbox => {
-            const price = parseFloat(checkbox.dataset.price);
-            const qty = parseInt(checkbox.dataset.qty);
-            
+        var total = 0;
+        document.querySelectorAll('.item-check:checked').forEach(function(checkbox) {
+            var price = parseFloat(checkbox.dataset.price) || 0;
+            var qty = parseInt(checkbox.dataset.qty) || 1;
             total += price * qty;
         });
+        totalEl.textContent = 'Rs.' + total;
+    }
 
-        document.getElementById('total').textContent = `Rs.${total}`;
-    }
-    
-    // Select All functionality
-    const selectAllCheckbox = document.getElementById('select-all');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            document.querySelectorAll('.item-check').forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            calculateTotals();
-        });
-    }
-    
-    // Individual item checkboxes
-    document.querySelectorAll('.item-check').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            calculateTotals();
-            
-            // Update select all checkbox
-            const allChecked = Array.from(document.querySelectorAll('.item-check')).every(cb => cb.checked);
-            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
-        });
-    });
-    
-    // Quantity controls
-    document.querySelectorAll('.qty-minus').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const input = this.parentElement.querySelector('.qty-input');
-            const checkbox = this.closest('.cart-item').querySelector('.item-check');
-            let value = parseInt(input.value);
-            
+    // Event delegation for dynamically created cart items
+    cartItemsList.addEventListener('click', function(e) {
+        // Quantity minus
+        var minusBtn = e.target.closest('.qty-minus');
+        if (minusBtn) {
+            var row = minusBtn.closest('.cart-item');
+            var input = row.querySelector('.qty-input');
+            var checkbox = row.querySelector('.item-check');
+            var value = parseInt(input.value);
             if (value > 1) {
                 value--;
                 input.value = value;
-                checkbox.dataset.qty = value;
-                syncQtyToStorage(this.closest('.cart-item'));
+                if (checkbox) checkbox.dataset.qty = value;
+                // Update in storage
+                var items = getCartItems();
+                var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
+                if (target) { target.qty = value; saveCartItems(items); }
                 calculateTotals();
             }
-        });
-    });
-    
-    document.querySelectorAll('.qty-plus').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const input = this.parentElement.querySelector('.qty-input');
-            const checkbox = this.closest('.cart-item').querySelector('.item-check');
-            let value = parseInt(input.value);
-            
+            return;
+        }
+
+        // Quantity plus
+        var plusBtn = e.target.closest('.qty-plus');
+        if (plusBtn) {
+            var row = plusBtn.closest('.cart-item');
+            var input = row.querySelector('.qty-input');
+            var checkbox = row.querySelector('.item-check');
+            var value = parseInt(input.value);
             if (value < 99) {
                 value++;
                 input.value = value;
-                checkbox.dataset.qty = value;
-                syncQtyToStorage(this.closest('.cart-item'));
+                if (checkbox) checkbox.dataset.qty = value;
+                var items = getCartItems();
+                var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
+                if (target) { target.qty = value; saveCartItems(items); }
                 calculateTotals();
             }
-        });
-    });
-    
-    // Remove item
-    document.querySelectorAll('.item-remove').forEach(btn => {
-        btn.addEventListener('click', function() {
+            return;
+        }
+
+        // Remove item
+        var removeBtn = e.target.closest('.item-remove');
+        if (removeBtn) {
             if (confirm('Are you sure you want to remove this item from your cart?')) {
-                const itemId = this.dataset.itemId;
-                const cartItem = this.closest('.cart-item');
-                
-                // Animate removal
+                var cartItem = removeBtn.closest('.cart-item');
+                var itemId = removeBtn.dataset.itemId;
                 cartItem.style.opacity = '0';
                 cartItem.style.transform = 'translateX(20px)';
-                
-                setTimeout(() => {
-                    cartItem.remove();
-                    if (cartApi) {
-                        cartApi.removeItem(itemId);
-                    }
-                    calculateTotals();
-                    updateEmptyCartState();
+                setTimeout(function() {
+                    var items = getCartItems().filter(function(i) { return String(i.id) !== String(itemId); });
+                    saveCartItems(items);
+                    renderCart();
                 }, 300);
             }
-        });
+            return;
+        }
     });
-    
-    // Delete selected items
-    const deleteSelectedBtn = document.querySelector('.delete-selected');
+
+    // Checkbox change events via delegation
+    cartItemsList.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-check')) {
+            calculateTotals();
+            var allChecked = Array.from(document.querySelectorAll('.item-check')).every(function(cb) { return cb.checked; });
+            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
+        }
+    });
+
+    // Select all
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            var checked = this.checked;
+            document.querySelectorAll('.item-check').forEach(function(cb) { cb.checked = checked; });
+            calculateTotals();
+        });
+    }
+
+    // Delete selected
     if (deleteSelectedBtn) {
         deleteSelectedBtn.addEventListener('click', function() {
-            const selectedItems = document.querySelectorAll('.item-check:checked');
-            
-            if (selectedItems.length === 0) {
+            var selectedChecks = document.querySelectorAll('.item-check:checked');
+            if (selectedChecks.length === 0) {
                 alert('Please select items to delete');
                 return;
             }
-            
-            if (confirm(`Are you sure you want to remove ${selectedItems.length} item(s) from your cart?`)) {
-                selectedItems.forEach(checkbox => {
-                    const cartItem = checkbox.closest('.cart-item');
-                    const itemId = cartItem?.dataset?.itemId;
-                    cartItem.style.opacity = '0';
-                    cartItem.style.transform = 'translateX(20px)';
-                    
-                    setTimeout(() => {
-                        cartItem.remove();
-                        if (cartApi && itemId) {
-                            cartApi.removeItem(itemId);
-                        }
-                        calculateTotals();
-                        updateEmptyCartState();
-                    }, 300);
+            if (confirm('Are you sure you want to remove ' + selectedChecks.length + ' item(s) from your cart?')) {
+                var idsToRemove = [];
+                selectedChecks.forEach(function(cb) {
+                    var cartItem = cb.closest('.cart-item');
+                    if (cartItem) idsToRemove.push(String(cartItem.dataset.itemId));
                 });
+                var items = getCartItems().filter(function(i) { return idsToRemove.indexOf(String(i.id)) === -1; });
+                saveCartItems(items);
+                renderCart();
             }
         });
     }
-    
+
     // Promo code
-    const applyPromoBtn = document.getElementById('apply-promo');
     if (applyPromoBtn) {
         applyPromoBtn.addEventListener('click', function() {
-            const promoCode = document.getElementById('promo-code-input').value.trim();
-            
-            if (promoCode === '') {
-                alert('Please enter a promo code');
-                return;
-            }
-            
-            // TODO: Validate promo code with backend
+            var code = document.getElementById('promo-code-input').value.trim();
+            if (!code) { alert('Please enter a promo code'); return; }
             alert('Promo code feature coming soon!');
         });
     }
-    
-    syncStorageFromDomWhenDifferent();
-    document.querySelectorAll('.cart-item').forEach(syncQtyToStorage);
-    if (cartApi) {
-        cartApi.updateBadges();
+
+    // Proceed to checkout
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            var selectedChecks = document.querySelectorAll('.item-check:checked');
+            console.log('Checkout clicked, checked items found:', selectedChecks.length);
+            
+            if (selectedChecks.length === 0) {
+                alert('Please select at least one item to proceed to checkout');
+                return;
+            }
+
+            var selectedCartItems = [];
+            selectedChecks.forEach(function(checkbox) {
+                var cartItem = checkbox.closest('.cart-item');
+                console.log('Cart item element:', cartItem);
+                console.log('Dataset:', cartItem ? cartItem.dataset : 'null');
+                
+                if (!cartItem) return;
+                var itemId = cartItem.dataset.itemId;
+                var rawPrice = cartItem.dataset.price;
+                
+                console.log('Processing item - ID:', itemId, 'Price:', rawPrice);
+
+                if (itemId && rawPrice) {
+                    var qtyInput = cartItem.querySelector('.qty-input');
+                    var qty = qtyInput ? parseInt(qtyInput.value, 10) || 1 : 1;
+                    var itemName = cartItem.querySelector('.item-title') ? cartItem.querySelector('.item-title').textContent.trim() : 'Product';
+                    var itemImage = cartItem.querySelector('.item-image img') ? cartItem.querySelector('.item-image img').getAttribute('src') : '';
+                    
+                    selectedCartItems.push({
+                        id: String(itemId).trim(),
+                        name: itemName,
+                        price: parseFloat(String(rawPrice).replace(/[^\d.]/g, '')) || 0,
+                        image: itemImage,
+                        qty: qty,
+                    });
+                }
+            });
+
+            console.log('Selected cart items to save:', selectedCartItems);
+            console.log('SELECTED_ITEMS_KEY:', SELECTED_ITEMS_KEY);
+
+            try {
+                console.log('Saving selected items to localStorage:', selectedCartItems);
+                localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(selectedCartItems));
+                console.log('Selected items saved successfully');
+                // Verify storage
+                var verify = localStorage.getItem(SELECTED_ITEMS_KEY);
+                console.log('Verification read:', verify);
+                
+                // Small delay to ensure localStorage is persisted before redirect
+                setTimeout(function() {
+                    window.location.href = '{{ route("checkout") }}';
+                }, 100);
+            } catch (e) {
+                console.error('Error saving selected items:', e);
+                // Fallback: redirect anyway
+                window.location.href = '{{ route("checkout") }}';
+            }
+        });
     }
 
-    // Initialize totals
-    calculateTotals();
+    // Listen for cart updates from other tabs/pages
+    window.addEventListener('storage', function(event) {
+        if (event.key === CART_KEY) {
+            renderCart();
+        }
+    });
+    window.addEventListener('gm-cart-updated', renderCart);
+
+    // Initial render
+    renderCart();
 });
 </script>
 

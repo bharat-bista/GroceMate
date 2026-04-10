@@ -50,7 +50,7 @@
     <div class="invoice-details">
         <h3>Invoice Details</h3>
         <p><strong>Invoice Number:</strong> {{ $invoice->invoice_no }}</p>
-        <p><strong>Date:</strong> {{ $invoice->purchase_date->format('d M Y') }}</p>
+        <p><strong>Date:</strong> {{ $invoice->invoice_date->format('d M Y') }}</p>
         <p><strong>Business:</strong> {{ $invoice->business->business_name }}</p>
         <p><strong>Payment Method:</strong> {{ ucfirst($invoice->payment_method) }}</p>
         

@@ -8,6 +8,7 @@ use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\frontend\SliderController;
+use App\Http\Controllers\frontend\OrderController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -53,6 +54,27 @@ Route::post('/cart/remove', [CartController::class, 'removeItem'])->name('cart.r
 Route::post('/cart/promo', [CartController::class, 'applyPromoCode'])->name('cart.promo');
 Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+Route::post('/checkout/esewa/initiate', [CheckoutController::class, 'initiateEsewa'])->name('frontend.checkout.esewa.initiate');
+Route::get('/checkout/esewa/callback', [CheckoutController::class, 'esewaCallback'])->name('frontend.checkout.esewa.callback');
+Route::post('/checkout/order', [OrderController::class, 'store'])->name('frontend.order.store');
+
+// Frontend order routes
+Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
+// Admin order routes
+Route::middleware(['auth', 'admin'])
+    ->prefix('inventory/orders')
+    ->name('inventory.orders.')
+    ->group(function () {
+        Route::get('/', [OrderController::class, 'adminIndex'])->name('index');
+        Route::get('/{order}', [OrderController::class, 'adminShow'])->name('show');
+        Route::patch('/{order}/delivery-status', [OrderController::class, 'updateDeliveryStatus'])->name('delivery-status');
+        Route::patch('/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('payment-status');
+        Route::patch('/{order}/verify-slip', [OrderController::class, 'verifyPaymentSlip'])->name('verify-slip');
+        Route::get('/export/{type}', [OrderController::class, 'export'])->name('export');
+    });
+
 Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'description'])
     ->whereNumber('ecommerceProduct')
     ->name('description');

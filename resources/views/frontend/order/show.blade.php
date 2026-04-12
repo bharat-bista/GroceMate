@@ -303,7 +303,14 @@
                 @if($order->payment_slip)
                 <div class="info-item payment-slip-section">
                     <label>Payment Slip</label>
-                    <img src="{{ $order->payment_slip }}" alt="Payment Slip">
+                    @if($order->payment_slip_is_pdf)
+                        <a href="{{ $order->payment_slip_url }}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+                            <i class="fas fa-file-pdf" style="font-size: 22px; color: #dc2626;"></i>
+                            <span>View Payment Slip (PDF)</span>
+                        </a>
+                    @else
+                        <img src="{{ $order->payment_slip_url }}" alt="Payment Slip">
+                    @endif
                 </div>
                 @endif
             </div>

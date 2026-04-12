@@ -34,6 +34,7 @@ class HomeController extends Controller
             ->get();
 
         $topSaleProducts = EcommerceProduct::query()
+            ->latestPerProduct()
             ->with(['product.category', 'product.brandRelation'])
             ->where('status', 'in_stock')
             ->where('discount_percent', '>', 30)
@@ -41,16 +42,14 @@ class HomeController extends Controller
             ->whereHas('product.brandRelation')
             ->orderByDesc('discount_percent')
             ->latest()
-            ->limit($topSaleLimit * 3)
-            ->get()
-            ->unique('product_id')
-            ->values()
-            ->take($topSaleLimit);
+            ->limit($topSaleLimit)
+            ->get();
 
         $featuredLimit = 16; // 4 rows x 4 cards target
         $maxPerCategory = 2;
 
         $ecommerceCandidates = EcommerceProduct::query()
+            ->latestPerProduct()
             ->with(['product.category', 'product.brandRelation'])
             ->where('status', 'in_stock')
             ->whereHas('product.category')

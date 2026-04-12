@@ -1275,9 +1275,11 @@ function normalizeCheckoutItem(item) {
       const formData = new FormData();
       formData.append('full_name', name);
       formData.append('phone', phone);
+      formData.append('email', email);
       formData.append('address', isStorePickup ? 'Store Pickup' : address);
       formData.append('delivery', document.querySelector('input[name="delivery"]:checked').value);
       formData.append('amount', total);
+      formData.append('items', JSON.stringify(checkoutItems));
 
       // Show loading state
       placeOrderBtn.disabled = true;
@@ -1304,8 +1306,10 @@ function normalizeCheckoutItem(item) {
           newWindow.document.write(html);
           newWindow.document.close();
         } else {
-          // Fallback: open the redirect URL directly
-          window.location.href = '{{ route("frontend.checkout.esewa.initiate") }}';
+          // Popup blocked: continue in same tab
+          document.open();
+          document.write(html);
+          document.close();
         }
       })
       .catch(error => {
@@ -1327,7 +1331,7 @@ function normalizeCheckoutItem(item) {
         delivery: document.querySelector('input[name="delivery"]:checked').value,
         payment_method: selectedPaymentMethod,
         amount: total,
-        items: JSON.stringify(checkoutItems),
+        items: checkoutItems,
         payment_slip: selectedPaymentMethod === 'connectips' ? document.getElementById('payment-slip-data').value : null,
         _token: '{{ csrf_token() }}'
       };
@@ -1345,7 +1349,14 @@ function normalizeCheckoutItem(item) {
         },
         body: JSON.stringify(orderData)
       })
-      .then(function(response) { return response.json(); })
+      .then(async function(response) {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = data.message || 'Unable to place order.';
+          throw new Error(message);
+        }
+        return data;
+      })
       .then(function(data) {
         if (data.success) {
           // Clear cart after successful order
@@ -1374,7 +1385,7 @@ function normalizeCheckoutItem(item) {
       })
       .catch(function(error) {
         console.error('Error:', error);
-        alert('Error placing order. Please try again.');
+        alert(error.message || 'Error placing order. Please try again.');
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
       });

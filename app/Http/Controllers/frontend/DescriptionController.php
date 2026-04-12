@@ -40,6 +40,7 @@ class DescriptionController extends Controller
             ->values();
 
         $topSaleProducts = EcommerceProduct::query()
+            ->latestPerProduct()
             ->with(['product.category', 'product.brandRelation'])
             ->where('status', 'in_stock')
             ->where('discount_percent', '>', 30)
@@ -48,25 +49,20 @@ class DescriptionController extends Controller
             ->whereHas('product.brandRelation')
             ->orderByDesc('discount_percent')
             ->latest()
-            ->limit(18)
-            ->get()
-            ->unique('product_id')
-            ->values()
-            ->take(12);
+            ->limit(12)
+            ->get();
 
         if ($topSaleProducts->isEmpty()) {
             $topSaleProducts = EcommerceProduct::query()
+                ->latestPerProduct()
                 ->with(['product.category', 'product.brandRelation'])
                 ->where('status', 'in_stock')
                 ->where('id', '!=', $selectedProduct->id)
                 ->whereHas('product.category')
                 ->whereHas('product.brandRelation')
                 ->latest()
-                ->limit(18)
-                ->get()
-                ->unique('product_id')
-                ->values()
-                ->take(12);
+                ->limit(12)
+                ->get();
         }
 
         return view('frontend.description.index', compact('selectedProduct', 'topSaleProducts', 'galleryPaths'));

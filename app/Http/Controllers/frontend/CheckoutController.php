@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Mail;
 
 class CheckoutController extends Controller
@@ -21,15 +22,46 @@ class CheckoutController extends Controller
      */
     public function initiateEsewa(Request $request)
     {
+        $request->merge([
+            'items' => $this->normalizeItemsPayload($request->input('items')),
+        ]);
+
         $request->validate([
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
             'address' => 'required|string|max:500',
             'delivery' => 'required|in:inside,outside,pickup',
-            'amount' => 'required|numeric|min:1',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required',
+            'items.*.name' => 'required|string|max:255',
+            'items.*.price' => 'required|numeric|min:0',
+            'items.*.qty' => 'required|integer|min:1',
         ]);
 
-        $totalAmount     = number_format($request->amount, 2, '.', '');
+        $items = collect($request->input('items', []))
+            ->map(function (array $item) {
+                return [
+                    'id' => (string) ($item['id'] ?? ''),
+                    'name' => (string) ($item['name'] ?? 'Product'),
+                    'price' => (float) ($item['price'] ?? 0),
+                    'qty' => max(1, (int) ($item['qty'] ?? 1)),
+                    'image' => !empty($item['image']) ? (string) $item['image'] : null,
+                ];
+            })
+            ->filter(fn (array $item) => $item['id'] !== '')
+            ->values()
+            ->all();
+
+        $deliveryCharges = [
+            'inside' => 100,
+            'outside' => 200,
+            'pickup' => 0,
+        ];
+        $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
+        $subtotal = round(collect($items)->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
+        $computedTotal = round($subtotal + $deliveryCharge, 2);
+        $totalAmount = number_format($computedTotal, 2, '.', '');
         $transactionUuid = 'ECOM-' . time() . '-' . Str::random(6);
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');
@@ -37,18 +69,18 @@ class CheckoutController extends Controller
         $message   = "total_amount={$totalAmount},transaction_uuid={$transactionUuid},product_code={$productCode}";
         $signature = base64_encode(hash_hmac('sha256', $message, $secretKey, true));
 
-        // Get items from session
-        $items = session('gm_checkout_selected_items', []);
-
         // Store order details in session for callback processing
         session([
             'esewa_checkout_order' => [
                 'transaction_uuid' => $transactionUuid,
                 'full_name' => $request->full_name,
                 'phone' => $request->phone,
+                'email' => $request->email,
                 'address' => $request->address,
                 'delivery' => $request->delivery,
-                'amount' => $request->amount,
+                'subtotal' => $subtotal,
+                'delivery_charge' => $deliveryCharge,
+                'total_amount' => $computedTotal,
                 'items' => $items,
             ]
         ]);
@@ -110,45 +142,63 @@ class CheckoutController extends Controller
                 ->with('error', 'Order information not found.');
         }
 
-        // Calculate delivery charge
-        $deliveryCharges = [
-            'inside' => 100,
-            'outside' => 200,
-            'pickup' => 0,
-        ];
-        $deliveryCharge = $deliveryCharges[$orderInfo['delivery']] ?? 0;
-        $subtotal = floatval($orderInfo['amount']);
-        $total = $subtotal + $deliveryCharge;
+        $expectedTotal = round((float) ($orderInfo['total_amount'] ?? 0), 2);
+        $paidTotal = round((float) ($decoded['total_amount'] ?? 0), 2);
 
-        // Create order
-        $order = Order::create([
-            'order_number' => Order::generateOrderNumber(),
-            'customer_name' => $orderInfo['full_name'],
-            'customer_phone' => $orderInfo['phone'],
-            'customer_email' => $orderInfo['email'] ?? null,
-            'delivery_address' => $orderInfo['address'],
-            'delivery_type' => $orderInfo['delivery'],
-            'subtotal' => $subtotal,
-            'delivery_charge' => $deliveryCharge,
-            'total_amount' => $total,
-            'payment_method' => 'esewa',
-            'payment_status' => 'verified',
-            'transaction_id' => $decoded['transaction_uuid'],
-            'delivery_status' => 'pending',
-        ]);
-
-        // Create order items
-        foreach ($orderInfo['items'] as $item) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $item['id'] ?? null,
-                'product_name' => $item['name'] ?? 'Product',
-                'price' => $item['price'] ?? 0,
-                'quantity' => $item['qty'] ?? 1,
-                'subtotal' => ($item['price'] ?? 0) * ($item['qty'] ?? 1),
-                'image' => $item['image'] ?? null,
-            ]);
+        if (abs($expectedTotal - $paidTotal) > 0.01) {
+            return redirect()->route('checkout')
+                ->with('error', 'Paid amount does not match the checkout amount.');
         }
+
+        $existingOrder = Order::query()
+            ->where('payment_method', 'esewa')
+            ->where('transaction_id', $decoded['transaction_uuid'])
+            ->first();
+
+        if ($existingOrder) {
+            session()->forget(['esewa_checkout_order', 'gm_checkout_selected_items']);
+            return redirect()->route('orders')
+                ->with('success', 'Payment already verified. Order #: ' . $existingOrder->order_number);
+        }
+
+        $subtotal = round((float) ($orderInfo['subtotal'] ?? 0), 2);
+        $deliveryCharge = round((float) ($orderInfo['delivery_charge'] ?? 0), 2);
+        $total = round((float) ($orderInfo['total_amount'] ?? ($subtotal + $deliveryCharge)), 2);
+
+        $order = DB::transaction(function () use ($orderInfo, $subtotal, $deliveryCharge, $total, $decoded) {
+            $order = Order::create([
+                'order_number' => Order::generateOrderNumber(),
+                'customer_name' => $orderInfo['full_name'],
+                'customer_phone' => $orderInfo['phone'],
+                'customer_email' => $orderInfo['email'] ?? null,
+                'delivery_address' => $orderInfo['address'],
+                'delivery_type' => $orderInfo['delivery'],
+                'subtotal' => $subtotal,
+                'delivery_charge' => $deliveryCharge,
+                'total_amount' => $total,
+                'payment_method' => 'esewa',
+                'payment_status' => 'verified',
+                'transaction_id' => $decoded['transaction_uuid'],
+                'delivery_status' => 'pending',
+            ]);
+
+            foreach (($orderInfo['items'] ?? []) as $item) {
+                $price = (float) ($item['price'] ?? 0);
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => (string) ($item['id'] ?? ''),
+                    'product_name' => (string) ($item['name'] ?? 'Product'),
+                    'price' => $price,
+                    'quantity' => $qty,
+                    'subtotal' => round($price * $qty, 2),
+                    'image' => !empty($item['image']) ? (string) $item['image'] : null,
+                ]);
+            }
+
+            return $order;
+        });
 
         // Send email notification if customer email exists
         if ($order->customer_email) {
@@ -164,5 +214,19 @@ class CheckoutController extends Controller
 
         return redirect()->route('orders')
             ->with('success', 'Payment successful! Order placed. Transaction ID: ' . $decoded['transaction_uuid']);
+    }
+
+    private function normalizeItemsPayload(mixed $items): array
+    {
+        if (is_array($items)) {
+            return $items;
+        }
+
+        if (is_string($items) && $items !== '') {
+            $decoded = json_decode($items, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return [];
     }
 }

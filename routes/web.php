@@ -42,6 +42,9 @@ Route::get('/login', [AccountController::class, 'login'])->name('page-login');
 Route::get('/auth/login', [AccountController::class, 'login'])->name('login');
 Route::post('/login', [AccountController::class, 'store'])->name('login.post');
 
+// Logout route
+Route::post('/logout', [AccountController::class, 'logout'])->name('logout')->middleware('auth');
+
 // home after login
 Route::get('/home', [HomeController::class, 'home'])->middleware('auth')->name('home');
 

@@ -13,11 +13,7 @@ class AdvancedController extends Controller
     public function advanced(Request $request)
     {
         $baseQuery = EcommerceProduct::query()
-            ->whereIn('id', function ($query) {
-                $query->from('ecommerce_products')
-                    ->selectRaw('MAX(id)')
-                    ->groupBy('product_id');
-            })
+            ->latestPerProduct()
             ->where('status', 'in_stock')
             ->whereHas('product.category')
             ->whereHas('product.brandRelation');
@@ -120,11 +116,7 @@ class AdvancedController extends Controller
         }
 
         $products = EcommerceProduct::query()
-            ->whereIn('id', function ($query) {
-                $query->from('ecommerce_products')
-                    ->selectRaw('MAX(id)')
-                    ->groupBy('product_id');
-            })
+            ->latestPerProduct()
             ->with(['product.category:id,name', 'product.brandRelation:id,name'])
             ->where('status', 'in_stock')
             ->where(function ($query) use ($q) {

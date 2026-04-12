@@ -1800,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     fadeElements.forEach(el => observer.observe(el));
     
-    // Seamless auto-scroll for Top Sale section with interaction-aware pause.
+    // Auto-scroll for Top Sale section with interaction-aware pause.
     const topSaleScrollers = document.querySelectorAll('[data-auto-scroll="top-sale"]');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1819,26 +1819,23 @@ document.addEventListener('DOMContentLoaded', function() {
         let isUserDragging = false;
         const speed = window.innerWidth <= 768 ? 0.35 : 0.55;
 
-        // Skip cloning/auto-scroll when there is only one real card.
+        // Skip auto-scroll when there is only one real card.
         if (baseItems.length < 2) {
             return;
         }
 
-        // Duplicate cards once for infinite-like scrolling.
-        baseItems.forEach(item => {
-            const clone = item.cloneNode(true);
-            clone.setAttribute('aria-hidden', 'true');
-            container.appendChild(clone);
-        });
-
-        const loopWidth = container.scrollWidth / 2;
+        function getMaxScrollDistance() {
+            return Math.max(container.scrollWidth - container.clientWidth, 0);
+        }
 
         function step() {
-            if (!isPaused && !isUserDragging && loopWidth > container.clientWidth) {
+            const maxScrollDistance = getMaxScrollDistance();
+
+            if (!isPaused && !isUserDragging && maxScrollDistance > 0) {
                 container.scrollLeft += speed;
 
-                if (container.scrollLeft >= loopWidth) {
-                    container.scrollLeft -= loopWidth;
+                if (container.scrollLeft >= maxScrollDistance) {
+                    container.scrollLeft = 0;
                 }
             }
 

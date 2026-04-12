@@ -126,11 +126,11 @@
 
     </div>
   </div>
-  <div x-data="{ open: {{ $isEcommerceGroup ? 'true' : 'false' }} }" class="space-y-1">
+  <div x-data="{ open: {{ $isPosGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
     <button @click="open = !open"
-            class="{{ $navButtonClass($isEcommerceGroup) }}">
+            class="{{ $navButtonClass($isPosGroup) }}">
       <span>POS</span>
       <svg :class="{'rotate-180': open}" 
            class="w-4 h-4 transition-transform duration-200"
@@ -278,9 +278,9 @@
             <div class="text-sm text-slate-600 hidden sm:block">
               {{ auth()->user()->full_name ?? 'User' }}
             </div>
-            <form method="POST" action="#">
+            <form method="POST" action="{{ route('logout') }}">
               @csrf
-              <button class="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+              <button type="submit" class="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-800">
                 Logout
               </button>
             </form>

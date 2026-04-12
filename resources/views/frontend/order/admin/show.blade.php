@@ -83,7 +83,14 @@
                         <h3 class="text-lg font-semibold text-slate-900">Payment Slip</h3>
                     </div>
                     <div class="p-6">
-                        <img src="{{ $order->payment_slip }}" alt="Payment Slip" class="max-w-xs rounded-lg border border-slate-200 mb-4">
+                        @if($order->payment_slip_is_pdf)
+                            <a href="{{ $order->payment_slip_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 mb-4">
+                                <i class="fas fa-file-pdf text-red-600"></i>
+                                <span>Open Payment Slip (PDF)</span>
+                            </a>
+                        @else
+                            <img src="{{ $order->payment_slip_url }}" alt="Payment Slip" class="max-w-xs rounded-lg border border-slate-200 mb-4">
+                        @endif
                         
                         @if($order->payment_status === 'pending')
                             <form method="POST" action="{{ route('inventory.orders.verify-slip', $order) }}" class="flex gap-3">

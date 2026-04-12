@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class EcommerceProduct extends Model
 {
@@ -39,6 +40,18 @@ class EcommerceProduct extends Model
     public function images()
     {
         return $this->hasMany(EcommerceProductImage::class);
+    }
+
+    public function scopeLatestPerProduct(Builder $query): Builder
+    {
+        $table = $query->getModel()->getTable();
+        $qualifiedId = $query->getModel()->qualifyColumn('id');
+
+        return $query->whereIn($qualifiedId, function ($subQuery) use ($table) {
+            $subQuery->from($table)
+                ->selectRaw('MAX(id)')
+                ->groupBy('product_id');
+        });
     }
 
     // Calculate display price from MRP and discount

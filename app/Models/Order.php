@@ -44,4 +44,35 @@ class Order extends Model
         $random = strtoupper(Str::random(4));
         return "{$prefix}-{$timestamp}-{$random}";
     }
+
+    public function getPaymentSlipUrlAttribute(): ?string
+    {
+        if (empty($this->payment_slip)) {
+            return null;
+        }
+
+        if (Str::startsWith($this->payment_slip, ['http://', 'https://', 'data:'])) {
+            return $this->payment_slip;
+        }
+
+        if (Str::startsWith($this->payment_slip, '/storage/')) {
+            return asset(ltrim($this->payment_slip, '/'));
+        }
+
+        return asset('storage/' . ltrim($this->payment_slip, '/'));
+    }
+
+    public function getPaymentSlipIsPdfAttribute(): bool
+    {
+        if (empty($this->payment_slip)) {
+            return false;
+        }
+
+        if (Str::startsWith($this->payment_slip, 'data:application/pdf')) {
+            return true;
+        }
+
+        $path = parse_url($this->payment_slip, PHP_URL_PATH) ?: $this->payment_slip;
+        return Str::endsWith(Str::lower($path), '.pdf');
+    }
 }

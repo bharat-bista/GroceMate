@@ -20,6 +20,7 @@ use App\Http\Controllers\Inventory\AdminAccountController;
 use App\Http\Controllers\Inventory\EcommerceProductController;
 use App\Http\Controllers\Inventory\EcommerceBrandController;
 use App\Http\Controllers\Inventory\EcommerceCategoryController;
+use App\Http\Controllers\Inventory\EcommerceIncomeController;
 use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
@@ -173,6 +174,10 @@ Route::middleware(['auth', 'admin'])
         // E-commerce Categories routes
         Route::get('ecommerce-categories', [EcommerceCategoryController::class, 'index'])->name('ecommerce-categories.index');
         Route::get('ecommerce-categories/{category}', [EcommerceCategoryController::class, 'show'])->name('ecommerce-categories.show');
+
+        // E-commerce Income routes
+        Route::get('ecommerce-income', [EcommerceIncomeController::class, 'index'])->name('ecommerce-income.index');
+        Route::get('ecommerce-income/export/{type}', [EcommerceIncomeController::class, 'export'])->name('ecommerce-income.export');
     }
     
 );

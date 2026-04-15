@@ -461,19 +461,36 @@ class OrderController extends Controller
     {
         $query = Order::with('items');
 
-        if ($request->status) {
-            $query->where('delivery_status', $request->status);
+        $search = trim((string) $request->get('search', ''));
+        $status = trim((string) $request->get('status', ''));
+        $paymentStatus = trim((string) $request->get('payment_status', ''));
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        if ($status !== '') {
+            $query->where('delivery_status', $status);
         }
 
-        if ($request->payment_status) {
-            $this->applyPaymentFilter($query, (string) $request->payment_status);
+        if ($paymentStatus !== '') {
+            $this->applyPaymentFilter($query, $paymentStatus);
         }
 
-        if ($request->from && $request->to) {
-            $query->whereBetween('created_at', [
-                \Carbon\Carbon::createFromFormat('Y-m-d', $request->from)->startOfDay(),
-                \Carbon\Carbon::createFromFormat('Y-m-d', $request->to)->endOfDay(),
-            ]);
+        if ($search !== '') {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('order_number', 'like', '%' . $search . '%')
+                    ->orWhere('customer_name', 'like', '%' . $search . '%')
+                    ->orWhere('customer_phone', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($from && $to) {
+            try {
+                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay();
+                $toDate = \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay();
+                $query->whereBetween('created_at', [$fromDate, $toDate]);
+            } catch (\Exception $e) {
+                // Ignore invalid date format and continue exporting with available filters.
+            }
         }
 
         $orders = $query->orderBy('created_at', 'desc')->get();
@@ -512,8 +529,48 @@ class OrderController extends Controller
             return response()->stream($callback, 200, $headers);
         }
 
-        // For PDF or other types, return a view
-        return view('frontend.order.admin.export', compact('orders'));
+        if ($type === 'pdf') {
+            $filename = 'orders_' . now()->format('Y-m-d') . '.pdf';
+
+            $html = view('frontend.order.admin.export-pdf', [
+                'orders' => $orders,
+                'search' => $search,
+                'status' => $status,
+                'paymentStatus' => $paymentStatus,
+                'from' => $from,
+                'to' => $to,
+            ])->render();
+
+            $pdf = new \Dompdf\Dompdf();
+            $pdf->loadHtml($html);
+            $pdf->setPaper('A4', 'landscape');
+            $pdf->render();
+
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        if ($type === 'excel') {
+            $filename = 'orders_' . now()->format('Y-m-d') . '.xlsx';
+
+            $html = view('frontend.order.admin.export-excel', [
+                'orders' => $orders,
+                'search' => $search,
+                'status' => $status,
+                'paymentStatus' => $paymentStatus,
+                'from' => $from,
+                'to' => $to,
+            ])->render();
+
+            return response($html, 200, [
+                'Content-Type' => 'application/vnd.ms-excel',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ]);
+        }
+
+        abort(404);
     }
 
     private function applyPaymentFilter($query, string $paymentFilter): void

@@ -222,7 +222,7 @@
     </div>
 
     <div class="footer">
-        <p>You can track your order status by visiting our website.</p>
+        <p>You can track your order status by Nepal Can Move.</p>
         <p>If you have any questions, please contact us.</p>
         <p>Thank you for shopping with <strong>GroceMate</strong>!</p>
     </div>

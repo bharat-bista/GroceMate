@@ -39,6 +39,34 @@
       </a>
 
       <!-- User Dropdown (mobile) -->
+      <div class="account-dropdown" data-account-menu>
+        <button
+          type="button"
+          class="mobile-account-btn"
+          aria-label="My Account"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          data-account-trigger>
+          <i class="fas fa-user"></i>
+          <span>Account</span>
+        </button>
+        <div class="account-menu" role="menu" data-account-panel>
+          <a href="{{ auth()->check() ? route('home') : route('page-login') }}" class="account-menu-item" role="menuitem">
+            Manage My Account
+          </a>
+          <a href="{{ auth()->check() ? route('orders') : route('page-login') }}" class="account-menu-item" role="menuitem">
+            My Orders
+          </a>
+          @auth
+            <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit" class="account-menu-item account-menu-button" role="menuitem">Logout</button>
+            </form>
+          @else
+            <a href="{{ route('page-login') }}" class="account-menu-item" role="menuitem">Logout</a>
+          @endauth
+        </div>
+      </div>
 
       <!-- Search Toggle -->
       <button class="search-toggle-btn" id="searchToggle" aria-controls="mobileSearchBar" aria-expanded="false" aria-label="Toggle search">
@@ -83,10 +111,34 @@
       </a>
 
       <!-- User Button -->
-      <a href="#" class="header-icon-btn user-btn" aria-label="My Account">
-        <i class="fas fa-user"></i>
-        <span class="icon-label">Account</span>
-      </a>
+      <div class="account-dropdown" data-account-menu>
+        <button
+          type="button"
+          class="header-icon-btn user-btn account-trigger"
+          aria-label="My Account"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          data-account-trigger>
+          <i class="fas fa-user"></i>
+          <span class="icon-label">Account</span>
+        </button>
+        <div class="account-menu" role="menu" data-account-panel>
+          <a href="{{ auth()->check() ? route('home') : route('page-login') }}" class="account-menu-item" role="menuitem">
+            Manage My Account
+          </a>
+          <a href="{{ auth()->check() ? route('orders') : route('page-login') }}" class="account-menu-item" role="menuitem">
+            My Orders
+          </a>
+          @auth
+            <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit" class="account-menu-item account-menu-button" role="menuitem">Logout</button>
+            </form>
+          @else
+            <a href="{{ route('page-login') }}" class="account-menu-item" role="menuitem">Logout</a>
+          @endauth
+        </div>
+      </div>
     </div>
   </div>
 
@@ -463,6 +515,93 @@
   flex: 1;
 }
 
+/* Account dropdown */
+.account-dropdown {
+  position: relative;
+}
+
+.account-trigger {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobile-account-btn {
+  border: none;
+  background: var(--primary-green);
+  color: var(--neutral-white);
+  border-radius: 12px;
+  padding: 7px 10px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  line-height: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobile-account-btn i {
+  font-size: 1.1rem;
+  margin-bottom: 3px;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  background: var(--neutral-white);
+  border: 1px solid var(--neutral-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  z-index: 1003;
+  padding: 10px;
+  display: none;
+}
+
+.account-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 18px;
+  width: 14px;
+  height: 14px;
+  background: var(--neutral-white);
+  border-left: 1px solid var(--neutral-border);
+  border-top: 1px solid var(--neutral-border);
+  transform: rotate(45deg);
+}
+
+.account-dropdown.is-open .account-menu {
+  display: block;
+}
+
+.account-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--secondary-navy);
+  text-decoration: none;
+  display: block;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.account-menu-button {
+  cursor: pointer;
+}
+
+.account-menu-item:hover {
+  background: #eef8f0;
+  color: var(--primary-green-dark);
+}
+
 /* ==========================================
    MOBILE STYLES (Color Updates Only)
    ========================================== */
@@ -527,6 +666,11 @@
 
   .search-result-meta {
     font-size: 0.88rem;
+  }
+
+  .account-menu {
+    right: -6px;
+    min-width: 230px;
   }
 }
 
@@ -622,20 +766,6 @@
   cursor: pointer;
 }
 
-/* User dropdown */
-.user-dropdown { position: relative; }
-.user-dropdown .user-menu {
-  position: absolute; right: 0; top: 120%;
-  background: var(--neutral-white);
-  border: 1px solid var(--neutral-border);
-  border-radius: 8px;
-  min-width: 180px;
-  padding: .5rem;
-  display: none;
-  z-index: 1001;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.user-dropdown.show .user-menu { display:block; }
 </style>
 
 <script>
@@ -653,8 +783,45 @@
   const mobileSearchResults = document.getElementById('global-search-results-mobile');
   const desktopSearchForm = document.getElementById('global-search-form-desktop');
   const mobileSearchForm = document.getElementById('global-search-form-mobile');
+  const accountDropdowns = Array.from(document.querySelectorAll('[data-account-menu]'));
   const suggestionsUrl = @json(route('search.suggestions'));
   const defaultSuggestionImage = @json(asset('assets/img/product/product1.jpg'));
+
+  function initAccountDropdowns() {
+    if (!accountDropdowns.length) return;
+
+    function closeAll(except = null) {
+      accountDropdowns.forEach((dropdown) => {
+        if (except && dropdown === except) return;
+        dropdown.classList.remove('is-open');
+        const trigger = dropdown.querySelector('[data-account-trigger]');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    accountDropdowns.forEach((dropdown) => {
+      const trigger = dropdown.querySelector('[data-account-trigger]');
+      if (!trigger) return;
+
+      trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        const shouldOpen = !dropdown.classList.contains('is-open');
+        closeAll(dropdown);
+        dropdown.classList.toggle('is-open', shouldOpen);
+        trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (accountDropdowns.some((dropdown) => dropdown.contains(event.target))) return;
+      closeAll();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      closeAll();
+    });
+  }
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -952,5 +1119,7 @@
     form: mobileSearchForm,
     desktopMode: false,
   });
+
+  initAccountDropdowns();
 })();
 </script>

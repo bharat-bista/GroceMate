@@ -910,6 +910,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById('select-all');
     const deleteSelectedBtn = document.getElementById('delete-selected-btn');
     const applyPromoBtn = document.getElementById('apply-promo');
+    var selectedItemIds = new Set();
 
     function getCartItems() {
         if (cartApi && typeof cartApi.getItems === 'function') {
@@ -942,12 +943,51 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/'/g, '&#39;');
     }
 
+    function getCheckedItemIdsFromDom() {
+        return Array.from(cartItemsList.querySelectorAll('.item-check:checked'))
+            .map(function(checkbox) {
+                var cartItem = checkbox.closest('.cart-item');
+                return cartItem ? String(cartItem.dataset.itemId) : '';
+            })
+            .filter(Boolean);
+    }
+
+    function syncSelectedItemIdsFromDom() {
+        selectedItemIds = new Set(getCheckedItemIdsFromDom());
+    }
+
+    function updateSelectAllState() {
+        if (!selectAllCheckbox) return;
+
+        var checks = Array.from(cartItemsList.querySelectorAll('.item-check'));
+        var checkedCount = checks.filter(function(cb) { return cb.checked; }).length;
+
+        selectAllCheckbox.checked = checks.length > 0 && checkedCount === checks.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checks.length;
+    }
+
     function renderCart() {
+        syncSelectedItemIdsFromDom();
+
         const items = getCartItems();
+        const availableIds = new Set(items.map(function(item) {
+            return String(item && item.id != null ? item.id : '').trim();
+        }).filter(Boolean));
+
+        selectedItemIds.forEach(function(id) {
+            if (!availableIds.has(id)) {
+                selectedItemIds.delete(id);
+            }
+        });
 
         if (items.length === 0) {
             cartLayoutSection.style.display = 'none';
             emptyCartSection.style.display = '';
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+            totalEl.textContent = 'Rs.0';
             return;
         }
 
@@ -960,11 +1000,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var safeImage = escapeHtml(item.image || fallbackImage);
             var price = Number(item.price) || 0;
             var qty = Math.max(1, Number(item.qty) || 1);
-            var id = escapeHtml(String(item.id));
+            var rawId = String(item && item.id != null ? item.id : '').trim();
+            var id = escapeHtml(rawId);
+            var checkedAttr = selectedItemIds.has(rawId) ? ' checked' : '';
 
             return '<div class="cart-item" data-item-id="' + id + '" data-price="' + price + '">' +
                 '<div class="item-checkbox">' +
-                    '<input type="checkbox" class="item-check" data-price="' + price + '" data-qty="' + qty + '">' +
+                    '<input type="checkbox" class="item-check" data-price="' + price + '" data-qty="' + qty + '"' + checkedAttr + '>' +
                 '</div>' +
                 '<div class="item-image">' +
                     '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'">' +
@@ -990,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', function() {
             '</div>';
         }).join('');
 
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateSelectAllState();
         calculateTotals();
     }
 
@@ -1066,9 +1108,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Checkbox change events via delegation
     cartItemsList.addEventListener('change', function(e) {
         if (e.target.classList.contains('item-check')) {
+            syncSelectedItemIdsFromDom();
             calculateTotals();
-            var allChecked = Array.from(document.querySelectorAll('.item-check')).every(function(cb) { return cb.checked; });
-            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
+            updateSelectAllState();
         }
     });
 
@@ -1076,7 +1118,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
             var checked = this.checked;
-            document.querySelectorAll('.item-check').forEach(function(cb) { cb.checked = checked; });
+            cartItemsList.querySelectorAll('.item-check').forEach(function(cb) { cb.checked = checked; });
+            syncSelectedItemIdsFromDom();
+            updateSelectAllState();
             calculateTotals();
         });
     }
@@ -1094,6 +1138,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedChecks.forEach(function(cb) {
                     var cartItem = cb.closest('.cart-item');
                     if (cartItem) idsToRemove.push(String(cartItem.dataset.itemId));
+                });
+                idsToRemove.forEach(function(id) {
+                    selectedItemIds.delete(String(id));
                 });
                 var items = getCartItems().filter(function(i) { return idsToRemove.indexOf(String(i.id)) === -1; });
                 saveCartItems(items);

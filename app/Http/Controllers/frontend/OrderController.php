@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Mail;
 
@@ -103,6 +105,8 @@ class OrderController extends Controller
         }
 
         $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items) {
+            $this->deductEcommerceStock($items);
+
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'customer_name' => $request->full_name,
@@ -151,6 +155,57 @@ class OrderController extends Controller
             'order_number' => $order->order_number,
             'message' => 'Order placed successfully!'
         ]);
+    }
+
+    private function deductEcommerceStock(Collection $items): void
+    {
+        $requiredQtyByProduct = $items
+            ->map(function (array $item) {
+                return [
+                    'id' => trim((string) ($item['id'] ?? '')),
+                    'qty' => max(1, (int) ($item['qty'] ?? 1)),
+                ];
+            })
+            ->filter(fn (array $item) => $item['id'] !== '')
+            ->groupBy('id')
+            ->map(fn (Collection $group) => (int) $group->sum('qty'));
+
+        if ($requiredQtyByProduct->isEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => 'No valid ecommerce products were found in the order.',
+            ]);
+        }
+
+        $products = EcommerceProduct::query()
+            ->whereIn('id', $requiredQtyByProduct->keys()->all())
+            ->lockForUpdate()
+            ->get()
+            ->keyBy(fn (EcommerceProduct $product) => (string) $product->id);
+
+        foreach ($requiredQtyByProduct as $productId => $requiredQty) {
+            $product = $products->get((string) $productId);
+
+            if (!$product) {
+                throw ValidationException::withMessages([
+                    'items' => "Selected ecommerce product ({$productId}) was not found.",
+                ]);
+            }
+
+            if ((float) $product->ecommerce_stock < (float) $requiredQty) {
+                throw ValidationException::withMessages([
+                    'items' => "Insufficient ecommerce stock for {$product->product?->name}. Available: {$product->ecommerce_stock}, required: {$requiredQty}.",
+                ]);
+            }
+        }
+
+        foreach ($requiredQtyByProduct as $productId => $requiredQty) {
+            $product = $products->get((string) $productId);
+            $updatedStock = max(0, round((float) $product->ecommerce_stock - (float) $requiredQty, 3));
+
+            $product->ecommerce_stock = $updatedStock;
+            $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
+            $product->save();
+        }
     }
 
     private function normalizeItemsPayload(mixed $items): array
@@ -265,9 +320,22 @@ class OrderController extends Controller
             'delivery_status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        $order->update([
-            'delivery_status' => $request->delivery_status,
-        ]);
+        $nextStatus = (string) $request->delivery_status;
+        $isFirstCancelTransition = $order->delivery_status !== 'cancelled' && $nextStatus === 'cancelled';
+        $shouldRestoreConnectIpsStock = $isFirstCancelTransition
+            && $order->payment_method === 'connectips'
+            && $order->payment_status === 'verified';
+
+        DB::transaction(function () use ($order, $nextStatus, $shouldRestoreConnectIpsStock) {
+            if ($shouldRestoreConnectIpsStock) {
+                $order->loadMissing('items');
+                $this->restoreEcommerceStock($order->items);
+            }
+
+            $order->update([
+                'delivery_status' => $nextStatus,
+            ]);
+        });
 
         // Send email notification to customer
         if ($order->customer_email) {
@@ -279,6 +347,45 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Delivery status updated successfully!');
+    }
+
+    private function restoreEcommerceStock(Collection $items): void
+    {
+        $restoreQtyByProduct = $items
+            ->map(function ($item) {
+                return [
+                    'id' => trim((string) ($item->product_id ?? '')),
+                    'qty' => max(1, (int) ($item->quantity ?? 1)),
+                ];
+            })
+            ->filter(fn (array $item) => $item['id'] !== '')
+            ->groupBy('id')
+            ->map(fn (Collection $group) => (int) $group->sum('qty'));
+
+        if ($restoreQtyByProduct->isEmpty()) {
+            return;
+        }
+
+        $products = EcommerceProduct::query()
+            ->whereIn('id', $restoreQtyByProduct->keys()->all())
+            ->lockForUpdate()
+            ->get()
+            ->keyBy(fn (EcommerceProduct $product) => (string) $product->id);
+
+        foreach ($restoreQtyByProduct as $productId => $restoreQty) {
+            $product = $products->get((string) $productId);
+
+            if (!$product) {
+                throw ValidationException::withMessages([
+                    'items' => "Unable to restore stock. Ecommerce product ({$productId}) was not found.",
+                ]);
+            }
+
+            $updatedStock = max(0, round((float) $product->ecommerce_stock + (float) $restoreQty, 3));
+            $product->ecommerce_stock = $updatedStock;
+            $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
+            $product->save();
+        }
     }
 
     /**

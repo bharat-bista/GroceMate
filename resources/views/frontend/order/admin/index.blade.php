@@ -20,9 +20,58 @@
                     <p class="text-sm text-slate-600 mt-1">Manage customer orders and payments</p>
                 </div>
                 <div class="flex gap-2">
-                    <a href="{{ route('inventory.orders.export', ['type' => 'csv']) }}?status={{ request('status') }}&payment_status={{ request('payment_status') }}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
-                        <i class="fas fa-download mr-2"></i> Export CSV
-                    </a>
+                    <div class="relative inline-block text-left">
+                        <button type="button" id="exportDropdown"
+                                class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                            <i class="fas fa-download mr-2"></i>
+                            Export All
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div id="exportMenu"
+                             class="hidden origin-top-right absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 p-3 space-y-3">
+                            <div class="flex gap-2">
+                                <button type="button" id="exportModeAll"
+                                        class="flex-1 px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white">
+                                    All
+                                </button>
+                                <button type="button" id="exportModeRange"
+                                        class="flex-1 px-3 py-1.5 rounded-lg text-sm bg-slate-100 text-slate-700">
+                                    Date Range
+                                </button>
+                            </div>
+
+                            <div id="exportDateRange" class="hidden space-y-2">
+                                <div>
+                                    <label for="exportFromDate" class="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+                                    <input type="date" id="exportFromDate"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label for="exportToDate" class="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+                                    <input type="date" id="exportToDate"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div id="exportDateWarning" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                    Please select both from and to dates.
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 pt-1">
+                                <a href="{{ route('inventory.orders.export', ['type' => 'pdf']) }}"
+                                   data-export-type="pdf"
+                                   class="text-center px-3 py-2 rounded-lg bg-slate-100 text-sm text-slate-700 hover:bg-slate-200">PDF</a>
+                                <a href="{{ route('inventory.orders.export', ['type' => 'excel']) }}"
+                                   data-export-type="excel"
+                                   class="text-center px-3 py-2 rounded-lg bg-slate-100 text-sm text-slate-700 hover:bg-slate-200">Excel</a>
+                                <a href="{{ route('inventory.orders.export', ['type' => 'csv']) }}"
+                                   data-export-type="csv"
+                                   class="text-center px-3 py-2 rounded-lg bg-slate-100 text-sm text-slate-700 hover:bg-slate-200">CSV</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -172,4 +221,118 @@
         @endif
     </div>
 </div>
+
+<script>
+const exportDropdown = document.getElementById('exportDropdown');
+const exportMenu = document.getElementById('exportMenu');
+const exportModeAll = document.getElementById('exportModeAll');
+const exportModeRange = document.getElementById('exportModeRange');
+const exportDateRange = document.getElementById('exportDateRange');
+const exportFromDate = document.getElementById('exportFromDate');
+const exportToDate = document.getElementById('exportToDate');
+const exportDateWarning = document.getElementById('exportDateWarning');
+const exportLinks = document.querySelectorAll('[data-export-type]');
+let exportMode = 'all';
+
+if (exportDropdown && exportMenu) {
+    exportDropdown.addEventListener('click', function () {
+        exportMenu.classList.toggle('hidden');
+    });
+}
+
+function updateExportModeUi() {
+    if (!exportModeAll || !exportModeRange || !exportDateRange) {
+        return;
+    }
+
+    if (exportMode === 'all') {
+        exportModeAll.className = 'flex-1 px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white';
+        exportModeRange.className = 'flex-1 px-3 py-1.5 rounded-lg text-sm bg-slate-100 text-slate-700';
+        exportDateRange.classList.add('hidden');
+        exportDateWarning?.classList.add('hidden');
+    } else {
+        exportModeAll.className = 'flex-1 px-3 py-1.5 rounded-lg text-sm bg-slate-100 text-slate-700';
+        exportModeRange.className = 'flex-1 px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white';
+        exportDateRange.classList.remove('hidden');
+    }
+}
+
+function getOrderExportUrl(type) {
+    const baseUrl = "{{ route('inventory.orders.export', ['type' => 'TYPE']) }}".replace('TYPE', type);
+    const url = new URL(baseUrl, window.location.origin);
+    const search = document.querySelector('input[name="search"]')?.value || '';
+    const status = document.querySelector('select[name="status"]')?.value || '';
+    const paymentStatus = document.querySelector('select[name="payment_status"]')?.value || '';
+
+    if (search) {
+        url.searchParams.set('search', search);
+    }
+    if (status) {
+        url.searchParams.set('status', status);
+    }
+    if (paymentStatus) {
+        url.searchParams.set('payment_status', paymentStatus);
+    }
+
+    if (exportMode === 'all') {
+        return url.toString();
+    }
+
+    const from = exportFromDate?.value;
+    const to = exportToDate?.value;
+
+    if (!from || !to) {
+        exportDateWarning?.classList.remove('hidden');
+        return null;
+    }
+
+    exportDateWarning?.classList.add('hidden');
+    url.searchParams.set('from', from);
+    url.searchParams.set('to', to);
+
+    return url.toString();
+}
+
+if (exportModeAll && exportModeRange) {
+    exportModeAll.addEventListener('click', function () {
+        exportMode = 'all';
+        updateExportModeUi();
+    });
+
+    exportModeRange.addEventListener('click', function () {
+        exportMode = 'range';
+        updateExportModeUi();
+    });
+}
+
+if (exportFromDate && exportToDate) {
+    [exportFromDate, exportToDate].forEach(input => {
+        input.addEventListener('input', function () {
+            if (exportFromDate.value && exportToDate.value) {
+                exportDateWarning?.classList.add('hidden');
+            }
+        });
+    });
+}
+
+exportLinks.forEach(link => {
+    link.addEventListener('click', function (e) {
+        const exportUrl = getOrderExportUrl(this.dataset.exportType);
+        if (!exportUrl) {
+            e.preventDefault();
+            return;
+        }
+
+        this.setAttribute('href', exportUrl);
+    });
+});
+
+updateExportModeUi();
+
+document.addEventListener('click', function (e) {
+    if (exportDropdown && exportMenu && !exportDropdown.contains(e.target) && !exportMenu.contains(e.target)) {
+        exportMenu.classList.add('hidden');
+    }
+});
+</script>
 @endsection

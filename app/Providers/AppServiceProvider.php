@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('frontend.layouts.header', function ($view) {
             $headerNavCategories = Category::query()
-                ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+                ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
                 ->orderBy('order')
                 ->orderBy('name')
                 ->limit(8)

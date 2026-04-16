@@ -32,6 +32,14 @@ class EcommerceProduct extends Model
         'profit' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $product) {
+            $stock = (float) ($product->ecommerce_stock ?? 0);
+            $product->status = $stock > 0 ? 'in_stock' : 'out_of_stock';
+        });
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class);
@@ -52,6 +60,13 @@ class EcommerceProduct extends Model
                 ->selectRaw('MAX(id)')
                 ->groupBy('product_id');
         });
+    }
+
+    public function scopeStorefrontVisible(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'in_stock')
+            ->where('ecommerce_stock', '>', 0);
     }
 
     // Calculate display price from MRP and discount

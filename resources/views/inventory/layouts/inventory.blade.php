@@ -30,7 +30,8 @@
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',
-            'inventory.alerts.*'
+          'inventory.alerts.*',
+          'inventory.invoices.*'
         );
         $isPosGroup = request()->routeIs(
             'pos.dashboard',
@@ -45,7 +46,8 @@
           'inventory.ecommerce-brands.*',
           'inventory.ecommerce-categories.*',
           'inventory.sliders.*',
-          'inventory.ecommerce-income.*'
+          'inventory.ecommerce-income.*',
+          'inventory.orders.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');

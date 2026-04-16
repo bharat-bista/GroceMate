@@ -847,6 +847,8 @@
                                         data-image-src="{{ $galleryImageUrl }}"
                                         aria-label="View image {{ $galleryIndex + 1 }}">
                                     <img src="{{ $galleryImageUrl }}"
+                                         loading="lazy"
+                                         decoding="async"
                                          class="product-thumb"
                                          alt="{{ $product?->name ?? 'Product image' }}">
                                 </button>
@@ -954,9 +956,9 @@
                     <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($topSaleProduct->thumbnail)
-                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $topSaleItem->name }}">
+                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $topSaleItem->name }}" loading="lazy" decoding="async">
                             @else
-                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $topSaleItem->name }}">
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $topSaleItem->name }}" loading="lazy" decoding="async">
                             @endif
                         </div>
                         <div class="gm-product-info">

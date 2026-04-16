@@ -7,6 +7,7 @@ use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
+use App\Services\EcommerceIncomeSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,10 @@ use Mail;
 
 class CheckoutController extends Controller
 {
+    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    {
+    }
+
     public function checkout(){
         return view('frontend.checkout.index');
     }
@@ -201,6 +206,8 @@ class CheckoutController extends Controller
                     'image' => !empty($item['image']) ? (string) $item['image'] : null,
                 ]);
             }
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
 
             return $order;
         });

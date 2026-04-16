@@ -7,6 +7,7 @@ use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
+use App\Services\EcommerceIncomeSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,10 @@ use Mail;
 
 class OrderController extends Controller
 {
+    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    {
+    }
+
     /**
      * Display customer's orders
      */
@@ -136,6 +141,8 @@ class OrderController extends Controller
                     'image' => $item['image'],
                 ]);
             }
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
 
             return $order;
         });
@@ -335,6 +342,8 @@ class OrderController extends Controller
             $order->update([
                 'delivery_status' => $nextStatus,
             ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
         });
 
         // Send email notification to customer
@@ -411,9 +420,13 @@ class OrderController extends Controller
             $finalPaymentStatus = 'verified';
         }
 
-        $order->update([
-            'payment_status' => $finalPaymentStatus,
-        ]);
+        DB::transaction(function () use ($order, $finalPaymentStatus) {
+            $order->update([
+                'payment_status' => $finalPaymentStatus,
+            ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
 
         // Send email notification to customer
         if ($order->customer_email) {
@@ -437,9 +450,13 @@ class OrderController extends Controller
             'payment_status' => 'required|in:verified,failed',
         ]);
 
-        $order->update([
-            'payment_status' => $request->payment_status,
-        ]);
+        DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'payment_status' => $request->payment_status,
+            ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
 
         // Send email notification to customer
         if ($order->customer_email) {

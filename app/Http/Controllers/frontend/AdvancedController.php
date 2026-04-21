@@ -14,9 +14,11 @@ class AdvancedController extends Controller
     {
         $baseQuery = EcommerceProduct::query()
             ->latestPerProduct()
-            ->where('status', 'in_stock')
-            ->whereHas('product.category')
-            ->whereHas('product.brandRelation');
+            ->storefrontVisible()
+            ->whereHas('product', function ($query) {
+                $query->whereNotNull('category_id')
+                    ->whereNotNull('brand_id');
+            });
 
         $priceBounds = (clone $baseQuery)
             ->selectRaw('MIN(COALESCE(NULLIF(display_price, 0), mrp)) as min_price, MAX(COALESCE(NULLIF(display_price, 0), mrp)) as max_price')
@@ -31,7 +33,14 @@ class AdvancedController extends Controller
 
         $q = trim((string) $request->input('q', ''));
         $brandId = $request->filled('brand_id') ? (int) $request->input('brand_id') : null;
-        $categoryIds = collect((array) $request->input('categories', []))
+        // Accept category arrays from multiple query formats:
+        // categories=1&categories=2, categories[]=1, categories[0]=1, etc.
+        $rawCategoryIds = $request->input('categories', []);
+        if (empty($rawCategoryIds)) {
+            $rawCategoryIds = $request->input('categories[]', []);
+        }
+
+        $categoryIds = collect((array) $rawCategoryIds)
             ->map(fn ($id) => (int) $id)
             ->filter(fn ($id) => $id > 0)
             ->unique()
@@ -54,7 +63,21 @@ class AdvancedController extends Controller
         }
 
         $ecommerceProducts = (clone $baseQuery)
-            ->with(['product.category', 'product.brandRelation'])
+            ->select([
+                'id',
+                'product_id',
+                'discount_percent',
+                'previous_price',
+                'mrp',
+                'display_price',
+                'thumbnail',
+                'created_at',
+            ])
+            ->with([
+                'product:id,name,brand_id,category_id',
+                'product.category:id,name',
+                'product.brandRelation:id,name',
+            ])
             ->when($q, function ($query) use ($q) {
                 $query->where(function ($searchQuery) use ($q) {
                     $searchQuery->whereHas('product', function ($productQuery) use ($q) {
@@ -83,15 +106,25 @@ class AdvancedController extends Controller
             ->withQueryString();
 
         $brands = Brand::query()
-            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+            ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
             ->orderBy('name')
             ->get(['id', 'name']);
 
         $categories = Category::query()
-            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
-            ->withCount(['ecommerceProducts' => fn ($query) => $query->where('status', 'in_stock')])
+            ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
+            ->withCount(['ecommerceProducts' => fn ($query) => $query->storefrontVisible()])
             ->orderBy('name')
             ->get(['id', 'name']);
+
+        // For AJAX requests, return only the refreshed product result HTML
+        // plus summary metadata used by the frontend.
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('frontend.advanced.partials.product-results', compact('ecommerceProducts'))->render(),
+                'total' => $ecommerceProducts->total(),
+                'query' => $request->query(),
+            ]);
+        }
 
         return view('frontend.advanced.index', compact(
             'ecommerceProducts',
@@ -118,7 +151,7 @@ class AdvancedController extends Controller
         $products = EcommerceProduct::query()
             ->latestPerProduct()
             ->with(['product.category:id,name', 'product.brandRelation:id,name'])
-            ->where('status', 'in_stock')
+            ->storefrontVisible()
             ->where(function ($query) use ($q) {
                 $query->whereHas('product', function ($productQuery) use ($q) {
                     $productQuery->where('name', 'like', "%{$q}%");
@@ -156,7 +189,7 @@ class AdvancedController extends Controller
 
         $brands = Brand::query()
             ->where('name', 'like', "%{$q}%")
-            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+            ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
             ->orderBy('name')
             ->limit(4)
             ->get(['id', 'name'])
@@ -170,7 +203,7 @@ class AdvancedController extends Controller
 
         $categories = Category::query()
             ->where('name', 'like', "%{$q}%")
-            ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
+            ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
             ->orderBy('name')
             ->limit(4)
             ->get(['id', 'name'])

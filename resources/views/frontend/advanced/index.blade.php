@@ -517,6 +517,23 @@
         position: relative;
         z-index: 1;
     }
+
+    .ajax-results-wrap {
+        position: relative;
+    }
+
+    .ajax-results-wrap.is-loading {
+        opacity: 0.65;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .result-summary {
+        margin-bottom: 14px;
+        color: #4b5563;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
     
     .price-filter-section {
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -951,6 +968,7 @@
                         class="form-control"
                         value="{{ $q }}"
                         placeholder="Search Product Name..."
+                        autocomplete="off"
                     >
 
                     <select id="company_name" name="brand_id" class="form-select">
@@ -973,64 +991,11 @@
                     </a>
                 </div>
 
-                <div id="product-listing" class="gm-products-grid">
-                    @forelse($ecommerceProducts as $ecommerceProduct)
-                        @php
-                            $product = $ecommerceProduct->product;
-                            $discountPercent = (float) ($ecommerceProduct->discount_percent ?? 0);
-                            $hasOldPrice = !is_null($ecommerceProduct->previous_price) && (float) $ecommerceProduct->previous_price > 0;
-                            $currentPrice = (float) ($ecommerceProduct->display_price ?: $ecommerceProduct->mrp);
-                        @endphp
+                <p class="result-summary">Showing <span id="result-count">{{ $ecommerceProducts->total() }}</span> products</p>
 
-                        @if($product)
-                            <div class="gm-product-card gm-ecom-card">
-                                <span class="gm-product-badge">
-                                    {{ $discountPercent > 0 ? rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') . '% OFF' : 'FEATURED' }}
-                                </span>
-                                <span class="gm-cart-icon-badge"
-                                      data-product-id="{{ $ecommerceProduct->id }}"
-                                      data-product-name="{{ $product->name }}"
-                                      data-product-price="{{ $currentPrice }}"
-                                      data-product-image="{{ $ecommerceProduct->thumbnail ? asset('storage/' . $ecommerceProduct->thumbnail) : asset('assets/img/product/product1.jpg') }}"
-                                      title="Add to cart">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </span>
-                                <a href="{{ route('description', $ecommerceProduct->id) }}" class="gm-product-card-link">
-                                    <div class="gm-product-img-wrap">
-                                        @if($ecommerceProduct->thumbnail)
-                                            <img src="{{ asset('storage/' . $ecommerceProduct->thumbnail) }}" alt="{{ $product->name }}">
-                                        @else
-                                            <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
-                                        @endif
-                                    </div>
-                                    <div class="gm-product-info">
-                                        <h3 class="gm-product-name">{{ $product->name }}</h3>
-                                        <div class="gm-product-price">
-                                            <span class="gm-price-new">Rs.{{ number_format($currentPrice, 2) }}</span>
-                                        </div>
-                                        <div class="gm-ecom-discount">
-                                            @if($hasOldPrice)
-                                                <span class="gm-price-old">Rs.{{ number_format((float) $ecommerceProduct->previous_price, 2) }}</span>
-                                            @else
-                                                <span class="gm-price-old">Rs.{{ number_format((float) $ecommerceProduct->mrp, 2) }}</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        @endif
-                    @empty
-                        <div class="gm-product-card gm-ecom-card" style="grid-column: 1 / -1; text-align: center; padding: 30px;">
-                            <p style="margin: 0; color: var(--gm-gray);">No products found for the selected filters.</p>
-                        </div>
-                    @endforelse
+                <div id="advanced-results" class="ajax-results-wrap">
+                    @include('frontend.advanced.partials.product-results', ['ecommerceProducts' => $ecommerceProducts])
                 </div>
-
-                @if($ecommerceProducts->hasPages())
-                    <div class="mt-4 d-flex justify-content-center">
-                        {{ $ecommerceProducts->links() }}
-                    </div>
-                @endif
             </div>
         </div>
     </form>
@@ -1041,6 +1006,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Main filter elements.
     const form = document.getElementById('advanced-filter-form');
     const searchBtn = document.getElementById('search-btn');
     const productInput = document.getElementById('product_name');
@@ -1051,47 +1017,213 @@ document.addEventListener('DOMContentLoaded', function () {
     const minBadge = document.getElementById('price-min');
     const maxBadge = document.getElementById('price-max');
     const sliderEl = document.getElementById('price-slider');
+    const resultsWrap = document.getElementById('advanced-results');
+    const resultCountEl = document.getElementById('result-count');
+
+    // Important URLs for AJAX calls.
+    const advancedUrl = @json(route('advanced'));
 
     const rangeMin = Number(@json($availableMinPrice));
     const rangeMax = Number(@json($availableMaxPrice));
     const selectedMin = Number(@json($selectedMinPrice));
     const selectedMax = Number(@json($selectedMaxPrice));
 
+    const safeMin = Number.isFinite(rangeMin) ? rangeMin : 0;
+    const safeMax = Number.isFinite(rangeMax) ? rangeMax : safeMin;
+
+    // Keep references so we can cancel stale requests.
+    let activeFilterRequest = null;
+    let filterDebounceTimer = null;
+
+    function setLoadingState(isLoading) {
+        if (!resultsWrap) {
+            return;
+        }
+
+        resultsWrap.classList.toggle('is-loading', isLoading);
+    }
+
     function formatPrice(value) {
         return 'Rs. ' + Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
     }
 
-    function submitFilters() {
-        if (form) {
-            form.submit();
+    // Convert form state to URL query while preserving repeated fields.
+    function buildFilterUrl() {
+        const params = new URLSearchParams(new FormData(form));
+
+        // Remove blank values so URL stays clean and shareable.
+        Array.from(params.entries()).forEach(function ([key, value]) {
+            if (String(value).trim() === '') {
+                params.delete(key);
+            }
+        });
+
+        const query = params.toString();
+        return query ? (advancedUrl + '?' + query) : advancedUrl;
+    }
+
+    // Read selected category values from all possible query key formats.
+    function getCategoryValuesFromParams(params) {
+        const values = [];
+        params.forEach(function (value, key) {
+            if (key === 'categories' || key === 'categories[]' || key.startsWith('categories[')) {
+                values.push(String(value));
+            }
+        });
+        return values;
+    }
+
+    // Keep filter inputs synced when navigating with browser history.
+    function syncFormWithUrl(urlString) {
+        const parsed = new URL(urlString, window.location.origin);
+        const params = parsed.searchParams;
+
+        if (productInput) {
+            productInput.value = params.get('q') || '';
+        }
+
+        if (companySelect) {
+            companySelect.value = params.get('brand_id') || '';
+        }
+
+        const selectedCategories = new Set(getCategoryValuesFromParams(params));
+        categoryChecks.forEach(function (checkbox) {
+            checkbox.checked = selectedCategories.has(String(checkbox.value));
+        });
+
+        const nextMin = Number(params.get('min_price'));
+        const nextMax = Number(params.get('max_price'));
+
+        if (minInput && Number.isFinite(nextMin)) {
+            minInput.value = String(nextMin);
+        }
+        if (maxInput && Number.isFinite(nextMax)) {
+            maxInput.value = String(nextMax);
+        }
+
+        if (sliderEl && sliderEl.noUiSlider) {
+            const slideMin = Number.isFinite(nextMin) ? nextMin : safeMin;
+            const slideMax = Number.isFinite(nextMax) ? nextMax : safeMax;
+            sliderEl.noUiSlider.set([slideMin, slideMax]);
         }
     }
 
+    // Fetch filtered result HTML and replace only the product section.
+    async function fetchFilters(url, shouldPushState) {
+        if (!resultsWrap) {
+            window.location.href = url;
+            return;
+        }
+
+        if (activeFilterRequest) {
+            activeFilterRequest.abort();
+        }
+
+        activeFilterRequest = new AbortController();
+        setLoadingState(true);
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                signal: activeFilterRequest.signal
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch filtered results');
+            }
+
+            const payload = await response.json();
+
+            if (typeof payload.html === 'string') {
+                resultsWrap.innerHTML = payload.html;
+            }
+
+            if (resultCountEl && typeof payload.total !== 'undefined') {
+                resultCountEl.textContent = Number(payload.total).toLocaleString('en-US');
+            }
+
+            if (shouldPushState) {
+                window.history.pushState({}, '', url);
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                // Hard fallback: if AJAX fails for any reason, continue with normal navigation.
+                window.location.href = url;
+            }
+        } finally {
+            setLoadingState(false);
+        }
+    }
+
+    function requestFilters(shouldPushState = true) {
+        fetchFilters(buildFilterUrl(), shouldPushState);
+    }
+
+    function debouncedFilterRequest(delayMs) {
+        window.clearTimeout(filterDebounceTimer);
+        filterDebounceTimer = window.setTimeout(function () {
+            requestFilters(true);
+        }, delayMs);
+    }
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            requestFilters(true);
+        });
+    }
+
     if (searchBtn) {
-        searchBtn.addEventListener('click', submitFilters);
+        searchBtn.addEventListener('click', function () {
+            requestFilters(true);
+        });
     }
 
     if (productInput) {
         productInput.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                submitFilters();
+                requestFilters(true);
             }
         });
     }
 
     if (companySelect) {
-        companySelect.addEventListener('change', submitFilters);
+        companySelect.addEventListener('change', function () {
+            requestFilters(true);
+        });
     }
 
     categoryChecks.forEach(function (checkbox) {
-        checkbox.addEventListener('change', submitFilters);
+        checkbox.addEventListener('change', function () {
+            debouncedFilterRequest(180);
+        });
     });
 
-    const safeMin = Number.isFinite(rangeMin) ? rangeMin : 0;
-    const safeMax = Number.isFinite(rangeMax) ? rangeMax : safeMin;
+    // Handle pagination links inside refreshed AJAX results.
+    if (resultsWrap) {
+        resultsWrap.addEventListener('click', function (event) {
+            const pageLink = event.target.closest('.pagination a');
+            if (!pageLink) {
+                return;
+            }
 
-    if (!sliderEl || safeMax <= safeMin) {
+            event.preventDefault();
+            fetchFilters(pageLink.href, true);
+        });
+    }
+
+    // Browser back/forward should restore both form controls and results.
+    window.addEventListener('popstate', function () {
+        syncFormWithUrl(window.location.href);
+        fetchFilters(window.location.href, false);
+    });
+
+    // Initialize slider (or fallback text) immediately on load.
+    if (!sliderEl || safeMax <= safeMin || typeof noUiSlider === 'undefined') {
         if (minBadge) {
             minBadge.textContent = formatPrice(selectedMin || safeMin);
         }
@@ -1115,9 +1247,9 @@ document.addEventListener('DOMContentLoaded', function () {
         connect: true,
         range: {
             min: safeMin,
-            max: safeMax
+            max: safeMax,
         },
-        step: 1
+        step: 1,
     });
 
     sliderEl.noUiSlider.on('update', function (values) {
@@ -1138,7 +1270,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    sliderEl.noUiSlider.on('change', submitFilters);
+    sliderEl.noUiSlider.on('change', function () {
+        debouncedFilterRequest(120);
+    });
 });
 </script>
 

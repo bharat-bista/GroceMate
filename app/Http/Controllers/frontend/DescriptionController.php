@@ -11,9 +11,13 @@ class DescriptionController extends Controller
     {
         $selectedProduct = $ecommerceProduct;
 
+        if ($selectedProduct && ((float) $selectedProduct->ecommerce_stock <= 0 || $selectedProduct->status !== 'in_stock')) {
+            abort(404, 'This ecommerce product is currently out of stock.');
+        }
+
         if (!$selectedProduct) {
             $selectedProduct = EcommerceProduct::query()
-                ->where('status', 'in_stock')
+                ->storefrontVisible()
                 ->whereHas('product')
                 ->latest()
                 ->first();
@@ -39,30 +43,52 @@ class DescriptionController extends Controller
             ->unique()
             ->values();
 
-        $topSaleProducts = EcommerceProduct::query()
+        $topSalePool = EcommerceProduct::query()
             ->latestPerProduct()
-            ->with(['product.category', 'product.brandRelation'])
-            ->where('status', 'in_stock')
+            ->storefrontVisible()
+            ->select(['id', 'product_id', 'discount_percent', 'previous_price', 'mrp', 'display_price', 'thumbnail', 'created_at'])
+            ->with([
+                'product:id,name,brand_id,category_id',
+                'product.category:id,name',
+                'product.brandRelation:id,name',
+            ])
             ->where('discount_percent', '>', 30)
-            ->where('id', '!=', $selectedProduct->id)
-            ->whereHas('product.category')
-            ->whereHas('product.brandRelation')
+            ->whereHas('product', function ($query) {
+                $query->whereNotNull('category_id')
+                    ->whereNotNull('brand_id');
+            })
             ->orderByDesc('discount_percent')
             ->latest()
-            ->limit(12)
+            ->limit(24)
             ->get();
 
+        $topSaleProducts = $topSalePool
+            ->where('id', '!=', $selectedProduct->id)
+            ->take(12)
+            ->values();
+
         if ($topSaleProducts->isEmpty()) {
-            $topSaleProducts = EcommerceProduct::query()
+            $recentPool = EcommerceProduct::query()
                 ->latestPerProduct()
-                ->with(['product.category', 'product.brandRelation'])
-                ->where('status', 'in_stock')
-                ->where('id', '!=', $selectedProduct->id)
-                ->whereHas('product.category')
-                ->whereHas('product.brandRelation')
+                ->storefrontVisible()
+                ->select(['id', 'product_id', 'discount_percent', 'previous_price', 'mrp', 'display_price', 'thumbnail', 'created_at'])
+                ->with([
+                    'product:id,name,brand_id,category_id',
+                    'product.category:id,name',
+                    'product.brandRelation:id,name',
+                ])
+                ->whereHas('product', function ($query) {
+                    $query->whereNotNull('category_id')
+                        ->whereNotNull('brand_id');
+                })
                 ->latest()
-                ->limit(12)
+                ->limit(24)
                 ->get();
+
+            $topSaleProducts = $recentPool
+                ->where('id', '!=', $selectedProduct->id)
+                ->take(12)
+                ->values();
         }
 
         return view('frontend.description.index', compact('selectedProduct', 'topSaleProducts', 'galleryPaths'));

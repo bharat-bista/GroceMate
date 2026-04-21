@@ -1516,9 +1516,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <a href="{{ route('description', $topSaleProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($topSaleProduct->thumbnail)
-                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $product->name }}">
+                                <img src="{{ asset('storage/' . $topSaleProduct->thumbnail) }}" alt="{{ $product->name }}" loading="lazy" decoding="async">
                             @else
-                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async">
                             @endif
                         </div>
                         <div class="gm-product-info">
@@ -1558,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @endphp
             <div class="gm-promo-card {{ $promoIndex === 0 ? 'gm-promo-card--primary' : 'gm-promo-card--secondary' }}">
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
-                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}">
+                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
                     @if($promoSlide->secondary_button_text)
                         <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
@@ -1618,9 +1618,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <a href="{{ route('description', $featuredProduct->id) }}" class="gm-product-card-link">
                         <div class="gm-product-img-wrap">
                             @if($featuredProduct->thumbnail)
-                                <img src="{{ asset('storage/' . $featuredProduct->thumbnail) }}" alt="{{ $product->name }}">
+                                <img src="{{ asset('storage/' . $featuredProduct->thumbnail) }}" alt="{{ $product->name }}" loading="lazy" decoding="async">
                             @else
-                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}">
+                                <img src="{{ asset('assets/img/product/product1.jpg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async">
                             @endif
                         </div>
 
@@ -1662,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @forelse($categories as $category)
                 <a href="{{ route('advanced', ['categories' => [$category->id]]) }}" class="gm-category-card">
                     @if($category->image)
-                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="gm-category-img">
+                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="gm-category-img" loading="lazy" decoding="async">
                     @else
                         <div class="gm-category-img" style="background: linear-gradient(135deg, var(--gm-primary-light), var(--gm-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem;">
                             {{ substr($category->name, 0, 2) }}
@@ -1693,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @endphp
             <div class="gm-promo-card {{ $promoIndex === 0 ? 'gm-promo-card--primary' : 'gm-promo-card--secondary' }}">
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
-                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}">
+                <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
                     @if($promoSlide->secondary_button_text)
                         <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
@@ -1725,7 +1725,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @forelse($brands as $brand)
                 <a href="{{ route('advanced', ['brand_id' => $brand->id]) }}" class="gm-brand-card">
                     @if($brand->image)
-                        <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="gm-brand-img">
+                        <img src="{{ asset('assets/img/brands/' . $brand->image) }}" alt="{{ $brand->name }}" class="gm-brand-img" loading="lazy" decoding="async">
                     @else
                         <div class="gm-brand-img" style="background: linear-gradient(135deg, var(--gm-primary-light), var(--gm-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem;">
                             {{ substr($brand->name, 0, 2) }}

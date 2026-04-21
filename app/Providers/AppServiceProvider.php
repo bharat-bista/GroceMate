@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Category;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,12 +23,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         View::composer('frontend.layouts.header', function ($view) {
-            $headerNavCategories = Category::query()
-                ->whereHas('ecommerceProducts', fn ($query) => $query->where('status', 'in_stock'))
-                ->orderBy('order')
-                ->orderBy('name')
-                ->limit(8)
-                ->get(['id', 'name']);
+            $headerNavCategories = Cache::remember('storefront.header_nav_categories', now()->addMinutes(5), function () {
+                return Category::query()
+                    ->whereHas('ecommerceProducts', fn ($query) => $query->storefrontVisible())
+                    ->orderBy('order')
+                    ->orderBy('name')
+                    ->limit(8)
+                    ->get(['id', 'name']);
+            });
 
             $view->with('headerNavCategories', $headerNavCategories);
         });

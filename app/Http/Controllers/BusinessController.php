@@ -7,14 +7,20 @@ use App\Models\Purchase;
 use App\Models\SupplierPayment;
 use App\Models\POS\Income;
 use App\Models\POS\Invoice;
+use App\Services\EcommerceIncomeSyncService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class BusinessController extends Controller
 {
+    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    {
+    }
+
     public function index()
     {
         $businesses = Business::latest()->get();
@@ -23,9 +29,14 @@ class BusinessController extends Controller
 
     public function show(Business $business)
     {
-        $reportData = $this->getBusinessReportData($business);
+        $this->ecommerceIncomeSyncService->syncBusinessOrders($business->id);
 
-        return view('pos.business.show', array_merge($reportData, [
+        $from = request()->get('from');
+        $to = request()->get('to');
+        $reportData = $this->getBusinessReportData($business, $from, $to);
+        $ecommerceData = $this->getEcommerceOverviewData($business, $from, $to);
+
+        return view('pos.business.show', array_merge($reportData, $ecommerceData, [
             'business' => $business,
             'chartData' => $this->buildChartData($business),
         ]));
@@ -534,5 +545,59 @@ class BusinessController extends Controller
         if ($to) {
             $query->whereDate($column, '<=', $to);
         }
+    }
+
+    private function getEcommerceOverviewData(Business $business, ?string $from = null, ?string $to = null): array
+    {
+        $query = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('ecommerce_products', 'order_items.product_id', '=', 'ecommerce_products.id')
+            ->join('products', 'ecommerce_products.product_id', '=', 'products.id')
+            ->where('products.business_id', $business->id)
+            ->where(function ($q) {
+                $q->where('orders.payment_method', 'esewa')
+                    ->orWhere('orders.payment_status', 'verified');
+            })
+            ->where('orders.delivery_status', '!=', 'cancelled');
+
+        if ($from) {
+            $query->whereDate('orders.created_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->whereDate('orders.created_at', '<=', $to);
+        }
+
+        $ecommerceOrders = (clone $query)
+            ->selectRaw('orders.id as order_id')
+            ->selectRaw('orders.order_number')
+            ->selectRaw('orders.customer_name')
+            ->selectRaw('orders.payment_method')
+            ->selectRaw('orders.payment_status')
+            ->selectRaw('orders.delivery_status')
+            ->selectRaw('orders.created_at as order_created_at')
+            ->selectRaw('SUM(order_items.quantity) as total_units')
+            ->selectRaw('SUM(order_items.subtotal) as gross_income')
+            ->selectRaw('SUM(COALESCE(ecommerce_products.profit, 0) * order_items.quantity) as estimated_profit')
+            ->groupBy([
+                'orders.id',
+                'orders.order_number',
+                'orders.customer_name',
+                'orders.payment_method',
+                'orders.payment_status',
+                'orders.delivery_status',
+                'orders.created_at',
+            ])
+            ->orderByDesc('orders.created_at')
+            ->orderByDesc('orders.id')
+            ->get();
+
+        return [
+            'ecommerceOrdersCount' => $ecommerceOrders->count(),
+            'ecommerceUnitsSold' => (int) $ecommerceOrders->sum('total_units'),
+            'ecommerceGrossIncome' => (float) $ecommerceOrders->sum('gross_income'),
+            'ecommerceEstimatedProfit' => (float) $ecommerceOrders->sum('estimated_profit'),
+            'recentEcommerceOrders' => $this->paginateCollection($ecommerceOrders, 6, 'ecommerce_page'),
+        ];
     }
 }

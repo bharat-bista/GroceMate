@@ -188,6 +188,86 @@
         </div>
     </div>
 
+    <div id="ecommerce-overview-section" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Ecommerce Overview</h3>
+                <p class="text-sm text-slate-500">Settled ecommerce sales linked to this business account.</p>
+            </div>
+            <div class="inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold bg-cyan-100 text-cyan-700">
+                Auto-linked with business account balance
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Ecommerce Orders</p>
+                <p class="text-2xl font-bold text-slate-900">{{ $ecommerceOrdersCount }}</p>
+                <p class="text-xs text-slate-500 mt-2">Verified and non-cancelled orders</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Units Sold</p>
+                <p class="text-2xl font-bold text-blue-600">{{ number_format($ecommerceUnitsSold) }}</p>
+                <p class="text-xs text-slate-500 mt-2">Total ecommerce quantity sold</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Gross Ecommerce Income</p>
+                <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($ecommerceGrossIncome, 2) }}</p>
+                <p class="text-xs text-slate-500 mt-2">Item subtotal without delivery charge</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Estimated Ecommerce Profit</p>
+                <p class="text-2xl font-bold {{ $ecommerceEstimatedProfit >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
+                    Rs {{ number_format($ecommerceEstimatedProfit, 2) }}
+                </p>
+                <p class="text-xs text-slate-500 mt-2">Based on ecommerce item margin settings</p>
+            </div>
+        </div>
+
+        <div id="recent-ecommerce-section" class="rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h4 class="text-sm font-semibold text-slate-900">Recent Ecommerce Orders</h4>
+                <span class="text-xs text-slate-500">{{ $ecommerceOrdersCount }} total</span>
+            </div>
+
+            @if($recentEcommerceOrders->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-white border-b border-slate-200">
+                            <tr>
+                                <th class="text-left px-4 py-3 font-medium text-slate-700">Date</th>
+                                <th class="text-left px-4 py-3 font-medium text-slate-700">Order #</th>
+                                <th class="text-left px-4 py-3 font-medium text-slate-700">Customer</th>
+                                <th class="text-right px-4 py-3 font-medium text-slate-700">Units</th>
+                                <th class="text-right px-4 py-3 font-medium text-slate-700">Gross Income</th>
+                                <th class="text-right px-4 py-3 font-medium text-slate-700">Est. Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            @foreach($recentEcommerceOrders as $ecommerceOrder)
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-4 py-3">{{ \Carbon\Carbon::parse($ecommerceOrder->order_created_at)->format('M d, Y') }}</td>
+                                    <td class="px-4 py-3 font-medium text-slate-900">{{ $ecommerceOrder->order_number }}</td>
+                                    <td class="px-4 py-3 text-slate-700">{{ $ecommerceOrder->customer_name }}</td>
+                                    <td class="px-4 py-3 text-right text-slate-700">{{ (int) $ecommerceOrder->total_units }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-emerald-600">Rs {{ number_format((float) $ecommerceOrder->gross_income, 2) }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold {{ (float) $ecommerceOrder->estimated_profit >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
+                                        Rs {{ number_format((float) $ecommerceOrder->estimated_profit, 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-4 py-3 border-t border-slate-200 bg-white">
+                    {{ $recentEcommerceOrders->appends(request()->query())->fragment('recent-ecommerce-section')->links('pagination::tailwind') }}
+                </div>
+            @else
+                <div class="text-center py-8 text-slate-500">No ecommerce sales found for this business account.</div>
+            @endif
+        </div>
+    </div>
+
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between mb-6">
             <div>

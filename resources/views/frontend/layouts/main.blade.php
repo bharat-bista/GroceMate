@@ -27,7 +27,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/slick.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/nice-select.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" ></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -43,8 +42,20 @@
 </head>
 <body class="whitesmoke-bg">
     <script>
-    $(window).on('load', function () {
-        $('#preloader-active').delay(300).fadeOut('slow');
+    window.addEventListener('load', function () {
+        const preloader = document.getElementById('preloader-active');
+        if (!preloader) {
+            return;
+        }
+
+        window.setTimeout(function () {
+            preloader.style.transition = 'opacity 0.3s ease';
+            preloader.style.opacity = '0';
+
+            window.setTimeout(function () {
+                preloader.style.display = 'none';
+            }, 300);
+        }, 300);
     });
 </script>
 

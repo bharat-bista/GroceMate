@@ -7,6 +7,8 @@ use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
+use App\Mail\OrderCustomerMessageMail;
+use App\Services\EcommerceIncomeSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -17,14 +19,36 @@ use Mail;
 
 class OrderController extends Controller
 {
+    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    {
+    }
+
     /**
      * Display customer's orders
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with('items')
+        $orders = Order::query()
+            ->select([
+                'id',
+                'order_number',
+                'delivery_status',
+                'payment_status',
+                'delivery_type',
+                'subtotal',
+                'delivery_charge',
+                'total_amount',
+                'created_at',
+            ])
+            ->withCount('items')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'html' => view('frontend.order.partials.list', compact('orders'))->render(),
+            ]);
+        }
 
         return view('frontend.order.index', compact('orders'));
     }
@@ -136,6 +160,8 @@ class OrderController extends Controller
                     'image' => $item['image'],
                 ]);
             }
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
 
             return $order;
         });
@@ -312,6 +338,39 @@ class OrderController extends Controller
     }
 
     /**
+     * Admin: Send custom message to customer
+     */
+    public function sendCustomerMessage(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        if (!$order->customer_email) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer does not have an email address.',
+            ], 400);
+        }
+
+        try {
+            Mail::to($order->customer_email)->send(new OrderCustomerMessageMail($order, $validated['message']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Message sent successfully to ' . $order->customer_email,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send order message: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email. Please check your email configuration.',
+            ], 500);
+        }
+    }
+
+    /**
      * Admin: Update delivery status
      */
     public function updateDeliveryStatus(Request $request, Order $order)
@@ -335,6 +394,8 @@ class OrderController extends Controller
             $order->update([
                 'delivery_status' => $nextStatus,
             ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
         });
 
         // Send email notification to customer
@@ -411,9 +472,13 @@ class OrderController extends Controller
             $finalPaymentStatus = 'verified';
         }
 
-        $order->update([
-            'payment_status' => $finalPaymentStatus,
-        ]);
+        DB::transaction(function () use ($order, $finalPaymentStatus) {
+            $order->update([
+                'payment_status' => $finalPaymentStatus,
+            ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
 
         // Send email notification to customer
         if ($order->customer_email) {
@@ -437,9 +502,13 @@ class OrderController extends Controller
             'payment_status' => 'required|in:verified,failed',
         ]);
 
-        $order->update([
-            'payment_status' => $request->payment_status,
-        ]);
+        DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'payment_status' => $request->payment_status,
+            ]);
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
 
         // Send email notification to customer
         if ($order->customer_email) {

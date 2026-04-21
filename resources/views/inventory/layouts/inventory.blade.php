@@ -30,7 +30,8 @@
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',
-            'inventory.alerts.*'
+          'inventory.alerts.*',
+          'inventory.invoices.*'
         );
         $isPosGroup = request()->routeIs(
             'pos.dashboard',
@@ -45,7 +46,9 @@
           'inventory.ecommerce-brands.*',
           'inventory.ecommerce-categories.*',
           'inventory.sliders.*',
-          'inventory.ecommerce-income.*'
+          'inventory.ecommerce-income.*',
+          'inventory.orders.*',
+          'inventory.contacts.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
@@ -221,6 +224,10 @@
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-income.*')) }}"
         href="{{ route('inventory.ecommerce-income.index') }}">
         Income
+      </a>
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.contacts.*')) }}"
+        href="{{ route('inventory.contacts.index') }}">
+        Contact Messages
       </a>
 
     </div>

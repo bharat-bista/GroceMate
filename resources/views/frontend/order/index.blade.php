@@ -43,6 +43,11 @@
         box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         transform: translateY(-2px);
     }
+    .orders-results.is-loading {
+        opacity: 0.65;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
     .order-header {
         display: flex;
         justify-content: space-between;
@@ -161,66 +166,71 @@
             <p>Track and manage your order history</p>
         </div>
 
-        @if($orders->isEmpty())
-            <div class="order-card">
-                <div class="empty-orders">
-                    <i class="fas fa-shopping-bag"></i>
-                    <h3>No Orders Yet</h3>
-                    <p>You haven't placed any orders yet. Start shopping to see your orders here.</p>
-                    <a href="{{ route('home') }}">Start Shopping</a>
-                </div>
-            </div>
-        @else
-            @foreach($orders as $order)
-                <div class="order-card">
-                    <div class="order-header">
-                        <div>
-                            <div class="order-number">{{ $order->order_number }}</div>
-                            <div class="order-date">{{ $order->created_at->format('M d, Y h:i A') }}</div>
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <span class="order-status-badge status-{{ $order->delivery_status }}">
-                                {{ ucfirst($order->delivery_status) }}
-                            </span>
-                            <span class="payment-badge payment-{{ $order->payment_status }}">
-                                {{ $order->payment_status === 'cod' ? 'COD' : ucfirst($order->payment_status) }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="order-summary">
-                        <div class="summary-item">
-                            <label>Items</label>
-                            <span>{{ $order->items->count() }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <label>Delivery</label>
-                            <span>{{ ucfirst($order->delivery_type) }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <label>Subtotal</label>
-                            <span>Rs. {{ number_format($order->subtotal, 0) }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <label>Delivery Charge</label>
-                            <span>Rs. {{ number_format($order->delivery_charge, 0) }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <label>Total</label>
-                            <span>Rs. {{ number_format($order->total_amount, 0) }}</span>
-                        </div>
-                    </div>
-                    <div class="order-actions">
-                        <a href="{{ route('orders.show', $order) }}" class="btn-view">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                    </div>
-                </div>
-            @endforeach
-
-            <div style="margin-top: 20px;">
-                {{ $orders->links() }}
-            </div>
-        @endif
+        <div id="orders-results" class="orders-results">
+            @include('frontend.order.partials.list', ['orders' => $orders])
+        </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const results = document.getElementById('orders-results');
+
+    if (!results) {
+        return;
+    }
+
+    let activeRequest = null;
+
+    async function fetchOrders(url, shouldPushState) {
+        if (activeRequest) {
+            activeRequest.abort();
+        }
+
+        activeRequest = new AbortController();
+        results.classList.add('is-loading');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: activeRequest.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error('Unable to load orders.');
+            }
+
+            const payload = await response.json();
+            results.innerHTML = payload.html || '';
+
+            if (shouldPushState) {
+                window.history.pushState({}, '', url);
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                window.location.href = url;
+            }
+        } finally {
+            results.classList.remove('is-loading');
+        }
+    }
+
+    results.addEventListener('click', function (event) {
+        const pageLink = event.target.closest('.pagination a');
+        if (!pageLink) {
+            return;
+        }
+
+        event.preventDefault();
+        fetchOrders(pageLink.href, true);
+    });
+
+    window.addEventListener('popstate', function () {
+        fetchOrders(window.location.href, false);
+    });
+});
+</script>
 @endsection

@@ -6,6 +6,7 @@ use App\Http\Controllers\frontend\AdvancedController;
 use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
+use App\Http\Controllers\frontend\ContactController;
 use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\frontend\OrderController;
@@ -58,6 +59,8 @@ Route::post('/cart/remove', [CartController::class, 'removeItem'])->name('cart.r
 Route::post('/cart/promo', [CartController::class, 'applyPromoCode'])->name('cart.promo');
 Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
 Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::post('/checkout/esewa/initiate', [CheckoutController::class, 'initiateEsewa'])->name('frontend.checkout.esewa.initiate');
 Route::get('/checkout/esewa/callback', [CheckoutController::class, 'esewaCallback'])->name('frontend.checkout.esewa.callback');
 Route::post('/checkout/order', [OrderController::class, 'store'])->name('frontend.order.store');
@@ -73,10 +76,21 @@ Route::middleware(['auth', 'admin'])
     ->group(function () {
         Route::get('/', [OrderController::class, 'adminIndex'])->name('index');
         Route::get('/{order}', [OrderController::class, 'adminShow'])->name('show');
+        Route::post('/{order}/send-message', [OrderController::class, 'sendCustomerMessage'])->name('send-message');
         Route::patch('/{order}/delivery-status', [OrderController::class, 'updateDeliveryStatus'])->name('delivery-status');
         Route::patch('/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('payment-status');
         Route::patch('/{order}/verify-slip', [OrderController::class, 'verifyPaymentSlip'])->name('verify-slip');
         Route::get('/export/{type}', [OrderController::class, 'export'])->name('export');
+    });
+
+// Admin contact message routes
+Route::middleware(['auth', 'admin'])
+    ->prefix('inventory/contacts')
+    ->name('inventory.contacts.')
+    ->group(function () {
+        Route::get('/', [ContactController::class, 'adminIndex'])->name('index');
+        Route::get('/{contactMessage}', [ContactController::class, 'adminShow'])->name('show');
+        Route::post('/{contactMessage}/send-message', [ContactController::class, 'sendMessage'])->name('send-message');
     });
 
 Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'description'])

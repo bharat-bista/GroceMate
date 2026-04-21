@@ -31,8 +31,10 @@ return new class extends Migration
         }
 
         Schema::table('ecommerce_products', function (Blueprint $table) {
+            $table->dropForeign(['product_id']);
             $table->dropIndex(['product_id']);
             $table->unique('product_id');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 
@@ -42,8 +44,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('ecommerce_products', function (Blueprint $table) {
+            $table->dropForeign(['product_id']);
             $table->dropUnique(['product_id']);
             $table->index('product_id');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 };

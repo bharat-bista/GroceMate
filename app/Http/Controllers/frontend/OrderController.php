@@ -7,6 +7,7 @@ use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
+use App\Mail\OrderCustomerMessageMail;
 use App\Services\EcommerceIncomeSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -25,11 +26,29 @@ class OrderController extends Controller
     /**
      * Display customer's orders
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with('items')
+        $orders = Order::query()
+            ->select([
+                'id',
+                'order_number',
+                'delivery_status',
+                'payment_status',
+                'delivery_type',
+                'subtotal',
+                'delivery_charge',
+                'total_amount',
+                'created_at',
+            ])
+            ->withCount('items')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'html' => view('frontend.order.partials.list', compact('orders'))->render(),
+            ]);
+        }
 
         return view('frontend.order.index', compact('orders'));
     }
@@ -316,6 +335,39 @@ class OrderController extends Controller
     {
         $order->load('items');
         return view('frontend.order.admin.show', compact('order'));
+    }
+
+    /**
+     * Admin: Send custom message to customer
+     */
+    public function sendCustomerMessage(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        if (!$order->customer_email) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer does not have an email address.',
+            ], 400);
+        }
+
+        try {
+            Mail::to($order->customer_email)->send(new OrderCustomerMessageMail($order, $validated['message']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Message sent successfully to ' . $order->customer_email,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send order message: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email. Please check your email configuration.',
+            ], 500);
+        }
     }
 
     /**

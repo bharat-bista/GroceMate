@@ -23,7 +23,7 @@
                                     <div class="footer-links">
                                         <h4><a href="#">Delivery Information</a></h4>
                                         <h4><a href="#">Terms & Conditions</a></h4>
-                                        <h4><a href="#">Contact Us</a></h4>
+                                        <h4><a href="{{ url('/contact') }}">Contact Us</a></h4>
                                     </div>
                                 </div>
                                 

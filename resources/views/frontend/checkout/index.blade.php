@@ -783,28 +783,6 @@
 </div>
 
 <script>
-// Debug: Log all localStorage changes to catch any clearing
-(function() {
-    var originalSetItem = localStorage.setItem;
-    var originalRemoveItem = localStorage.removeItem;
-    var originalClear = localStorage.clear;
-    
-    localStorage.setItem = function(key, value) {
-        console.log('[localStorage SET]', key, value ? value.substring(0, 200) : value);
-        originalSetItem.call(this, key, value);
-    };
-    
-    localStorage.removeItem = function(key) {
-        console.log('[localStorage REMOVE]', key);
-        originalRemoveItem.call(this, key);
-    };
-    
-    localStorage.clear = function() {
-        console.log('[localStorage CLEAR]');
-        originalClear.call(this);
-    };
-})();
-
 document.addEventListener('DOMContentLoaded', function() {
   const CART_KEY = 'gm_cart_items';
   const BUY_NOW_KEY = 'gm_buy_now_item';
@@ -872,80 +850,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function readCartItems() {
     if (window.GroceMateCart && typeof window.GroceMateCart.getItems === 'function') {
-      const items = window.GroceMateCart.getItems();
-      console.log('Cart items from GroceMateCart API:', items);
-      return items;
+      return window.GroceMateCart.getItems();
     }
 
     try {
-      const raw = localStorage.getItem(CART_KEY);
-      console.log('Raw cart items from localStorage:', raw);
-      const parsed = JSON.parse(raw || '[]');
-      console.log('Parsed cart items:', parsed);
+      const parsed = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
-      console.log('Error reading cart items');
       return [];
     }
   }
 
   function readSelectedItems() {
-    console.log('=== readSelectedItems called ===');
     try {
       var raw = localStorage.getItem(SELECTED_ITEMS_KEY);
-      console.log('Raw selected items from localStorage:', raw);
-      console.log('typeof raw:', typeof raw);
-      console.log('raw === null:', raw === null);
-      console.log('raw === "null":', raw === 'null');
       
-      if (raw === null || raw === 'null') {
-        console.log('Selected items key is null - checking all localStorage keys:');
-        for (var i = 0; i < localStorage.length; i++) {
-          var key = localStorage.key(i);
-          console.log('  Key:', key, 'Value:', localStorage.getItem(key));
-        }
-      }
-      
-      // Also check all relevant keys
-      console.log('Checking localStorage keys:');
-      console.log('  gm_cart_items:', localStorage.getItem('gm_cart_items'));
-      console.log('  gm_buy_now_item:', localStorage.getItem('gm_buy_now_item'));
-      console.log('  buynow:', localStorage.getItem('buynow'));
-      console.log('  gm_checkout_selected_items:', localStorage.getItem('gm_checkout_selected_items'));
-      
+
+
       var parsed = (raw && raw !== 'null') ? JSON.parse(raw) : [];
-      console.log('Parsed selected items:', parsed);
-      console.log('Is array:', Array.isArray(parsed));
       return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.log('Error reading selected items:', e.message);
+    } catch (_) {
       return [];
     }
   }
-function normalizeCheckoutItem(item) {
-    console.log('Normalizing checkout item:', item);
-    let price = parsePrice(item?.price);
 
-    // Sanity guard: if price looks like it's stored in paise (e.g. 12000 for Rs.120)
-    // and is unreasonably large, convert back. Adjust threshold to your max product price.
-    // Conversely, if price is < 1 it was likely stored as a fraction — flag it.
-    if (price > 0 && price < 1) {
-        // Price stored as a fraction (e.g. 0.12) — likely a paise/unit error upstream.
-        // Multiply by 1000 to recover: 0.12 * 1000 = 120? No — this is unreliable.
-        // Better: trust nothing below 1 rupee for a grocery store.
-        console.warn('[Checkout] Suspicious price detected:', price, 'for item:', item?.name);
-    }
+  function normalizeCheckoutItem(item) {
+    const price = parsePrice(item?.price);
 
-    const normalized = {
+    return {
         id: String(item?.id ?? '').trim(),
         name: String(item?.name || 'Product'),
         price: price,
         image: String(item?.image || ''),
         qty: Math.max(1, Math.floor(Number(item?.qty || 1) || 1)),
     };
-    console.log('Normalized item:', normalized);
-    return normalized;
-}
+  }
 
   function readBuyNowItem() {
     if (window.GroceMateCart && typeof window.GroceMateCart.getBuyNowItem === 'function') {
@@ -966,27 +905,17 @@ function normalizeCheckoutItem(item) {
   }
 
   function getCheckoutItems() {
-    console.log('getCheckoutItems called, isBuyNowMode:', isBuyNowMode);
-    
     if (!isBuyNowMode) {
-      // First try to get selected items from cart
       const selectedItems = readSelectedItems();
-      console.log('Selected items from storage:', selectedItems);
-      
+
       if (selectedItems.length > 0) {
-        console.log('Using selected items');
         return selectedItems.map(normalizeCheckoutItem);
       }
-      
-      // Fall back to all cart items if no selected items
-      const cartItems = readCartItems();
-      console.log('Cart items from storage:', cartItems);
-      console.log('Using cart items as fallback');
-      return cartItems.map(normalizeCheckoutItem);
+
+      return readCartItems().map(normalizeCheckoutItem);
     }
 
     const buyNowItem = readBuyNowItem();
-    console.log('Buy now item:', buyNowItem);
     return buyNowItem ? [buyNowItem] : [];
   }
 
@@ -1043,8 +972,6 @@ function normalizeCheckoutItem(item) {
 
   function renderOrderSummary() {
     const checkoutItems = getCheckoutItems();
-    console.log('Checkout items retrieved:', checkoutItems);
-    console.log('Number of items:', checkoutItems.length);
     const hasItems = checkoutItems.length > 0;
 
     const summary = checkoutItems.reduce((acc, item) => {
@@ -1130,19 +1057,14 @@ function normalizeCheckoutItem(item) {
 
   deliveryInputs.forEach(function(input) {
     input.addEventListener('change', function() {
-      console.log('Delivery changed to:', input.value);
       saveCheckoutDraft();
       renderOrderSummary();
       
       // Toggle map visibility based on delivery selection
       var storePickupMap = document.getElementById('store-pickup-map-group');
       
-      console.log('Store pickup map element:', storePickupMap);
-      console.log('Address input element:', addressInput);
-      
       if (input.value === 'pickup') {
         // Show map and hide address field for store pickup
-        console.log('Showing store pickup map');
         storePickupMap.style.display = 'block';
         if (addressInput) {
           addressInput.parentElement.style.display = 'none';
@@ -1150,7 +1072,6 @@ function normalizeCheckoutItem(item) {
         }
       } else {
         // Hide map and show address field for delivery
-        console.log('Hiding store pickup map');
         storePickupMap.style.display = 'none';
         if (addressInput) {
           addressInput.parentElement.style.display = 'block';
@@ -1313,7 +1234,6 @@ function normalizeCheckoutItem(item) {
         }
       })
       .catch(error => {
-        console.error('Error:', error);
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
         alert('Error initiating payment. Please try again.');
@@ -1384,7 +1304,6 @@ function normalizeCheckoutItem(item) {
         }
       })
       .catch(function(error) {
-        console.error('Error:', error);
         alert(error.message || 'Error placing order. Please try again.');
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
@@ -1428,3 +1347,5 @@ function normalizeCheckoutItem(item) {
 </script>
 
 @endsection
+
+

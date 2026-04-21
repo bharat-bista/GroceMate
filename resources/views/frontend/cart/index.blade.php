@@ -1162,8 +1162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function() {
             var selectedChecks = document.querySelectorAll('.item-check:checked');
-            console.log('Checkout clicked, checked items found:', selectedChecks.length);
-            
+
             if (selectedChecks.length === 0) {
                 alert('Please select at least one item to proceed to checkout');
                 return;
@@ -1172,14 +1171,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var selectedCartItems = [];
             selectedChecks.forEach(function(checkbox) {
                 var cartItem = checkbox.closest('.cart-item');
-                console.log('Cart item element:', cartItem);
-                console.log('Dataset:', cartItem ? cartItem.dataset : 'null');
-                
+
                 if (!cartItem) return;
                 var itemId = cartItem.dataset.itemId;
                 var rawPrice = cartItem.dataset.price;
-                
-                console.log('Processing item - ID:', itemId, 'Price:', rawPrice);
 
                 if (itemId && rawPrice) {
                     var qtyInput = cartItem.querySelector('.qty-input');
@@ -1197,23 +1192,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            console.log('Selected cart items to save:', selectedCartItems);
-            console.log('SELECTED_ITEMS_KEY:', SELECTED_ITEMS_KEY);
-
             try {
-                console.log('Saving selected items to localStorage:', selectedCartItems);
                 localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(selectedCartItems));
-                console.log('Selected items saved successfully');
-                // Verify storage
-                var verify = localStorage.getItem(SELECTED_ITEMS_KEY);
-                console.log('Verification read:', verify);
-                
+
                 // Small delay to ensure localStorage is persisted before redirect
                 setTimeout(function() {
                     window.location.href = '{{ route("checkout") }}';
                 }, 100);
             } catch (e) {
-                console.error('Error saving selected items:', e);
                 // Fallback: redirect anyway
                 window.location.href = '{{ route("checkout") }}';
             }

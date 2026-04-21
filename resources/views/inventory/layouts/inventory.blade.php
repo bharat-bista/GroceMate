@@ -47,7 +47,8 @@
           'inventory.ecommerce-categories.*',
           'inventory.sliders.*',
           'inventory.ecommerce-income.*',
-          'inventory.orders.*'
+          'inventory.orders.*',
+          'inventory.contacts.*'
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
@@ -223,6 +224,10 @@
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-income.*')) }}"
         href="{{ route('inventory.ecommerce-income.index') }}">
         Income
+      </a>
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.contacts.*')) }}"
+        href="{{ route('inventory.contacts.index') }}">
+        Contact Messages
       </a>
 
     </div>

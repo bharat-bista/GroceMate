@@ -29,6 +29,12 @@
                             <p class="text-sm text-slate-500 mt-1">Placed on {{ $order->created_at->format('M d, Y at h:i A') }}</p>
                         </div>
                         <div class="flex gap-2">
+                            @if($order->customer_email)
+                                <button type="button" id="sendOrderEmailBtn"
+                                        class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                                    <i class="fas fa-envelope mr-2"></i> Send Email
+                                </button>
+                            @endif
                             @if($order->delivery_status !== 'cancelled' && $order->delivery_status !== 'delivered')
                                 <button onclick="document.getElementById('deliveryModal').showModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
                                     <i class="fas fa-truck mr-2"></i> Update Delivery
@@ -214,6 +220,121 @@
         </div>
     </div>
 </div>
+
+<!-- Email Message Modal -->
+<div id="orderEmailModal"
+     class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+     style="display: none; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 animate-scaleIn"
+         style="width: 100%; max-width: 520px; margin: 0 auto;">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Send Message to Customer</h3>
+        <p class="text-gray-600 text-sm mb-5">Write a quick note and send it to the customer's email.</p>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
+            <input type="email" id="orderCustomerEmailInput" class="w-full rounded-xl border border-gray-300 px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+            <textarea id="orderCustomerMessageInput" rows="5"
+                      class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      placeholder="Type your message here..."></textarea>
+            <p id="orderEmailError" class="text-sm text-red-600 mt-2 hidden">Please enter a message.</p>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button" id="sendOrderEmailConfirm" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition">
+                Send Email
+            </button>
+            <button type="button" id="sendOrderEmailCancel" class="flex-1 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const orderEmailModal = document.getElementById('orderEmailModal');
+const sendOrderEmailBtn = document.getElementById('sendOrderEmailBtn');
+const sendOrderEmailConfirm = document.getElementById('sendOrderEmailConfirm');
+const sendOrderEmailCancel = document.getElementById('sendOrderEmailCancel');
+const orderCustomerEmailInput = document.getElementById('orderCustomerEmailInput');
+const orderCustomerMessageInput = document.getElementById('orderCustomerMessageInput');
+const orderEmailError = document.getElementById('orderEmailError');
+
+if (sendOrderEmailBtn) {
+    sendOrderEmailBtn.addEventListener('click', function () {
+        orderCustomerEmailInput.value = "{{ $order->customer_email ?? '' }}";
+        orderCustomerMessageInput.value = '';
+        orderEmailError.classList.add('hidden');
+        orderEmailModal.style.display = 'flex';
+    });
+}
+
+sendOrderEmailConfirm?.addEventListener('click', function () {
+    const message = orderCustomerMessageInput.value.trim();
+
+    if (!message) {
+        orderEmailError.classList.remove('hidden');
+        return;
+    }
+
+    orderEmailError.classList.add('hidden');
+    orderEmailModal.style.display = 'none';
+
+    sendOrderEmailBtn.disabled = true;
+    sendOrderEmailBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+
+    fetch('{{ route("inventory.orders.send-message", $order) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ message })
+    })
+        .then(response => response.json())
+        .then(data => {
+            const container = document.querySelector('.space-y-6');
+            if (!container) {
+                return;
+            }
+            const alertDiv = document.createElement('div');
+            alertDiv.className = data.success
+                ? 'p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm'
+                : 'p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm';
+            alertDiv.textContent = data.message || 'Unable to send the email.';
+            container.insertBefore(alertDiv, container.firstChild);
+            setTimeout(() => alertDiv.remove(), 5000);
+        })
+        .catch(() => {
+            const container = document.querySelector('.space-y-6');
+            if (!container) {
+                return;
+            }
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm';
+            alertDiv.textContent = 'Failed to send email. Please try again.';
+            container.insertBefore(alertDiv, container.firstChild);
+            setTimeout(() => alertDiv.remove(), 5000);
+        })
+        .finally(() => {
+            sendOrderEmailBtn.disabled = false;
+            sendOrderEmailBtn.innerHTML = '<i class="fas fa-envelope mr-2"></i> Send Email';
+        });
+});
+
+sendOrderEmailCancel?.addEventListener('click', function () {
+    orderEmailModal.style.display = 'none';
+});
+
+orderEmailModal?.addEventListener('click', function (event) {
+    if (event.target === orderEmailModal) {
+        orderEmailModal.style.display = 'none';
+    }
+});
+</script>
 
 <!-- Delivery Status Modal -->
 <dialog id="deliveryModal" class="modal p-6 rounded-2xl shadow-2xl border border-slate-200 max-w-md">

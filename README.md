@@ -7,6 +7,10 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## About GroceMate
+
+GroceMate is a Laravel-based grocery management and e-commerce platform that helps grocery businesses run day-to-day operations in one system by combining role-based user access, inventory and supplier management, purchase tracking, point-of-sale billing, customer-facing shopping flows, and reporting, with a modular architecture that supports both in-store and online sales workflows.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

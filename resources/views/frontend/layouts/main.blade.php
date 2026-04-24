@@ -22,7 +22,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/animate.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/animated-headline.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/magnific-popup.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/fontawesome-all.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/themify-icons.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/slick.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/nice-select.css') }}">
@@ -32,8 +31,6 @@
 
 <!-- Font Awesome v6 (TikTok Supported) -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<!-- Add to your head -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.5.0/nouislider.min.css">
 
 
 

@@ -30,6 +30,7 @@ use App\Http\Controllers\POS\ExpenseController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\BusinessController;
+use App\Http\Controllers\AdminChatbotController;
 
 
 // Khalti Payment Verification Route
@@ -161,6 +162,7 @@ Route::middleware(['auth', 'admin'])
             ->name('purchases.store-brand');
         Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
+        Route::post('/chatbot/message', [AdminChatbotController::class, 'message'])->name('chatbot.message');
         
         // Purchase resource routes (must come AFTER custom routes)
         Route::resource('purchases', PurchaseController::class);

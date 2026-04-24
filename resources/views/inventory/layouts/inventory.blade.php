@@ -350,5 +350,8 @@
       }
     });
   </script>
+  @if(auth()->check() && auth()->user()->isAdmin())
+    @include('inventory.partials.admin-chatbot')
+  @endif
 </body>
 </html>

@@ -29,6 +29,7 @@ use App\Http\Controllers\POS\IncomeController;
 use App\Http\Controllers\POS\ExpenseController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
 use App\Http\Controllers\TaxController;
+use App\Http\Controllers\DeliveryFeeSettingController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\AdminChatbotController;
 
@@ -283,6 +284,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/{tax}/edit', [TaxController::class, 'edit'])->name('edit');
         Route::put('/{tax}', [TaxController::class, 'update'])->name('update');
         Route::delete('/{tax}', [TaxController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('settings/delivery-fees')->name('delivery-fees.')->group(function () {
+        Route::get('/', [DeliveryFeeSettingController::class, 'index'])->name('index');
+        Route::put('/', [DeliveryFeeSettingController::class, 'update'])->name('update');
     });
 });
 

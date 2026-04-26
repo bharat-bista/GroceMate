@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -105,11 +106,7 @@ class OrderController extends Controller
             ]);
         }
 
-        $deliveryCharges = [
-            'inside' => 100,
-            'outside' => 200,
-            'pickup' => 0,
-        ];
+        $deliveryCharges = DeliveryFeeSetting::chargeMap();
         
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round($items->sum(fn (array $item) => $item['price'] * $item['qty']), 2);

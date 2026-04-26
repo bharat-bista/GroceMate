@@ -606,18 +606,18 @@
             <label>Delivery Type *</label>
             <div class="delivery-options">
               <label class="delivery-option">
-                <input class="form-check-input" type="radio" name="delivery" value="inside" data-charge="100" checked>
+                <input class="form-check-input" type="radio" name="delivery" value="inside" data-charge="{{ $deliveryFees['inside'] ?? 100 }}" checked>
                 <span class="delivery-option-text">
                   <strong>Inside Valley</strong>
-                  <span>Rs. 100</span>
+                  <span>Rs. {{ number_format((float) ($deliveryFees['inside'] ?? 100), 2) }}</span>
                 </span>
               </label>
 
               <label class="delivery-option">
-                <input class="form-check-input" type="radio" name="delivery" value="outside" data-charge="200">
+                <input class="form-check-input" type="radio" name="delivery" value="outside" data-charge="{{ $deliveryFees['outside'] ?? 200 }}">
                 <span class="delivery-option-text">
                   <strong>Outside Valley</strong>
-                  <span>Rs. 200</span>
+                  <span>Rs. {{ number_format((float) ($deliveryFees['outside'] ?? 200), 2) }}</span>
                 </span>
               </label>
 
@@ -1347,5 +1347,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 @endsection
-
 

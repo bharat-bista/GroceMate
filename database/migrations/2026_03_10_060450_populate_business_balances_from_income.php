@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Business;
 use App\Models\POS\Income;
 
@@ -12,6 +13,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (
+            !Schema::hasTable('businesses')
+            || !Schema::hasColumn('businesses', 'balance')
+            || !Schema::hasTable('incomes')
+            || !Schema::hasColumn('incomes', 'business_id')
+        ) {
+            return;
+        }
+
         // Get total income for each business
         $businessIncomes = Income::selectRaw('business_id, SUM(amount_received) as total_income')
             ->whereNotNull('business_id')

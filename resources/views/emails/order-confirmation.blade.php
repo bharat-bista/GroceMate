@@ -121,15 +121,40 @@
     </style>
 </head>
 <body>
+    @php
+        // Derive lightweight flags from mail type to keep conditional rendering
+        // readable and make each order-status email feel distinct.
+        $isPaymentVerified = $type === 'payment_verified';
+        $isCancelled = $type === 'order_cancelled';
+        $isDeliveryUpdate = $type === 'delivery_update';
+        $isPaymentFailed = $type === 'payment_failed';
+    @endphp
+
     <div class="header">
         <h1>
-            @if($type === 'payment_verified')
+            @if($isCancelled)
+                <i class="fas fa-times-circle"></i> Order Cancelled
+            @elseif($isPaymentVerified)
                 <i class="fas fa-check-circle"></i> Payment Verified!
+            @elseif($isPaymentFailed)
+                <i class="fas fa-exclamation-circle"></i> Payment Update
+            @elseif($isDeliveryUpdate)
+                <i class="fas fa-truck"></i> Delivery Status Updated
             @else
                 <i class="fas fa-box-open"></i> Order Confirmed
             @endif
         </h1>
-        <p>Thank you for your order with GroceMate</p>
+        <p>
+            @if($isCancelled)
+                Your order has been cancelled. Please contact support if you need help.
+            @elseif($isDeliveryUpdate)
+                Your order delivery status has been updated.
+            @elseif($isPaymentFailed)
+                There was an update on your payment status.
+            @else
+                Thank you for your order with GroceMate.
+            @endif
+        </p>
     </div>
 
     <div class="order-info">
@@ -177,10 +202,16 @@
                     <span class="status-badge status-verified">Verified</span>
                 @elseif($order->payment_status === 'pending')
                     <span class="status-badge status-pending">Pending</span>
+                @elseif($order->payment_status === 'failed')
+                    <span class="status-badge status-pending">Failed</span>
                 @else
                     <span class="status-badge status-cod">COD</span>
                 @endif
             </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Delivery Status</span>
+            <span class="info-value">{{ ucfirst($order->delivery_status ?? 'pending') }}</span>
         </div>
     </div>
 

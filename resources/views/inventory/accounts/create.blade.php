@@ -1,8 +1,8 @@
 @extends('inventory.layouts.inventory')
 
-@section('title', 'Create Admin Account')
-@section('subtitle', 'Add a new admin user')
-@section('heading', 'Create Admin Account')
+@section('title', 'Create Account')
+@section('subtitle', 'Add a new admin or staff user')
+@section('heading', 'Create Account')
 
 @section('content')
 <div class="max-w-2xl mx-auto" x-data="{ step: {{ session('otp_sent') ? 2 : 1 }} }">
@@ -42,10 +42,23 @@
   <div x-show="step === 1" x-transition>
     <div class="bg-white rounded-xl border border-slate-200 p-6">
       <h3 class="text-lg font-semibold text-slate-900 mb-1">Account Details</h3>
-      <p class="text-sm text-slate-500 mb-6">Enter the new admin's information. An OTP will be sent to their email for verification.</p>
+      <p class="text-sm text-slate-500 mb-6">Choose Admin or Staff, then enter account details. An OTP will be sent to that email for verification.</p>
 
       <form action="{{ route('admin.accounts.sendOtp') }}" method="POST" class="space-y-5">
         @csrf
+
+        {{-- Account Type --}}
+        <div>
+          <label for="role_type" class="block text-sm font-medium text-slate-700 mb-1">Account Type</label>
+          <select id="role_type" name="role_type" required
+                  class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="admin" {{ old('role_type', 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
+            <option value="staff" {{ old('role_type') === 'staff' ? 'selected' : '' }}>Staff</option>
+          </select>
+          @error('role_type')
+            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+          @enderror
+        </div>
 
         {{-- Full Name --}}
         <div>
@@ -106,9 +119,9 @@
     <div class="bg-white rounded-xl border border-slate-200 p-6">
       <h3 class="text-lg font-semibold text-slate-900 mb-1">Verify Email</h3>
       <p class="text-sm text-slate-500 mb-6">
-        An OTP has been sent to the new admin's email.
-        Ask them for the 6-digit code and enter it below.
-      </p>
+         An OTP has been sent to the selected account email.
+         Ask them for the 6-digit code and enter it below.
+       </p>
 
       <form action="{{ route('admin.accounts.verifyOtp') }}" method="POST" class="space-y-5">
         @csrf

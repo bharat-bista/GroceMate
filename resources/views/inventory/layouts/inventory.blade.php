@@ -23,6 +23,8 @@
         <div class="text-xs text-slate-500 mt-1">Inventory Module</div>
       </div>
       @php
+        $user = auth()->user();
+        $isAdminUser = $user && $user->isAdmin();
         $isInventoryDashboard = request()->routeIs('inventory.dashboard');
         $isInventoryGroup = request()->routeIs(
             'inventory.categories.*',
@@ -130,6 +132,7 @@
 
     </div>
   </div>
+  @if($isAdminUser)
   <div x-data="{ open: {{ $isPosGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
@@ -179,6 +182,7 @@
 
     </div>
   </div>
+  @endif
   <div x-data="{ open: {{ $isEcommerceGroup ? 'true' : 'false' }} }" class="space-y-1">
     
     <!-- Dropdown Button -->
@@ -232,6 +236,7 @@
 
     </div>
   </div>
+  @if($isAdminUser)
   <!-- Dashboard -->
   <a class="{{ $navSectionLinkClass($isBusinessProfile) }}"
      href="{{ route('business.index') }}">
@@ -258,7 +263,7 @@
     
       <a class="{{ $navLinkClass($isAccountsGroup) }}"
          href="{{ route('admin.accounts.index') }}">
-         Manage Admins
+         Manage Access
       </a>
       
       <a class="{{ $navLinkClass(request()->routeIs('taxes.*')) }}"
@@ -270,6 +275,7 @@
 
     </div>
   </div>
+  @endif
 
   
 
@@ -350,7 +356,7 @@
       }
     });
   </script>
-  @if(auth()->check() && auth()->user()->isAdmin())
+  @if($isAdminUser)
     @include('inventory.partials.admin-chatbot')
   @endif
 </body>

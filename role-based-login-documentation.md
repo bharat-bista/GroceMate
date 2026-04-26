@@ -6,10 +6,11 @@ This document explains the complete role-based login system in `GroceMate`, incl
 
 ## 1. Overview
 
-The system supports **two user roles**:
+The system supports **three user roles**:
 
 - **Admin** → `role_id = 1`
 - **Customer** → `role_id = 2`
+- **Staff** → `role_id = 3`
 
 The role determines where the user is redirected after login and which parts of the system they can access.
 
@@ -18,6 +19,7 @@ The role determines where the user is redirected after login and which parts of 
 | Role | Access |
 |------|--------|
 | Admin (`role_id = 1`) | Inventory, POS, Business Profile, Admin Accounts |
+| Staff (`role_id = 3`) | Inventory + Ecommerce sections in admin panel (no POS, no Business/Admin settings) |
 | Customer (`role_id = 2`) | Public frontend / home page only |
 
 ---
@@ -29,12 +31,13 @@ The role-based system depends on the `role_id` column in the `users` table.
 ### Role Mapping
 - `1` = Admin
 - `2` = Customer
+- `3` = Staff
 
 ### Helper Methods in `User` Model
 
 File: `app/Models/User.php`
 
-Two helper methods are available to simplify role checks across the application:
+Role helpers are available to simplify checks across the application:
 
 ```php
 public function isAdmin(): bool
@@ -45,6 +48,16 @@ public function isAdmin(): bool
 public function isCustomer(): bool
 {
     return $this->role_id === 2;
+}
+
+public function isStaff(): bool
+{
+    return $this->role_id === 3;
+}
+
+public function canAccessInventoryPanel(): bool
+{
+    return $this->isAdmin() || $this->isStaff();
 }
 ```
 
@@ -94,7 +107,7 @@ When a user logs in with email and password, the system:
 ```php
 Auth::login($user, $request->remember);
 
-if ($user->isAdmin()) {
+if ($user->canAccessInventoryPanel()) {
     return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
 }
 
@@ -102,7 +115,7 @@ return redirect()->route('home')->with('success', 'Login successful!');
 ```
 
 ### Result
-- Admins go to: `inventory.dashboard`
+- Admins and staff go to: `inventory.dashboard`
 - Customers go to: `home`
 
 ---
@@ -123,7 +136,7 @@ The Google callback follows the same role-based redirect logic.
 ```php
 Auth::login($user);
 
-if ($user->isAdmin()) {
+if ($user->canAccessInventoryPanel()) {
     return redirect()->route('inventory.dashboard')->with('success', 'Logged in with Google!');
 }
 
@@ -166,9 +179,9 @@ This ensures that normal self-registration can only create customer accounts.
 
 ---
 
-## 7. Admin Route Protection
+## 7. Admin and Staff Route Protection
 
-File: `app/Http/Middleware/AdminMiddleware.php`
+Files: `app/Http/Middleware/AdminMiddleware.php`, `app/Http/Middleware/AdminOrStaffMiddleware.php`
 
 Hiding admin links in the UI is not enough. Real security must happen at the route level.
 
@@ -183,8 +196,9 @@ if (!auth()->check() || !auth()->user()->isAdmin()) {
 
 ### What It Does
 - blocks guests
-- blocks logged-in customers
-- allows only admin users through
+- blocks logged-in customers from admin panel sections
+- allows admin + staff into inventory/ecommerce routes
+- keeps POS/business/accounts routes admin-only
 
 If a customer manually types a protected URL like:
 
@@ -203,11 +217,12 @@ they are redirected back to `home`.
 
 File: `bootstrap/app.php`
 
-The admin middleware is registered under the alias `admin`:
+The middleware aliases are:
 
 ```php
 $middleware->alias([
     'admin' => \App\Http\Middleware\AdminMiddleware::class,
+    'admin_or_staff' => \App\Http\Middleware\AdminOrStaffMiddleware::class,
 ]);
 ```
 
@@ -215,6 +230,7 @@ This allows route groups to use:
 
 ```php
 ->middleware(['auth', 'admin'])
+->middleware(['auth', 'admin_or_staff']) // inventory + ecommerce
 ```
 
 ---
@@ -223,11 +239,11 @@ This allows route groups to use:
 
 File: `routes/web.php`
 
-The following parts of the application are protected using both `auth` and `admin` middleware:
+The application uses route protection by section:
 
 ### Inventory Module
 ```php
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin_or_staff'])
     ->prefix('inventory')
     ->name('inventory.')
     ->group(function () {
@@ -270,14 +286,14 @@ Route::middleware(['auth', 'admin'])
 
 File: `app/Http/Controllers/Inventory/AdminAccountController.php`
 
-Since public registration only creates customers, a secure separate admin creation flow is required.
+Since public registration only creates customers, a secure separate admin/staff creation flow is required.
 
-The system provides an **admin-only Accounts module** for managing admin users.
+The system provides an **admin-only Accounts module** for managing admin and staff users.
 
 ### Features
-- list all admins
-- create new admin via OTP verification
-- delete admin accounts
+- list all admin/staff accounts
+- create new admin or staff via OTP verification
+- delete admin/staff accounts
 - prevent self-deletion
 
 ---
@@ -305,22 +321,24 @@ An existing admin visits:
 /admin/accounts/create
 ```
 
-### Step 2 — Fill Admin Details
+### Step 2 — Fill Account Details
 The form collects:
+- account type (admin or staff)
 - full name
 - email
 - password
 - password confirmation
 
-### Step 3 — Store Pending Admin in Session
-The controller temporarily stores the new admin data in session:
+### Step 3 — Store Pending Account in Session
+The controller temporarily stores the new account data in session:
 
 ```php
 session([
-    'admin_account' => [
+    'managed_account' => [
         'full_name' => $validated['full_name'],
         'email'     => $validated['email'],
         'password'  => $validated['password'],
+        'role_id'   => $roleId,
     ]
 ]);
 ```
@@ -329,39 +347,33 @@ session([
 The system:
 - generates a 6-digit OTP
 - stores it in `otp_resets`
-- sends it to the new admin’s email using `PasswordOtpMail`
-
-Since the actual user does not yet exist, a temporary placeholder is used:
-
-```php
-'user_id' => 0
-```
+- sends it to the selected account email using `PasswordOtpMail`
 
 with:
 
 ```php
-'purpose' => 'admin_register'
+'purpose' => 'managed_account_register'
 ```
 
 ### Step 5 — Verify OTP
-The existing admin enters the code received by the new admin.
+The existing admin enters the code received by the selected account owner.
 
-### Step 6 — Create the New Admin Account
+### Step 6 — Create the New Account
 If the OTP is correct, the system creates the user with:
 
 ```php
 User::create([
-    'full_name' => $adminData['full_name'],
-    'email'     => $adminData['email'],
-    'password'  => $adminData['password'],
+    'full_name' => $accountData['full_name'],
+    'email'     => $accountData['email'],
+    'password'  => $accountData['password'],
     'gender'    => 'other',
-    'role_id'   => 1,
+    'role_id'   => $accountData['role_id'], // 1 admin, 3 staff
     'status'    => 'Y',
 ]);
 ```
 
 ### Final Result
-- new admin is inserted only after successful OTP verification
+- new account is inserted only after successful OTP verification
 - session data is cleared
 - OTP records are cleaned up
 
@@ -391,23 +403,23 @@ This protects against accidental partial account creation.
 
 ---
 
-## 14. Admin Listing
+## 14. Admin and Staff Listing
 
 File: `app/Http/Controllers/Inventory/AdminAccountController.php`
 
-All admins are listed using:
+Admin and staff accounts are listed using:
 
 ```php
-$admins = User::where('role_id', 1)->latest()->get();
+$accounts = User::whereIn('role_id', [1, 3])->latest()->get();
 ```
 
-This ensures the Accounts list only shows admin users.
+This ensures the Accounts list only shows admin/staff users.
 
 ---
 
 ## 15. Admin Deletion Rules
 
-Admins can delete other admin accounts, but not their own.
+Admins can delete other admin/staff accounts, but not their own.
 
 ### Self-Delete Protection
 
@@ -450,7 +462,7 @@ An `Accounts` section is shown in the sidebar only for admin users.
 ```php
 <a class="{{ $navLinkClass($isAccountsGroup) }}"
    href="{{ route('admin.accounts.index') }}">
-   Manage Admins
+   Manage Access
 </a>
 ```
 
@@ -532,8 +544,10 @@ This implementation provides several important protections:
 - `/auth/google`
 - `/home`
 
-### Admin-Protected Routes
+### Admin + Staff Routes
 - `/inventory/*`
+
+### Admin-Protected Routes
 - `/pos/*`
 - `/business/*`
 - `/admin/accounts/*`

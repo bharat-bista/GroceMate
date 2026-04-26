@@ -71,7 +71,7 @@ Route::get('/orders', [OrderController::class, 'index'])->name('orders');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
 // Admin order routes
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin_or_staff'])
     ->prefix('inventory/orders')
     ->name('inventory.orders.')
     ->group(function () {
@@ -85,7 +85,7 @@ Route::middleware(['auth', 'admin'])
     });
 
 // Admin contact message routes
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin_or_staff'])
     ->prefix('inventory/contacts')
     ->name('inventory.contacts.')
     ->group(function () {
@@ -118,7 +118,7 @@ Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyReg
 Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin_or_staff'])
     ->prefix('inventory')
     ->name('inventory.')
     ->group(function () {

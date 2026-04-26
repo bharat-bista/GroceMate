@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin_or_staff' => \App\Http\Middleware\AdminOrStaffMiddleware::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

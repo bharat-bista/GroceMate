@@ -45,4 +45,14 @@ class User extends Authenticatable
     {
         return $this->role_id === 2;
     }
+
+    public function isStaff(): bool
+    {
+        return $this->role_id === 3;
+    }
+
+    public function canAccessInventoryPanel(): bool
+    {
+        return $this->isAdmin() || $this->isStaff();
+    }
 }

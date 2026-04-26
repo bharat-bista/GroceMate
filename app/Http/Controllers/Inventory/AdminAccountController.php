@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Mail;
 class AdminAccountController extends Controller
 {
     /**
-     * List all admin accounts
+     * List all admin and staff accounts
      */
     public function index()
     {
-        $admins = User::where('role_id', 1)->latest()->get();
-        return view('inventory.accounts.index', compact('admins'));
+        $accounts = User::whereIn('role_id', [1, 3])->latest()->get();
+        return view('inventory.accounts.index', compact('accounts'));
     }
 
     /**
-     * Show create admin account form
+     * Show create admin/staff account form
      */
     public function create()
     {
@@ -38,14 +38,20 @@ class AdminAccountController extends Controller
             'full_name' => 'required|string|max:100',
             'email'     => 'required|email|unique:users,email',
             'password'  => 'required|min:6|confirmed',
+            'role_type' => 'required|in:admin,staff',
         ]);
 
-        // Store admin data in session
+        $roleId = $validated['role_type'] === 'staff' ? 3 : 1;
+        $roleLabel = $validated['role_type'] === 'staff' ? 'Staff' : 'Admin';
+
+        // Store account data in session
         session([
-            'admin_account' => [
+            'managed_account' => [
                 'full_name' => $validated['full_name'],
                 'email'     => $validated['email'],
                 'password'  => $validated['password'],
+                'role_id'   => $roleId,
+                'role_label' => $roleLabel,
             ]
         ]);
 
@@ -56,7 +62,7 @@ class AdminAccountController extends Controller
         $adminUserId = auth()->id();
 
         OtpReset::where('user_id', $adminUserId)
-            ->where('purpose', 'admin_register')
+            ->where('purpose', 'managed_account_register')
             ->delete();
 
         OtpReset::create([
@@ -65,34 +71,34 @@ class AdminAccountController extends Controller
             'expires_at' => now()->addMinutes(10),
             'attempts'   => 0,
             'used'       => false,
-            'purpose'    => 'admin_register',
+            'purpose'    => 'managed_account_register',
         ]);
 
-        // Send OTP to the new admin's email
+        // Send OTP to the new account's email
         Mail::to($validated['email'])->send(new PasswordOtpMail($otp, $validated['full_name']));
 
         return redirect()->route('admin.accounts.create')
             ->with('otp_sent', true)
-            ->with('success', 'OTP sent to ' . $validated['email'] . '. Please enter it below.');
+            ->with('success', $roleLabel . ' OTP sent to ' . $validated['email'] . '. Please enter it below.');
     }
 
     /**
-     * Step 2: Verify OTP, create admin account
+     * Step 2: Verify OTP, create admin/staff account
      */
     public function verifyOtp(Request $request)
     {
         $request->validate(['otp' => 'required|digits:6']);
 
-        $adminData = session('admin_account');
+        $accountData = session('managed_account');
 
-        if (!$adminData) {
+        if (!$accountData) {
             return redirect()->route('admin.accounts.create')
                 ->with('error', 'Session expired. Please start over.');
         }
 
         // Find OTP record
         $otpRecord = OtpReset::where('user_id', auth()->id())
-            ->where('purpose', 'admin_register')
+            ->where('purpose', 'managed_account_register')
             ->where('used', false)
             ->latest()
             ->first();
@@ -122,30 +128,30 @@ class AdminAccountController extends Controller
                 ->withErrors(['otp' => 'Invalid OTP. Please try again.']);
         }
 
-        // OTP valid — create admin account
+        // OTP valid — create account
         $otpRecord->update(['used' => true]);
 
         User::create([
-            'full_name' => $adminData['full_name'],
-            'email'     => $adminData['email'],
-            'password'  => $adminData['password'], // auto-hashed by model cast
+            'full_name' => $accountData['full_name'],
+            'email'     => $accountData['email'],
+            'password'  => $accountData['password'], // auto-hashed by model cast
             'gender'    => 'other',
-            'role_id'   => 1,
+            'role_id'   => $accountData['role_id'],
             'status'    => 'Y',
         ]);
 
         // Cleanup session
-        session()->forget('admin_account');
+        session()->forget('managed_account');
         OtpReset::where('user_id', auth()->id())
-            ->where('purpose', 'admin_register')
+            ->where('purpose', 'managed_account_register')
             ->delete();
 
         return redirect()->route('admin.accounts.index')
-            ->with('success', '✅ Admin account for ' . $adminData['full_name'] . ' created successfully!');
+            ->with('success', '✅ ' . $accountData['role_label'] . ' account for ' . $accountData['full_name'] . ' created successfully!');
     }
 
     /**
-     * Delete an admin account (prevent self-deletion)
+     * Delete an admin/staff account (prevent self-deletion)
      */
     public function destroy(User $user)
     {
@@ -154,15 +160,16 @@ class AdminAccountController extends Controller
                 ->with('error', '❌ You cannot delete your own account.');
         }
 
-        if (!$user->isAdmin()) {
+        if (!$user->isAdmin() && !$user->isStaff()) {
             return redirect()->route('admin.accounts.index')
-                ->with('error', '❌ This user is not an admin.');
+                ->with('error', '❌ This user is not an admin or staff account.');
         }
 
         $name = $user->full_name;
+        $roleLabel = $user->isStaff() ? 'Staff' : 'Admin';
         $user->delete();
 
         return redirect()->route('admin.accounts.index')
-            ->with('success', '✅ Admin account "' . $name . '" deleted successfully.');
+            ->with('success', '✅ ' . $roleLabel . ' account "' . $name . '" deleted successfully.');
     }
 }

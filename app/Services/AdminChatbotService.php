@@ -2,12 +2,20 @@
 
 namespace App\Services;
 
+use App\Models\Business;
+use App\Models\POS\Customer;
+use App\Models\POS\Income;
+use App\Models\POS\Invoice;
+use App\Models\POS\InvoiceItem;
 use App\Models\PurchaseItem;
+use App\Models\Purchase;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -54,12 +62,36 @@ class AdminChatbotService
             return $localAnswer;
         }
 
+        if ($localAnswer = $this->tryCustomerDueAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
+        if ($localAnswer = $this->trySupplierDueAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
+        if ($localAnswer = $this->tryProductDemandAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
+        if ($localAnswer = $this->tryTopSalesBusinessAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
+        if ($localAnswer = $this->tryBusinessFinancialSnapshotAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
+        if ($localAnswer = $this->tryBusinessReportAnswer($normalizedMessage)) {
+            return $localAnswer;
+        }
+
         if ($vannaAnswer = $this->tryVannaSidecar($message, $user)) {
             return $vannaAnswer;
         }
 
         return $this->buildResponse(
-            answer: "I can already answer low-stock, expiry, supplier-count, and calculator questions locally. For broader analytics, start the Vanna sidecar and enable it in the chatbot config.",
+            answer: "Sorry, for inconvience but i only give a anser which are related to the system  data or mathematical operation.",
             source: 'fallback',
             meta: [
                 'vanna_enabled' => config('chatbot.vanna.enabled'),
@@ -289,6 +321,375 @@ class AdminChatbotService
                 'rows_previewed' => $items->count(),
             ],
         );
+    }
+
+    /**
+     * Answer customer outstanding due questions.
+     */
+    protected function tryCustomerDueAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['customer due', 'customer dues', 'customer outstanding', 'receivable', 'collect from customer'])) {
+            return null;
+        }
+
+        $limit = (int) config('chatbot.limits.customer_due_rows', 10);
+
+        $rows = Customer::query()
+            ->where('total_due', '>', 0)
+            ->orderByDesc('total_due')
+            ->limit($limit)
+            ->get(['id', 'name', 'phone', 'total_due']);
+
+        $count = Customer::query()->where('total_due', '>', 0)->count();
+        $totalDue = (float) Customer::query()->where('total_due', '>', 0)->sum('total_due');
+
+        if ($count === 0) {
+            return $this->buildResponse(
+                answer: 'There are currently no customers with outstanding due.',
+                source: 'laravel-rule',
+                meta: ['count' => 0, 'total_due' => 0],
+            );
+        }
+
+        $lines = $rows->map(function (Customer $customer): string {
+            $phone = trim((string) ($customer->phone ?? ''));
+            $phoneText = $phone !== '' ? " ({$phone})" : '';
+
+            return sprintf(
+                '- %s%s: Rs %s due',
+                $customer->name,
+                $phoneText,
+                $this->formatDecimal($customer->total_due),
+            );
+        })->implode("\n");
+
+        return $this->buildResponse(
+            answer: "Total customer receivable is Rs {$this->formatDecimal($totalDue)} across {$count} customer(s).\nHere are the top {$rows->count()}:\n{$lines}",
+            source: 'laravel-rule',
+            meta: [
+                'count' => $count,
+                'total_due' => $totalDue,
+                'rows_previewed' => $rows->count(),
+            ],
+        );
+    }
+
+    /**
+     * Answer supplier outstanding due questions.
+     */
+    protected function trySupplierDueAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['supplier due', 'supplier dues', 'supplier outstanding', 'payable', 'due to supplier', 'pay suppliers'])) {
+            return null;
+        }
+
+        $limit = (int) config('chatbot.limits.supplier_due_rows', 10);
+
+        $rows = Supplier::query()
+            ->where('total_due', '>', 0)
+            ->orderByDesc('total_due')
+            ->limit($limit)
+            ->get(['id', 'name', 'phone', 'total_due']);
+
+        $count = Supplier::query()->where('total_due', '>', 0)->count();
+        $totalDue = (float) Supplier::query()->where('total_due', '>', 0)->sum('total_due');
+
+        if ($count === 0) {
+            return $this->buildResponse(
+                answer: 'There are currently no suppliers with outstanding due.',
+                source: 'laravel-rule',
+                meta: ['count' => 0, 'total_due' => 0],
+            );
+        }
+
+        $lines = $rows->map(function (Supplier $supplier): string {
+            $phone = trim((string) ($supplier->phone ?? ''));
+            $phoneText = $phone !== '' ? " ({$phone})" : '';
+
+            return sprintf(
+                '- %s%s: Rs %s due',
+                $supplier->name,
+                $phoneText,
+                $this->formatDecimal($supplier->total_due),
+            );
+        })->implode("\n");
+
+        return $this->buildResponse(
+            answer: "Total supplier payable is Rs {$this->formatDecimal($totalDue)} across {$count} supplier(s).\nHere are the top {$rows->count()}:\n{$lines}",
+            source: 'laravel-rule',
+            meta: [
+                'count' => $count,
+                'total_due' => $totalDue,
+                'rows_previewed' => $rows->count(),
+            ],
+        );
+    }
+
+    /**
+     * Answer high-demand / low-demand product questions from invoice history.
+     */
+    protected function tryProductDemandAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['demand', 'high demand', 'low demand', 'fast moving', 'slow moving', 'most sold', 'least sold'])) {
+            return null;
+        }
+
+        $days = $this->extractDaysWindow($normalizedMessage) ?? 30;
+        $limit = (int) config('chatbot.limits.demand_rows', 10);
+        $isLowDemand = Str::contains($normalizedMessage, ['low demand', 'least sold', 'slow moving']);
+        $isAllTime = Str::contains($normalizedMessage, ['all time', 'overall']);
+
+        $query = InvoiceItem::query()
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->leftJoin('products', 'invoice_items.product_id', '=', 'products.id')
+            ->leftJoin('businesses', 'invoices.business_id', '=', 'businesses.id')
+            ->selectRaw('COALESCE(products.name, invoice_items.product_name) as product_name')
+            ->selectRaw('COALESCE(businesses.business_name, "No business") as business_name')
+            ->selectRaw('SUM(invoice_items.qty) as total_units')
+            ->groupBy(
+                DB::raw('COALESCE(products.name, invoice_items.product_name)'),
+                DB::raw('COALESCE(businesses.business_name, "No business")')
+            )
+            ->havingRaw('SUM(invoice_items.qty) > 0');
+
+        if (! $isAllTime) {
+            $query->whereDate('invoices.invoice_date', '>=', Carbon::today()->subDays($days));
+        }
+
+        $rows = $isLowDemand
+            ? $query->orderBy('total_units')->limit($limit)->get()
+            : $query->orderByDesc('total_units')->limit($limit)->get();
+
+        if ($rows->isEmpty()) {
+            $scopeText = $isAllTime ? 'all time' : "the last {$days} day(s)";
+
+            return $this->buildResponse(
+                answer: "I could not find product demand records for {$scopeText}.",
+                source: 'laravel-rule',
+                meta: ['count' => 0],
+            );
+        }
+
+        $lines = $rows->map(function ($row): string {
+            return sprintf(
+                '- %s (%s): %s unit(s)',
+                (string) $row->product_name,
+                (string) $row->business_name,
+                $this->formatDecimal($row->total_units),
+            );
+        })->implode("\n");
+
+        $scopeText = $isAllTime ? 'all-time data' : "the last {$days} day(s)";
+        $demandLabel = $isLowDemand ? 'low-demand' : 'high-demand';
+
+        return $this->buildResponse(
+            answer: "Here are the top {$rows->count()} {$demandLabel} products based on {$scopeText}:\n{$lines}",
+            source: 'laravel-rule',
+            meta: [
+                'rows_previewed' => $rows->count(),
+                'days' => $isAllTime ? null : $days,
+                'mode' => $isLowDemand ? 'low' : 'high',
+            ],
+        );
+    }
+
+    /**
+     * Answer "which business has more sale" style questions.
+     */
+    protected function tryTopSalesBusinessAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['business have more sale', 'business has more sale', 'bussiness have more sale', 'bussiness has more sale', 'top business sale', 'highest sale business', 'business with highest sale', 'most sales business'])) {
+            return null;
+        }
+
+        $days = $this->extractDaysWindow($normalizedMessage);
+        $limit = (int) config('chatbot.limits.business_rows', 5);
+
+        $query = Invoice::query()
+            ->join('businesses', 'invoices.business_id', '=', 'businesses.id')
+            ->selectRaw('businesses.id as business_id')
+            ->selectRaw('businesses.business_name as business_name')
+            ->selectRaw('SUM(invoices.total_cost) as total_sales')
+            ->selectRaw('COUNT(invoices.id) as invoice_count')
+            ->groupBy('businesses.id', 'businesses.business_name')
+            ->orderByDesc('total_sales');
+
+        if ($days) {
+            $query->whereDate('invoices.invoice_date', '>=', Carbon::today()->subDays($days));
+        }
+
+        $rows = $query->limit($limit)->get();
+
+        if ($rows->isEmpty()) {
+            return $this->buildResponse(
+                answer: 'I could not find sales records tied to businesses.',
+                source: 'laravel-rule',
+                meta: ['count' => 0],
+            );
+        }
+
+        $top = $rows->first();
+        $lines = $rows->map(function ($row): string {
+            return sprintf(
+                '- %s: Rs %s from %s invoice(s)',
+                (string) $row->business_name,
+                $this->formatDecimal($row->total_sales),
+                $this->formatDecimal($row->invoice_count),
+            );
+        })->implode("\n");
+
+        $scope = $days ? "in the last {$days} day(s)" : 'for all-time data';
+
+        return $this->buildResponse(
+            answer: "Top sales business {$scope} is {$top->business_name} (Rs {$this->formatDecimal($top->total_sales)}).\nTop {$rows->count()} businesses:\n{$lines}",
+            source: 'laravel-rule',
+            meta: [
+                'rows_previewed' => $rows->count(),
+                'top_business_id' => $top->business_id,
+                'days' => $days,
+            ],
+        );
+    }
+
+    /**
+     * Answer overall payable/receivable/collection/payment snapshot questions.
+     */
+    protected function tryBusinessFinancialSnapshotAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['purchase due', 'due to pay', 'collection', 'payable', 'receivable', 'business data', 'bussiness data', 'pay collection'])) {
+            return null;
+        }
+
+        $totalSales = (float) Invoice::query()->sum('total_cost');
+        $totalPurchases = (float) Purchase::query()->sum('total_cost');
+        $customerReceivable = (float) Customer::query()->sum('total_due');
+        $supplierPayable = (float) Supplier::query()->sum('total_due');
+        $dueCollection = (float) Income::query()
+            ->where('income_type', 'Due Collection')
+            ->where('amount_received', '>', 0)
+            ->sum('amount_received');
+        $supplierPayment = (float) SupplierPayment::query()->sum('amount');
+        $grossIncomeReceived = (float) Income::query()->where('amount_received', '>', 0)->sum('amount_received');
+        $netCashFlow = $grossIncomeReceived - $supplierPayment;
+
+        $answer = sprintf(
+            "Business finance snapshot:\n- Total sales: Rs %s\n- Total purchases: Rs %s\n- Customer receivable (to collect): Rs %s\n- Supplier payable (to pay): Rs %s\n- Due collection received: Rs %s\n- Supplier payment made: Rs %s\n- Net cash flow (income - supplier payment): Rs %s",
+            $this->formatDecimal($totalSales),
+            $this->formatDecimal($totalPurchases),
+            $this->formatDecimal($customerReceivable),
+            $this->formatDecimal($supplierPayable),
+            $this->formatDecimal($dueCollection),
+            $this->formatDecimal($supplierPayment),
+            $this->formatDecimal($netCashFlow),
+        );
+
+        return $this->buildResponse(
+            answer: $answer,
+            source: 'laravel-rule',
+            meta: [
+                'total_sales' => $totalSales,
+                'total_purchases' => $totalPurchases,
+                'customer_receivable' => $customerReceivable,
+                'supplier_payable' => $supplierPayable,
+                'due_collection' => $dueCollection,
+                'supplier_payment' => $supplierPayment,
+                'net_cash_flow' => $netCashFlow,
+            ],
+        );
+    }
+
+    /**
+     * Return a compact business report when the prompt asks for a report.
+     */
+    protected function tryBusinessReportAnswer(string $normalizedMessage): ?array
+    {
+        if (! Str::contains($normalizedMessage, ['business report', 'bussiness report', 'report about business', 'report about bussiness', 'business summary', 'report of business'])) {
+            return null;
+        }
+
+        $business = $this->matchBusinessFromMessage($normalizedMessage);
+        $days = $this->extractDaysWindow($normalizedMessage);
+
+        if ($business) {
+            $salesQuery = $business->invoices();
+            $purchaseQuery = $business->purchases();
+            $incomeQuery = $business->incomes()->where('amount_received', '>', 0);
+            $paymentQuery = $business->supplierPayments();
+
+            if ($days) {
+                $startDate = Carbon::today()->subDays($days);
+                $salesQuery->whereDate('invoice_date', '>=', $startDate);
+                $purchaseQuery->whereDate('purchase_date', '>=', $startDate);
+                $incomeQuery->whereDate('transaction_date', '>=', $startDate);
+                $paymentQuery->whereDate('date', '>=', $startDate);
+            }
+
+            $salesTotal = (float) $salesQuery->sum('total_cost');
+            $purchaseTotal = (float) $purchaseQuery->sum('total_cost');
+            $incomeTotal = (float) $incomeQuery->sum('amount_received');
+            $dueCollectionTotal = (float) (clone $incomeQuery)->where('income_type', 'Due Collection')->sum('amount_received');
+            $supplierPaymentTotal = (float) $paymentQuery->sum('amount');
+            $grossProfitLoss = $salesTotal - $purchaseTotal;
+            $netCashFlow = $incomeTotal - $supplierPaymentTotal;
+
+            $scope = $days ? "last {$days} day(s)" : 'all-time';
+
+            return $this->buildResponse(
+                answer: sprintf(
+                    "Business report for %s (%s):\n- Sales: Rs %s\n- Purchases: Rs %s\n- Income received: Rs %s\n- Due collections: Rs %s\n- Supplier payments: Rs %s\n- Gross profit/loss: Rs %s\n- Net cash flow: Rs %s\n- Current balance: Rs %s",
+                    $business->business_name,
+                    $scope,
+                    $this->formatDecimal($salesTotal),
+                    $this->formatDecimal($purchaseTotal),
+                    $this->formatDecimal($incomeTotal),
+                    $this->formatDecimal($dueCollectionTotal),
+                    $this->formatDecimal($supplierPaymentTotal),
+                    $this->formatDecimal($grossProfitLoss),
+                    $this->formatDecimal($netCashFlow),
+                    $this->formatDecimal($business->balance),
+                ),
+                source: 'laravel-rule',
+                meta: [
+                    'business_id' => $business->id,
+                    'days' => $days,
+                ],
+            );
+        }
+
+        $rows = Invoice::query()
+            ->join('businesses', 'invoices.business_id', '=', 'businesses.id')
+            ->selectRaw('businesses.business_name as business_name')
+            ->selectRaw('SUM(invoices.total_cost) as total_sales')
+            ->groupBy('businesses.id', 'businesses.business_name')
+            ->orderByDesc('total_sales')
+            ->limit((int) config('chatbot.limits.business_rows', 5))
+            ->get();
+
+        $lines = $rows->map(function ($row): string {
+            return sprintf(
+                '- %s: Rs %s',
+                (string) $row->business_name,
+                $this->formatDecimal($row->total_sales),
+            );
+        })->implode("\n");
+
+        return $this->buildResponse(
+            answer: "I could not match a specific business name in your report request, so here are the top businesses by sales:\n{$lines}",
+            source: 'laravel-rule',
+            meta: ['rows_previewed' => $rows->count()],
+        );
+    }
+
+    /**
+     * Try to resolve a business name from the message.
+     */
+    protected function matchBusinessFromMessage(string $normalizedMessage): ?Business
+    {
+        return Business::query()
+            ->get(['id', 'business_name', 'balance'])
+            ->first(function (Business $business) use ($normalizedMessage) {
+                return Str::contains($normalizedMessage, Str::of($business->business_name)->lower()->squish()->value());
+            });
     }
 
     /**

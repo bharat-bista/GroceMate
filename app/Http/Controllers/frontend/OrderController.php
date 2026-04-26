@@ -401,7 +401,10 @@ class OrderController extends Controller
         // Send email notification to customer
         if ($order->customer_email) {
             try {
-                Mail::to($order->customer_email)->send(new OrderConfirmationMail($order, 'delivery_update'));
+                // Use an explicit mail type so the email template can render a
+                // cancellation-specific message instead of a generic confirmation.
+                $mailType = $nextStatus === 'cancelled' ? 'order_cancelled' : 'delivery_update';
+                Mail::to($order->customer_email)->send(new OrderConfirmationMail($order, $mailType));
             } catch (\Exception $e) {
                 // Email sending failed, continue anyway
             }

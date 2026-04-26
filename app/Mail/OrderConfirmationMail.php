@@ -23,9 +23,16 @@ class OrderConfirmationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $subject = $this->type === 'payment_verified' 
-            ? 'Payment Verified - Order ' . $this->order->order_number . ' - GroceMate'
-            : 'Order Confirmation - ' . $this->order->order_number . ' - GroceMate';
+        // Keep all order-notification subject mapping in one place so each
+        // status transition gets the correct email subject.
+        $subject = match ($this->type) {
+            'payment_verified' => 'Payment Verified - Order ' . $this->order->order_number . ' - GroceMate',
+            'payment_failed' => 'Payment Failed - Order ' . $this->order->order_number . ' - GroceMate',
+            'payment_update' => 'Payment Status Updated - Order ' . $this->order->order_number . ' - GroceMate',
+            'delivery_update' => 'Delivery Status Updated - Order ' . $this->order->order_number . ' - GroceMate',
+            'order_cancelled' => 'Order Cancelled - ' . $this->order->order_number . ' - GroceMate',
+            default => 'Order Confirmation - ' . $this->order->order_number . ' - GroceMate',
+        };
 
         return new Envelope(
             subject: $subject,

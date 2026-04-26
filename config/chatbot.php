@@ -18,9 +18,12 @@ return [
         // Suggested prompt buttons shown when the panel first opens.
         'starter_prompts' => [
             'Which products are low stock?',
+            'Show customer due summary',
+            'Show supplier due summary',
+            'Which business has the highest sales?',
             'Show products expiring in 30 days',
             'Calculate 2450 + 18%',
-            'How many suppliers do we have?',
+            'Give me a business report',
         ],
     ],
 
@@ -54,5 +57,9 @@ return [
     'limits' => [
         'low_stock_rows' => (int) env('ADMIN_CHATBOT_LOW_STOCK_ROWS', 10),
         'expiry_rows' => (int) env('ADMIN_CHATBOT_EXPIRY_ROWS', 10),
+        'customer_due_rows' => (int) env('ADMIN_CHATBOT_CUSTOMER_DUE_ROWS', 10),
+        'supplier_due_rows' => (int) env('ADMIN_CHATBOT_SUPPLIER_DUE_ROWS', 10),
+        'demand_rows' => (int) env('ADMIN_CHATBOT_DEMAND_ROWS', 10),
+        'business_rows' => (int) env('ADMIN_CHATBOT_BUSINESS_ROWS', 5),
     ],
 ];

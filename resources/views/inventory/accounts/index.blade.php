@@ -92,7 +92,7 @@
   {{-- Info --}}
   <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
     <strong>Note:</strong> Admin users can access Inventory, POS, and settings.
-    Staff users can access Inventory and Ecommerce only. Customers cannot access admin sections.
+    Staff users can access Inventory and Ecommerce only. 
   </div>
 
 </div>

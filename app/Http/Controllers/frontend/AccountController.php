@@ -23,7 +23,7 @@ class AccountController extends Controller
     public function login()
     {
         if (Auth::check()) {
-            return auth()->user()->isAdmin()
+            return auth()->user()->canAccessInventoryPanel()
                 ? redirect()->route('inventory.dashboard')
                 : redirect()->route('home');
         }
@@ -58,7 +58,7 @@ class AccountController extends Controller
     // Login user
     Auth::login($user, $request->remember);
 
-    if ($user->isAdmin()) {
+    if ($user->canAccessInventoryPanel()) {
         return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
     }
 
@@ -218,7 +218,7 @@ class AccountController extends Controller
 
         Auth::login($user);
 
-        if ($user->isAdmin()) {
+        if ($user->canAccessInventoryPanel()) {
             return redirect()->route('inventory.dashboard')->with('success', 'Logged in with Google!');
         }
 

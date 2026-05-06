@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Brand;
 use App\Models\Business;
 use Illuminate\Http\Request;
@@ -34,6 +35,32 @@ class ProductController extends Controller
       'q' => $q,
       'businesses' => Business::orderBy('business_name')->get(),
       'selectedBusinessId' => $businessId,
+    ]);
+  }
+
+  public function batches(Request $request, Product $product)
+  {
+    $status = $request->get('status');
+    $allowedStatuses = ['active', 'depleted', 'expired'];
+
+    $batches = StockBatch::query()
+      ->where('product_id', $product->id)
+      ->when(in_array($status, $allowedStatuses, true), fn ($q) => $q->where('status', $status))
+      ->orderBy('purchased_on')
+      ->orderBy('id')
+      ->paginate(10)
+      ->withQueryString();
+
+    $valuationTotal = (float) StockBatch::active()
+      ->where('product_id', $product->id)
+      ->selectRaw('SUM(qty_remaining * unit_cost) as total')
+      ->value('total');
+
+    return view('inventory.stock.batches', [
+      'product' => $product,
+      'batches' => $batches,
+      'status' => $status,
+      'valuationTotal' => $valuationTotal,
     ]);
   }
 

@@ -129,10 +129,16 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-sm">
-                                <a href="{{ route('inventory.products.edit', $product) }}"
-                                   class="text-green-600 hover:text-green-900 font-medium">
-                                    Edit
-                                </a>
+                                <div class="flex items-center gap-3">
+                                    <a href="{{ route('inventory.stock.batches', $product) }}"
+                                       class="text-slate-600 hover:text-slate-900 font-medium">
+                                        Batches
+                                    </a>
+                                    <a href="{{ route('inventory.products.edit', $product) }}"
+                                       class="text-green-600 hover:text-green-900 font-medium">
+                                        Edit
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

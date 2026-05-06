@@ -10,6 +10,7 @@ use App\Models\POS\Invoice;
 use App\Models\POS\InvoiceItem;
 use App\Models\Stock;
 use App\Models\Tax;
+use App\Services\FifoStockService;
 use App\Services\InvoiceNumberService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -107,6 +108,8 @@ class InvoiceController extends Controller
 
             $purchaseBaseTotal = 0;
 
+            $fifoService = app(FifoStockService::class);
+
             foreach ($data['items'] as $row) {
                 $qty = (float) $row['qty'];
                 $unitCost = (float) $row['unit_cost'];
@@ -152,12 +155,10 @@ class InvoiceController extends Controller
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
 
-                // Update stock (decrease for POS sales)
-                $stock = Stock::firstOrCreate(
-                    ['product_id' => $productId],
-                    ['quantity' => 0, 'reorder_level' => 0]
-                );
-                $stock->decrement('quantity', $qty);
+                $result = $fifoService->consume($productId, $qty);
+                if (!$result['success']) {
+                    throw new \Exception("Insufficient stock. Shortfall: {$result['shortfall']} units.");
+                }
             }
 
             // Calculate final tax if selected

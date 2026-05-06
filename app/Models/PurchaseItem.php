@@ -19,6 +19,7 @@ class PurchaseItem extends Model
         'tax_total',
         'line_total',
         'expiry_date',
+        'batch_no',
     ];
 
     protected $casts = [

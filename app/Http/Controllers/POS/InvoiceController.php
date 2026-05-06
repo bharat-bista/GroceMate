@@ -18,9 +18,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller
 {
+    public function __construct(private FifoStockService $fifoService)
+    {
+    }
+
     public function index(Request $request)
     {
         // Start with base query
@@ -92,7 +97,25 @@ class InvoiceController extends Controller
         $sendEmail = $data['send_email'] ?? false;
         $invoiceId = null;
 
-        DB::transaction(function () use ($data, &$invoiceId) {
+        // Validate stock for every row before any DB changes, so we can show per-row errors.
+        $errors = [];
+        $fifoService = $this->fifoService ?? app(FifoStockService::class);
+        foreach ($data['items'] as $index => $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            $qty = (float) $row['qty'];
+            $check = $fifoService->canConsume($productId, $qty, 'pos');
+
+            if (!$check['ok']) {
+                $productLabel = $row['product_name'];
+                $errors["items.{$index}.qty"] = "{$productLabel} — only {$check['available']} available, you need {$qty}";
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        DB::transaction(function () use ($data, &$invoiceId, $fifoService) {
             // Create invoice header
             $invoice = Invoice::create([
                 'business_id' => $data['business_id'],
@@ -108,8 +131,6 @@ class InvoiceController extends Controller
 
             $purchaseBaseTotal = 0;
 
-            $fifoService = app(FifoStockService::class);
-
             foreach ($data['items'] as $row) {
                 $qty = (float) $row['qty'];
                 $unitCost = (float) $row['unit_cost'];
@@ -122,9 +143,10 @@ class InvoiceController extends Controller
                 } else {
                     // Create new product
                     $product = Product::create([
+                        'business_id' => $data['business_id'],
                         'name' => $row['product_name'],
                         'unit' => $row['product_unit'],
-                        'category_id' => 1, // Default category, you might want to change this
+                        'category_id' => config('pos.default_category_id', 1),
                         'selling_price' => $unitCost * 1.2, // 20% markup by default
                         'is_active' => true,
                     ]);
@@ -140,7 +162,7 @@ class InvoiceController extends Controller
                 }
 
                 // Create invoice item (no per-product taxes)
-                InvoiceItem::create([
+                $invoiceItem = InvoiceItem::create([
                     'invoice_id' => $invoice->id,
                     'product_id' => $productId,
                     'product_name' => $row['product_name'],         // snapshot
@@ -155,10 +177,11 @@ class InvoiceController extends Controller
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
 
-                $result = $fifoService->consume($productId, $qty);
-                if (!$result['success']) {
-                    throw new \Exception("Insufficient stock. Shortfall: {$result['shortfall']} units.");
-                }
+                // Consume FIFO batches for POS and store the batch breakdown on the item.
+                $result = $fifoService->consume($productId, $qty, 'pos');
+                $invoiceItem->update([
+                    'batches_consumed' => json_encode($result['batches_used']),
+                ]);
             }
 
             // Calculate final tax if selected
@@ -467,6 +490,51 @@ class InvoiceController extends Controller
             \Log::error('Failed to send invoice email: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function cancel(Request $request, Invoice $invoice)
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($invoice->cancellation_status === 'cancelled') {
+            return back()->with('error', 'Invoice already cancelled');
+        }
+
+        $reason = $data['reason'];
+        $fifoService = $this->fifoService ?? app(FifoStockService::class);
+
+        DB::transaction(function () use ($invoice, $reason, $fifoService) {
+            $invoice->loadMissing('items');
+
+            // Restore stock back to the exact FIFO batches used on this invoice.
+            foreach ($invoice->items as $item) {
+                $batchesUsed = [];
+                if (!empty($item->batches_consumed)) {
+                    $decoded = json_decode($item->batches_consumed, true);
+                    $batchesUsed = is_array($decoded) ? $decoded : [];
+                }
+
+                $fifoService->reverse($item->product_id, (float) $item->qty, $batchesUsed);
+            }
+
+            // Mark the invoice as cancelled and capture audit details.
+            $invoice->update([
+                'cancellation_status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancelled_by' => auth()->id(),
+                'cancellation_reason' => $reason,
+            ]);
+
+            $customer = Customer::find($invoice->customer_id);
+            if ($customer) {
+                $customer->syncTotalDue();
+            }
+        });
+
+        return redirect()->route('pos.invoices.index')
+            ->with('success', 'Invoice cancelled successfully.');
     }
 
     public function destroy(Invoice $invoice)

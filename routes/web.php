@@ -28,6 +28,8 @@ use App\Http\Controllers\POS\InvoiceController;
 use App\Http\Controllers\POS\IncomeController;
 use App\Http\Controllers\POS\ExpenseController;
 use App\Http\Controllers\POS\DashboardController as POSDashboardController;
+use App\Http\Controllers\POS\StockCheckController;
+use App\Http\Controllers\POS\ProductSearchController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\DeliveryFeeSettingController;
 use App\Http\Controllers\BusinessController;
@@ -36,6 +38,12 @@ use App\Http\Controllers\AdminChatbotController;
 
 // Khalti Payment Verification Route
 Route::post('/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
+
+// Read-only POS stock check endpoint (no auth required).
+Route::post('/pos/stock-check', [StockCheckController::class, 'check'])->name('pos.stock-check');
+
+// POS product search endpoint (no auth required).
+Route::get('/pos/products/search', [ProductSearchController::class, 'searchProductsForPOS'])->name('pos.products.search');
 
 
 // Redirect root URL to login page
@@ -221,6 +229,8 @@ Route::middleware(['auth', 'admin'])
         Route::get('/invoices/{invoice}/export/{format}', [InvoiceController::class, 'export'])->name('invoices.export');
         
         Route::post('/invoices/{invoice}/send-email', [InvoiceController::class, 'sendEmail'])->name('invoices.send-email');
+        
+        Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
 
         // Income routes
         Route::get('/income', [IncomeController::class, 'index'])->name('income.index');

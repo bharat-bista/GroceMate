@@ -18,6 +18,7 @@ class InvoiceItem extends Model
         'tax_total',
         'line_total',
         'expiry_date',
+        'batches_consumed',
     ];
 
     protected $casts = [

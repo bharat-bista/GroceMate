@@ -17,11 +17,16 @@ class Invoice extends Model
         'total_cost',
         'payment_method',
         'status',
+        'cancellation_status',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
     ];
 
     protected $casts = [
         'invoice_date' => 'date',
         'total_cost' => 'decimal:2',
+        'cancelled_at' => 'datetime',
     ];
 
     public function customer()

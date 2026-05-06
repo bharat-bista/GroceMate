@@ -63,4 +63,27 @@ class Product extends Model {
   {
       return $this->hasOne(EcommerceProduct::class);
   }
+
+  // Total on-hand quantity from the stock cache.
+  public function availableStock(): float
+  {
+      return (float) ($this->stock?->quantity ?? 0);
+  }
+
+  // Quantity reserved for ecommerce orders.
+  public function ecommerceReserved(): float
+  {
+      return (float) ($this->ecommerceProduct?->ecommerce_stock ?? 0);
+  }
+
+  // Stock that POS can actually use after ecommerce reservations.
+  public function posAvailableStock(): float
+  {
+      return max(0.0, $this->availableStock() - $this->ecommerceReserved());
+  }
+
+  public function getPosAvailableStockAttribute(): float
+  {
+      return $this->posAvailableStock();
+  }
 }

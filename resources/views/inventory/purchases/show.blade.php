@@ -124,6 +124,7 @@
                     <thead class="text-slate-700 bg-slate-100">
                         <tr>
                             <th class="text-left px-4 py-3 font-medium">Product</th>
+                            <th class="text-left px-4 py-3 font-medium">Batch No</th>
                             <th class="text-left px-4 py-3 font-medium">Unit</th>
                             <th class="text-left px-4 py-3 font-medium">Quantity</th>
                             <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
@@ -135,6 +136,7 @@
                         @foreach($purchase->items as $item)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">{{ $item->product_name ?? $item->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ $item->batch_no ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->unit ?? $item->product->unit ?? 'N/A' }}</td>
                                 <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
                                 <td class="px-4 py-3">Rs {{ number_format((float) $item->unit_cost, 2) }}</td>
@@ -145,19 +147,19 @@
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-300">
                         <tr>
-                            <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
+                            <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
                             <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 2) }}</td>
                         </tr>
                         @if($purchase->total_cost > $purchase->items->sum('line_total'))
                             <tr>
-                                <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
+                                <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
                                 <td class="px-4 py-3 font-semibold text-red-600">
                                     Rs {{ number_format((float) ($purchase->total_cost - $purchase->items->sum('line_total')), 2) }}
                                 </td>
                             </tr>
                         @endif
                         <tr class="bg-slate-100">
-                            <td colspan="5" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
+                            <td colspan="6" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
                             <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format((float) $purchase->total_cost, 2) }}</td>
                         </tr>
                     </tfoot>

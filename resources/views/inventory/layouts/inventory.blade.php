@@ -29,6 +29,7 @@
         $isInventoryGroup = request()->routeIs(
             'inventory.categories.*',
             'inventory.products.*',
+            'inventory.stock.*',
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',
@@ -54,7 +55,7 @@
         );
         $isBusinessProfile = request()->routeIs('business.*');
         $isAccountsGroup = request()->routeIs('admin.accounts.*');
-        $isSettingsGroup = request()->routeIs(['taxes.*', 'admin.accounts.*']);
+        $isSettingsGroup = request()->routeIs(['taxes.*', 'delivery-fees.*', 'admin.accounts.*']);
 
         $navLinkClass = function (bool $active = false) {
             return $active
@@ -269,6 +270,11 @@
       <a class="{{ $navLinkClass(request()->routeIs('taxes.*')) }}"
          href="{{ route('taxes.index') }}">
          Tax Settings
+      </a>
+
+      <a class="{{ $navLinkClass(request()->routeIs('delivery-fees.*')) }}"
+         href="{{ route('delivery-fees.index') }}">
+         Delivery Fee Settings
       </a>
     
   @endif

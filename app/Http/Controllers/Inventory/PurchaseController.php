@@ -8,6 +8,7 @@ use App\Models\PurchaseItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Tax;
 use App\Models\Category;
 use App\Models\Brand;
@@ -242,7 +243,7 @@ class PurchaseController extends Controller
                 }
 
                 // Create purchase item with category and company snapshots
-                PurchaseItem::create([
+                $purchaseItem = PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
                     'product_name' => $row['product_name'],         // snapshot
@@ -256,6 +257,22 @@ class PurchaseController extends Controller
                     'line_total' => $baseCost,
                     'expiry_date' => $row['expiry_date'] ?? null,
                 ]);
+
+                $batchNo = StockBatch::generateBatchNo($data['purchase_date']);
+
+                StockBatch::create([
+                    'product_id' => $productId,
+                    'purchase_item_id' => $purchaseItem->id,
+                    'batch_no' => $batchNo,
+                    'qty_received' => $qty,
+                    'qty_remaining' => $qty,
+                    'unit_cost' => $unitCost,
+                    'expiry_date' => $row['expiry_date'] ?? null,
+                    'purchased_on' => $data['purchase_date'],
+                    'status' => 'active',
+                ]);
+
+                $purchaseItem->update(['batch_no' => $batchNo]);
 
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
@@ -309,16 +326,19 @@ class PurchaseController extends Controller
         $today = Carbon::today();
         $soon = $today->copy()->addDays($days);
 
-        $expiringSoon = PurchaseItem::query()
-            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
+        $expiringSoon = StockBatch::query()
+            ->with(['product.business', 'product.brandRelation', 'purchaseItem.purchase.supplier'])
+            ->where('status', 'active')
+            ->where('qty_remaining', '>', 0)
             ->whereNotNull('expiry_date')
             ->whereBetween('expiry_date', [$today, $soon])
             ->orderBy('expiry_date')
             ->paginate(10, ['*'], 'soon_page')
             ->withQueryString();
 
-        $expired = PurchaseItem::query()
-            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
+        $expired = StockBatch::query()
+            ->with(['product.business', 'product.brandRelation', 'purchaseItem.purchase.supplier'])
+            ->where('qty_remaining', '>', 0)
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '<', $today)
             ->orderByDesc('expiry_date')
@@ -331,54 +351,44 @@ public function searchProducts(Request $request)
 {
     $q = trim($request->get('q', ''));
     $businessId = $request->get('business_id');
-    $businessName = null;
-    if ($businessId) {
-        $businessName = Business::find($businessId)?->business_name;
+    $showAll = $request->boolean('show_all');
+
+    if (strlen($q) < 2) {
+        return response()->json([]);
     }
-    if (strlen($q) < 2) return response()->json([]);
 
-    // Debug: Log the search query
-    \Log::info('Searching for products with query: ' . $q);
-
-    // Simple direct search on purchase items
-    $items = PurchaseItem::query()
-        ->when($businessId, function ($query) use ($businessId) {
-            $query->whereHas('purchase', function ($purchaseQuery) use ($businessId) {
-                $purchaseQuery->where('business_id', $businessId);
+    // Search real products so we don't hide items that were never purchased.
+    $products = Product::query()
+        ->with(['stock', 'ecommerceProduct', 'latestPurchaseItem'])
+        ->when($businessId, fn($query) => $query->where('business_id', $businessId))
+        ->where('name', 'LIKE', '%' . $q . '%')
+        ->when(!$showAll, function ($query) {
+            $query->whereHas('stock', function ($stockQuery) {
+                $stockQuery->where('quantity', '>', 0);
             });
         })
-        ->whereNotNull('product_name')
-        ->where('product_name', 'LIKE', '%' . $q . '%')
-        ->orderByDesc('id')
+        ->orderBy('name')
+        ->limit(10)
         ->get();
 
-    // Debug: Log how many items found
-    \Log::info('Found ' . $items->count() . ' items for query: ' . $q);
+    $results = $products->map(function (Product $product) {
+        $lastPurchaseCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0);
+        $availableStock = (float) ($product->stock?->quantity ?? 0);
 
-    $results = $items
-        ->groupBy(function($item) {
-            return strtolower(trim($item->product_name));
-        })
-        ->map(function ($group) {
-            $item = $group->first();
-            return [
-                'id'            => $item->product_id,
-                'name'          => $item->product_name,
-                'sku'           => null,
-                'unit'          => $item->unit,
-                'last_cost'     => (float) $item->unit_cost,
-                'category_name' => $item->category_name,
-                'category_id'   => null, // PurchaseItem doesn't store category_id
-                'brand_name'    => $item->company_name, // company_name is the brand
-                'brand_id'      => null, // PurchaseItem doesn't store brand_id
-                'business_id'   => $item->purchase->business_id ?? null,
-            ];
-        })
-        ->values()
-        ->take(10);
-
-    // Debug: Log final results
-    \Log::info('Returning ' . $results->count() . ' unique results for query: ' . $q);
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'unit' => $product->unit,
+            'selling_price' => (float) ($product->selling_price ?? 0),
+            'last_purchase_cost' => $lastPurchaseCost,
+            // Backward-compatible alias for existing UI bindings.
+            'last_cost' => $lastPurchaseCost,
+            'available_stock' => $availableStock,
+            'pos_available' => $product->posAvailableStock(),
+            'business_id' => $product->business_id,
+        ];
+    });
 
     return response()->json($results);
 }
@@ -388,6 +398,7 @@ public function export($type, Request $request)
     $from = $request->get('from');
     $to = $request->get('to');
     $businessId = $request->get('business_id');
+    $businessName = $businessId ? Business::find($businessId)?->business_name : null;
     
     // Debug: Log the received parameters
     \Log::info('Export parameters:', [

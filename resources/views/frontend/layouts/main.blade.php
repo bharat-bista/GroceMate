@@ -12,7 +12,7 @@
     <meta property="og:description" content="@yield('og_description', 'Golden Vision Traders Pvt. Ltd provides premium CCTV systems and electronic goods for homes and businesses')">
     <meta property="og:image" content="@yield('og_image', asset('assets/img/logo/logo.png'))">
 
-    <link rel="manifest" href="site.webmanifest">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/img/logo/golden.png') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/owl.carousel.min.css') }}">

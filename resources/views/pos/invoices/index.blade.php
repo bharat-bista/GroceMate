@@ -96,7 +96,6 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Payment Method</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Customer Due</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Total</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -137,15 +136,6 @@
                                 @else
                                     <div class="text-sm text-slate-500">-</div>
                                 @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm">
-                                    @if($invoice->status === 'Complete')
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Complete</span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                                    @endif
-                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($invoice->total_cost, 2) }}</div>

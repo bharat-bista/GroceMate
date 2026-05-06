@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -22,7 +23,9 @@ class CheckoutController extends Controller
     }
 
     public function checkout(){
-        return view('frontend.checkout.index');
+        return view('frontend.checkout.index', [
+            'deliveryFees' => DeliveryFeeSetting::chargeMap(),
+        ]);
     }
 
     /**
@@ -61,11 +64,7 @@ class CheckoutController extends Controller
             ->values()
             ->all();
 
-        $deliveryCharges = [
-            'inside' => 100,
-            'outside' => 200,
-            'pickup' => 0,
-        ];
+        $deliveryCharges = DeliveryFeeSetting::chargeMap();
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round(collect($items)->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
         $computedTotal = round($subtotal + $deliveryCharge, 2);

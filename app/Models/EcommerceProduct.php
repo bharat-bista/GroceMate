@@ -40,6 +40,12 @@ class EcommerceProduct extends Model
         });
     }
 
+    // Reserved quantity held back for ecommerce orders.
+    public function getReservedStockAttribute(): float
+    {
+        return (float) ($this->ecommerce_stock ?? 0);
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class);
@@ -59,6 +65,14 @@ class EcommerceProduct extends Model
             $subQuery->from($table)
                 ->selectRaw('MAX(id)')
                 ->groupBy('product_id');
+        });
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        // Only include ecommerce products whose base product is active and listed.
+        return $query->whereHas('product', function (Builder $productQuery) {
+            $productQuery->where('is_active', true)->where('is_listed', true);
         });
     }
 

@@ -351,54 +351,44 @@ public function searchProducts(Request $request)
 {
     $q = trim($request->get('q', ''));
     $businessId = $request->get('business_id');
-    $businessName = null;
-    if ($businessId) {
-        $businessName = Business::find($businessId)?->business_name;
+    $showAll = $request->boolean('show_all');
+
+    if (strlen($q) < 2) {
+        return response()->json([]);
     }
-    if (strlen($q) < 2) return response()->json([]);
 
-    // Debug: Log the search query
-    \Log::info('Searching for products with query: ' . $q);
-
-    // Simple direct search on purchase items
-    $items = PurchaseItem::query()
-        ->when($businessId, function ($query) use ($businessId) {
-            $query->whereHas('purchase', function ($purchaseQuery) use ($businessId) {
-                $purchaseQuery->where('business_id', $businessId);
+    // Search real products so we don't hide items that were never purchased.
+    $products = Product::query()
+        ->with(['stock', 'ecommerceProduct', 'latestPurchaseItem'])
+        ->when($businessId, fn($query) => $query->where('business_id', $businessId))
+        ->where('name', 'LIKE', '%' . $q . '%')
+        ->when(!$showAll, function ($query) {
+            $query->whereHas('stock', function ($stockQuery) {
+                $stockQuery->where('quantity', '>', 0);
             });
         })
-        ->whereNotNull('product_name')
-        ->where('product_name', 'LIKE', '%' . $q . '%')
-        ->orderByDesc('id')
+        ->orderBy('name')
+        ->limit(10)
         ->get();
 
-    // Debug: Log how many items found
-    \Log::info('Found ' . $items->count() . ' items for query: ' . $q);
+    $results = $products->map(function (Product $product) {
+        $lastPurchaseCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0);
+        $availableStock = (float) ($product->stock?->quantity ?? 0);
 
-    $results = $items
-        ->groupBy(function($item) {
-            return strtolower(trim($item->product_name));
-        })
-        ->map(function ($group) {
-            $item = $group->first();
-            return [
-                'id'            => $item->product_id,
-                'name'          => $item->product_name,
-                'sku'           => null,
-                'unit'          => $item->unit,
-                'last_cost'     => (float) $item->unit_cost,
-                'category_name' => $item->category_name,
-                'category_id'   => null, // PurchaseItem doesn't store category_id
-                'brand_name'    => $item->company_name, // company_name is the brand
-                'brand_id'      => null, // PurchaseItem doesn't store brand_id
-                'business_id'   => $item->purchase->business_id ?? null,
-            ];
-        })
-        ->values()
-        ->take(10);
-
-    // Debug: Log final results
-    \Log::info('Returning ' . $results->count() . ' unique results for query: ' . $q);
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'unit' => $product->unit,
+            'selling_price' => (float) ($product->selling_price ?? 0),
+            'last_purchase_cost' => $lastPurchaseCost,
+            // Backward-compatible alias for existing UI bindings.
+            'last_cost' => $lastPurchaseCost,
+            'available_stock' => $availableStock,
+            'pos_available' => $product->posAvailableStock(),
+            'business_id' => $product->business_id,
+        ];
+    });
 
     return response()->json($results);
 }

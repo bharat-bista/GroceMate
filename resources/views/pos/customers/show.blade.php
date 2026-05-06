@@ -223,7 +223,6 @@
                                 <th class="text-left px-4 py-3">Invoice No</th>
                                 <th class="text-left px-4 py-3">Date</th>
                                 <th class="text-left px-4 py-3">Amount</th>
-                                <th class="text-left px-4 py-3">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y">
@@ -238,17 +237,6 @@
                                         <span class="text-blue-600 font-semibold">
                                             Rs {{ number_format($sale->total_cost, 2) }}
                                         </span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if($sale->status === 'Complete')
-                                            <span class="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                                               Due Paid
-                                            </span>
-                                        @else
-                                            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">
-                                                Pending
-                                            </span>
-                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

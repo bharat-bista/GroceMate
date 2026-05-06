@@ -122,7 +122,7 @@
                         <th class="text-left px-4 py-3 font-medium">Product</th>
                         <th class="text-left px-4 py-3 font-medium">Unit</th>
                         <th class="text-left px-4 py-3 font-medium">Qty</th>
-                        <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
+                        <th class="text-left px-4 py-3 font-medium">Unit Price</th>
                         <th class="text-left px-4 py-3 font-medium">Base Cost</th>
                         <th class="text-left px-4 py-3 font-medium">Subtotal</th>
                         <th class="text-center px-4 py-3 font-medium">Action</th>
@@ -265,7 +265,8 @@ const products = [
     name: "{{ addslashes($product['name']) }}",
     unit: "{{ $product['unit'] }}",
     sku: "{{ $product['sku'] ?? '' }}",
-    last_cost: {{ $product['last_cost'] ?? 0 }},
+    selling_price: {{ $product['selling_price'] ?? 0 }},
+    pos_available: {{ $product['pos_available_stock'] ?? 0 }},
 },
 @endforeach
 ];
@@ -294,7 +295,7 @@ async function searchProductsApi(query) {
         // Get CSRF token
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
-        const response = await fetch(`/inventory/purchases/search-products?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(`/pos/products/search?q=${encodeURIComponent(query)}`, {
             method: 'GET',
             headers: { 
                 'Accept': 'application/json',
@@ -417,7 +418,8 @@ function updateProductFromInput(rowId, payload) {
     const name = payload.name || '';
     const id = payload.id ? Number(payload.id) : null;
     const unit = payload.unit || 'pcs';
-    const lastCost = payload.last_cost || 0;
+    // Use selling price as the default unit price for POS.
+    const sellingPrice = payload.selling_price || 0;
 
     productInput.value = name;
     productIdInput.value = id || '';
@@ -433,7 +435,7 @@ function updateProductFromInput(rowId, payload) {
         unitDisplay.classList.add('hidden');
     }
 
-    costInput.value = lastCost;
+    costInput.value = sellingPrice;
 
     updateAllTotals();
 }
@@ -478,9 +480,15 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
     // --- Existing products first ---
     if (results.length > 0) {
         results.slice(0, 10).forEach((p) => {
+            // Prevent selection of items that have no POS-available stock.
+            const posAvailable = Number(p.pos_available ?? 0);
+            const inStock = posAvailable > 0;
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate';
+            item.disabled = !inStock;
+            item.className = inStock
+                ? 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate'
+                : 'block w-full px-3 py-2 text-sm text-slate-400 rounded-xl cursor-not-allowed opacity-60 truncate';
             
             // highlight matching text
             const name = p.name || '';
@@ -497,21 +505,27 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
                     <div class="min-w-0 flex-1">
                         <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
                         <div class="text-[11px] text-slate-500 leading-tight">
-                            ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'}
+                            ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'} •
+                            ${inStock ? `In stock: ${posAvailable} units` : '<span class="text-red-600">Out of stock</span>'}
                         </div>
                     </div>
                     <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
-                        Last: ${formatCurrency(p.last_cost ?? 0)}
+                        Price: Rs ${formatCurrency(p.selling_price ?? 0)}
                     </div>
                 </div>
             `;
 
             item.addEventListener('click', () => {
+                if (!inStock) {
+                    return;
+                }
+
                 updateProductFromInput(rowId, {
                     id: p.id,
                     name: p.name,
                     unit: p.unit,
-                    last_cost: p.last_cost
+                    selling_price: p.selling_price,
+                    pos_available: p.pos_available
                 });
 
                 dropdown.remove();
@@ -682,7 +696,11 @@ function createRow() {
     productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
 
     // update totals when qty or cost changes
-    row.querySelector('.qty-input').addEventListener('input', updateAllTotals);
+    row.querySelector('.qty-input').addEventListener('input', () => {
+        // Clear any previous stock errors when quantities change.
+        clearStockErrors();
+        updateAllTotals();
+    });
     row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
 
     // remove row
@@ -701,6 +719,95 @@ function removeRow(rowId) {
     if (row) row.remove();
     removeAutocomplete();
     updateAllTotals();
+}
+
+// ---------- Stock check ----------
+function clearStockErrors() {
+    document.querySelectorAll('.qty-input').forEach(input => {
+        input.classList.remove('border-red-500');
+    });
+    document.querySelectorAll('.stock-error').forEach(el => el.remove());
+}
+
+function showStockError(row, available) {
+    const qtyInput = row.querySelector('.qty-input');
+    if (!qtyInput) return;
+
+    qtyInput.classList.add('border-red-500');
+
+    let errorEl = row.querySelector('.stock-error');
+    if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'stock-error text-red-600 text-xs mt-1';
+        qtyInput.parentElement.appendChild(errorEl);
+    }
+
+    errorEl.textContent = `Only ${available} available`;
+}
+
+async function checkStock() {
+    // Build a minimal payload with product_id + qty (skip rows with no product).
+    const rows = document.querySelectorAll('.purchase-row');
+    const items = [];
+
+    rows.forEach(row => {
+        const productId = row.querySelector('.product-id-input')?.value;
+        const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
+
+        if (productId) {
+            items.push({ product_id: Number(productId), qty });
+        }
+    });
+
+    clearStockErrors();
+
+    if (items.length === 0) {
+        return true;
+    }
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    try {
+        const response = await fetch('/pos/stock-check', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ items })
+        });
+
+        if (!response.ok) {
+            console.error('Stock check failed:', response.status);
+            return false;
+        }
+
+        const data = await response.json();
+        if (data?.ok) {
+            return true;
+        }
+
+        const results = Array.isArray(data?.items) ? data.items : [];
+        const byProduct = new Map(results.map(item => [String(item.product_id), item]));
+
+        rows.forEach(row => {
+            const productId = row.querySelector('.product-id-input')?.value;
+            if (!productId) return;
+
+            const result = byProduct.get(String(productId));
+            if (result && !result.ok) {
+                showStockError(row, result.available);
+            }
+        });
+
+        return false;
+    } catch (e) {
+        console.error('Stock check error:', e);
+        return false;
+    }
 }
 
 // ---------- Init ----------
@@ -747,10 +854,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Show email modal when save button is clicked
-    saveInvoiceBtn.addEventListener('click', function() {
+    saveInvoiceBtn.addEventListener('click', async function() {
         const customer = document.querySelector('select[name="customer_id"]').value;
         if (!customer) {
             alert('Please select a customer');
+            return;
+        }
+
+        const stockOk = await checkStock();
+        if (!stockOk) {
             return;
         }
 

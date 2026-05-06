@@ -8,6 +8,7 @@ use App\Models\PurchaseItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Tax;
 use App\Models\Category;
 use App\Models\Brand;
@@ -242,7 +243,7 @@ class PurchaseController extends Controller
                 }
 
                 // Create purchase item with category and company snapshots
-                PurchaseItem::create([
+                $purchaseItem = PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
                     'product_name' => $row['product_name'],         // snapshot
@@ -256,6 +257,22 @@ class PurchaseController extends Controller
                     'line_total' => $baseCost,
                     'expiry_date' => $row['expiry_date'] ?? null,
                 ]);
+
+                $batchNo = StockBatch::generateBatchNo($data['purchase_date']);
+
+                StockBatch::create([
+                    'product_id' => $productId,
+                    'purchase_item_id' => $purchaseItem->id,
+                    'batch_no' => $batchNo,
+                    'qty_received' => $qty,
+                    'qty_remaining' => $qty,
+                    'unit_cost' => $unitCost,
+                    'expiry_date' => $row['expiry_date'] ?? null,
+                    'purchased_on' => $data['purchase_date'],
+                    'status' => 'active',
+                ]);
+
+                $purchaseItem->update(['batch_no' => $batchNo]);
 
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
@@ -309,16 +326,19 @@ class PurchaseController extends Controller
         $today = Carbon::today();
         $soon = $today->copy()->addDays($days);
 
-        $expiringSoon = PurchaseItem::query()
-            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
+        $expiringSoon = StockBatch::query()
+            ->with(['product.business', 'product.brandRelation', 'purchaseItem.purchase.supplier'])
+            ->where('status', 'active')
+            ->where('qty_remaining', '>', 0)
             ->whereNotNull('expiry_date')
             ->whereBetween('expiry_date', [$today, $soon])
             ->orderBy('expiry_date')
             ->paginate(10, ['*'], 'soon_page')
             ->withQueryString();
 
-        $expired = PurchaseItem::query()
-            ->with(['product.brandRelation', 'purchase.business', 'purchase.supplier'])
+        $expired = StockBatch::query()
+            ->with(['product.business', 'product.brandRelation', 'purchaseItem.purchase.supplier'])
+            ->where('qty_remaining', '>', 0)
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '<', $today)
             ->orderByDesc('expiry_date')
@@ -388,6 +408,7 @@ public function export($type, Request $request)
     $from = $request->get('from');
     $to = $request->get('to');
     $businessId = $request->get('business_id');
+    $businessName = $businessId ? Business::find($businessId)?->business_name : null;
     
     // Debug: Log the received parameters
     \Log::info('Export parameters:', [

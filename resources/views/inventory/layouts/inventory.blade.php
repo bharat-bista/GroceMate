@@ -29,6 +29,7 @@
         $isInventoryGroup = request()->routeIs(
             'inventory.categories.*',
             'inventory.products.*',
+            'inventory.stock.*',
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',

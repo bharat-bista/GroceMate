@@ -50,7 +50,7 @@
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Company</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Date</th>
-          <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Qty</th>
+          <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Qty Remaining</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Expiry</th>
         </tr>
       </thead>
@@ -58,10 +58,10 @@
         @forelse($expiringSoon as $it)
           <tr class="hover:bg-slate-50">
             <td class="px-5 py-4 font-semibold">{{ $it->product->name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->company_name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->purchase->business->business_name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->purchase->purchase_date?->format('Y-m-d') ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->qty }}</td>
+            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->purchaseItem->company_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->product->business->business_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchaseItem->purchase?->purchase_date?->format('Y-m-d') ?? '—' }}</td>
+            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 3) }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty
@@ -84,7 +84,7 @@
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Company</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Date</th>
-          <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Qty</th>
+          <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Qty Remaining</th>
           <th class="text-left px-5 py-3 text-xs font-medium text-slate-700 uppercase tracking-wider">Expiry</th>
         </tr>
       </thead>
@@ -92,10 +92,10 @@
         @forelse($expired as $it)
           <tr class="hover:bg-slate-50">
             <td class="px-5 py-4 font-semibold">{{ $it->product->name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->company_name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->purchase->business->business_name ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->purchase->purchase_date?->format('Y-m-d') ?? '—' }}</td>
-            <td class="px-5 py-4">{{ $it->qty }}</td>
+            <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->purchaseItem->company_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->product->business->business_name ?? '—' }}</td>
+            <td class="px-5 py-4">{{ $it->purchaseItem->purchase?->purchase_date?->format('Y-m-d') ?? '—' }}</td>
+            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 3) }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty

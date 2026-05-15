@@ -131,8 +131,8 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Items</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Total</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Method</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Payment</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Delivery</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Payment</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Date</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -140,9 +140,7 @@
                 <tbody class="bg-white divide-y divide-slate-200">
                     @forelse($orders as $order)
                         @php
-                            $paymentState = $order->payment_method === 'esewa'
-                                ? 'paid'
-                                : ($order->payment_status === 'verified' ? 'paid' : 'unpaid');
+                            $paymentState = $order->payment_status === 'verified' ? 'paid' : 'unpaid';
                         @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-4">
@@ -167,37 +165,29 @@
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">COD</span>
                                 @endif
                             </td>
+
                             <td class="px-6 py-4">
-                                @if($order->payment_method === 'esewa')
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+                                @if($order->delivery_status === 'pending')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                                @elseif($order->delivery_status === 'processing')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Processing</span>
+                                @elseif($order->delivery_status === 'shipped')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Shipped</span>
+                                @elseif($order->delivery_status === 'delivered')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Delivered</span>
                                 @else
-                                    <form method="POST" action="{{ route('inventory.orders.payment-status', $order) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="payment_state"
-                                                class="rounded-lg border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                                onchange="this.form.submit()">
-                                            <option value="paid" {{ $paymentState === 'paid' ? 'selected' : '' }}>Paid</option>
-                                            <option value="unpaid" {{ $paymentState === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                                        </select>
-                                    </form>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
                                 @endif
                             </td>
+
                             <td class="px-6 py-4">
-                                <form method="POST" action="{{ route('inventory.orders.delivery-status', $order) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <select name="delivery_status"
-                                            class="rounded-lg border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                            onchange="this.form.submit()">
-                                        <option value="pending" {{ $order->delivery_status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="processing" {{ $order->delivery_status === 'processing' ? 'selected' : '' }}>Processing</option>
-                                        <option value="shipped" {{ $order->delivery_status === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                        <option value="delivered" {{ $order->delivery_status === 'delivered' ? 'selected' : '' }}>Delivered</option>
-                                        <option value="cancelled" {{ $order->delivery_status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                                    </select>
-                                </form>
+                                @if($order->payment_status === 'verified')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Unpaid</span>
+                                @endif
                             </td>
+
                             <td class="px-6 py-4 text-slate-500">
                                 {{ $order->created_at->format('M d, Y') }}
                             </td>

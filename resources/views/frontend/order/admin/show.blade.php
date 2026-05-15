@@ -12,12 +12,6 @@
         </a>
     </div>
 
-    @if(session('success'))
-        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Order Info -->
         <div class="lg:col-span-2 space-y-6">
@@ -168,31 +162,75 @@
                     <h3 class="text-lg font-semibold text-slate-900">Status</h3>
                 </div>
                 <div class="p-6 space-y-4">
+                    <div class="flex flex-wrap gap-2">
+                        @if($order->isLocked())
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Delivered &amp; Locked</span>
+                        @endif
+                        @if($order->isPaymentLocked())
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Payment Locked</span>
+                        @endif
+                    </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-2">Delivery Status</label>
-                        @if($order->delivery_status == 'pending')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                        @elseif($order->delivery_status == 'processing')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Processing</span>
-                        @elseif($order->delivery_status == 'shipped')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">Shipped</span>
-                        @elseif($order->delivery_status == 'delivered')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Delivered</span>
+                        @if($order->isLocked() || $order->delivery_status === 'cancelled')
+                            <select name="delivery_status"
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed"
+                                    disabled>
+                                <option value="pending" {{ $order->delivery_status === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="processing" {{ $order->delivery_status === 'processing' ? 'selected' : '' }}>Processing</option>
+                                <option value="shipped" {{ $order->delivery_status === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                                <option value="delivered" {{ $order->delivery_status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                <option value="cancelled" {{ $order->delivery_status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">Status is locked and cannot be changed</p>
                         @else
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">Cancelled</span>
+                            <form method="POST" action="{{ route('inventory.orders.delivery-status', $order) }}">
+                                @csrf
+                                @method('PATCH')
+                                <select name="delivery_status"
+                                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                        onchange="this.form.submit()">
+                                    <option value="pending" {{ $order->delivery_status === 'pending' ? 'selected' : '' }}>Pending</option>
+                                    <option value="processing" {{ $order->delivery_status === 'processing' ? 'selected' : '' }}>Processing</option>
+                                    <option value="shipped" {{ $order->delivery_status === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                                    <option value="delivered" {{ $order->delivery_status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                    <option value="cancelled" {{ $order->delivery_status === 'cancelled' ? 'selected' : '' }} {{ $order->delivery_status === 'shipped' ? 'disabled' : '' }}>Cancelled</option>
+                                </select>
+                            </form>
                         @endif
                     </div>
 
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-2">Payment Status</label>
-                        @if($order->payment_status == 'verified')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Verified</span>
-                        @elseif($order->payment_status == 'pending')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                        @elseif($order->payment_status == 'failed')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">Failed</span>
+                        @if($order->isLocked() || $order->delivery_status === 'cancelled')
+                            <select name="payment_state"
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed"
+                                    disabled>
+                                <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
+                                <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">Order is locked and cannot be changed</p>
+                        @elseif($order->payment_method === 'esewa')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Auto-Verified (eSewa)</span>
+                        @elseif($order->isPaymentLocked())
+                            <select name="payment_state"
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed"
+                                    disabled>
+                                <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
+                                <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">Status is locked and cannot be changed</p>
                         @else
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">Cash on Delivery</span>
+                            <form method="POST" action="{{ route('inventory.orders.payment-status', $order) }}">
+                                @csrf
+                                @method('PATCH')
+                                <select name="payment_state"
+                                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                        onchange="this.form.submit()">
+                                    <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
+                                    <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                                </select>
+                            </form>
                         @endif
                     </div>
 
@@ -337,6 +375,9 @@ orderEmailModal?.addEventListener('click', function (event) {
 </script>
 
 <!-- Delivery Status Modal -->
+@php
+    $cancelDisabled = $order->delivery_status === 'shipped';
+@endphp
 <dialog id="deliveryModal" class="modal p-6 rounded-2xl shadow-2xl border border-slate-200 max-w-md">
     <div class="space-y-4">
         <h3 class="text-lg font-semibold text-slate-900">Update Delivery Status</h3>
@@ -360,9 +401,9 @@ orderEmailModal?.addEventListener('click', function (event) {
                     <input type="radio" name="delivery_status" value="delivered" class="text-emerald-600">
                     <span>Delivered</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-                    <input type="radio" name="delivery_status" value="cancelled" class="text-red-600">
-                    <span class="text-red-600">Cancelled</span>
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg {{ $cancelDisabled ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'hover:bg-slate-50 cursor-pointer' }}">
+                    <input type="radio" name="delivery_status" value="cancelled" class="text-red-600" {{ $cancelDisabled ? 'disabled' : '' }}>
+                    <span class="{{ $cancelDisabled ? 'text-slate-400' : 'text-red-600' }}">Cancelled</span>
                 </label>
             </div>
             <div class="flex gap-3 mt-6">

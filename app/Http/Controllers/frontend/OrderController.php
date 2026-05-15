@@ -7,9 +7,12 @@ use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderRefund;
+use App\Exceptions\InsufficientStockException;
 use App\Mail\OrderConfirmationMail;
 use App\Mail\OrderCustomerMessageMail;
 use App\Services\EcommerceIncomeSyncService;
+use App\Services\FifoStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,10 @@ use Mail;
 
 class OrderController extends Controller
 {
-    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    public function __construct(
+        private EcommerceIncomeSyncService $ecommerceIncomeSyncService,
+        private FifoStockService $fifoStockService
+    )
     {
     }
 
@@ -119,14 +125,12 @@ class OrderController extends Controller
         if ($request->payment_method === 'esewa') {
             $paymentStatus = 'verified';
             $transactionId = $request->transaction_id ?? 'ESEWA-' . time();
-        } elseif ($request->payment_method === 'cod') {
-            $paymentStatus = 'cod';
         } elseif ($request->payment_method === 'connectips') {
             $paymentSlipPath = $this->storePaymentSlip($request->payment_slip);
         }
 
         $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items) {
-            $this->deductEcommerceStock($items);
+            $batchesByProduct = $this->deductEcommerceStock($items);
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -155,6 +159,7 @@ class OrderController extends Controller
                     'quantity' => $item['qty'],
                     'subtotal' => round($item['price'] * $item['qty'], 2),
                     'image' => $item['image'],
+                    'batches_consumed' => $batchesByProduct[$item['id']] ?? null,
                 ]);
             }
 
@@ -176,11 +181,110 @@ class OrderController extends Controller
             'success' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'delivery_type' => $order->delivery_type,
+            'delivery_charge' => (float) $order->delivery_charge,
+            'total_amount' => (float) $order->total_amount,
+            'payment_method' => $order->payment_method,
             'message' => 'Order placed successfully!'
         ]);
     }
 
-    private function deductEcommerceStock(Collection $items): void
+    /**
+     * Returns live ecommerce_stock for given product IDs (used by the cart page).
+     * GET /cart/stock?ids[]=1&ids[]=2
+     */
+    public function getCartStock(Request $request)
+    {
+        $ids = array_filter(array_map('intval', (array) $request->query('ids', [])));
+
+        if (empty($ids)) {
+            return response()->json(['stock' => []]);
+        }
+
+        $products = EcommerceProduct::query()
+            ->whereIn('id', $ids)
+            ->get(['id', 'ecommerce_stock', 'status']);
+
+        $stock = $products->mapWithKeys(function (EcommerceProduct $product) {
+            return [
+                (string) $product->id => [
+                    'stock' => (float) $product->ecommerce_stock,
+                    'status' => $product->status,
+                ],
+            ];
+        });
+
+        return response()->json(['stock' => $stock]);
+    }
+
+    public function validateStock(Request $request)
+    {
+        try {
+            $request->merge([
+                'items' => $this->normalizeItemsPayload($request->input('items')),
+            ]);
+
+            $request->validate([
+                'items' => 'required|array|min:1',
+                'items.*.id' => 'required',
+                'items.*.qty' => 'required|integer|min:1',
+            ]);
+
+            $requiredQtyByProduct = collect($request->input('items', []))
+                ->map(function (array $item) {
+                    return [
+                        'id' => trim((string) ($item['id'] ?? '')),
+                        'qty' => max(1, (int) ($item['qty'] ?? 1)),
+                    ];
+                })
+                ->filter(fn (array $item) => $item['id'] !== '')
+                ->groupBy('id')
+                ->map(fn (Collection $group) => (int) $group->sum('qty'));
+
+            if ($requiredQtyByProduct->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => 'No valid ecommerce products were found in the cart.',
+                ]);
+            }
+
+            $products = EcommerceProduct::query()
+                ->with('product:id,name')
+                ->whereIn('id', $requiredQtyByProduct->keys()->all())
+                ->get()
+                ->keyBy(fn (EcommerceProduct $product) => (string) $product->id);
+
+            foreach ($requiredQtyByProduct as $productId => $requiredQty) {
+                $product = $products->get((string) $productId);
+
+                if (!$product) {
+                    throw ValidationException::withMessages([
+                        'items' => "Selected ecommerce product ({$productId}) was not found.",
+                    ]);
+                }
+
+                if ((float) $product->ecommerce_stock < (float) $requiredQty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Insufficient ecommerce stock for {$product->product?->name}. Available: {$product->ecommerce_stock}, required: {$requiredQty}.",
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock is available.',
+            ]);
+        } catch (ValidationException $e) {
+            $errors = $e->errors();
+
+            return response()->json([
+                'success' => false,
+                'message' => collect($errors)->flatten()->first() ?? 'Unable to validate stock.',
+                'errors' => $errors,
+            ], 422);
+        }
+    }
+
+    private function deductEcommerceStock(Collection $items): array
     {
         $requiredQtyByProduct = $items
             ->map(function (array $item) {
@@ -205,6 +309,8 @@ class OrderController extends Controller
             ->get()
             ->keyBy(fn (EcommerceProduct $product) => (string) $product->id);
 
+        $batchesByProduct = [];
+
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
             $product = $products->get((string) $productId);
 
@@ -219,6 +325,22 @@ class OrderController extends Controller
                     'items' => "Insufficient ecommerce stock for {$product->product?->name}. Available: {$product->ecommerce_stock}, required: {$requiredQty}.",
                 ]);
             }
+
+            $baseProductId = (int) ($product->product_id ?? 0);
+            if ($baseProductId <= 0) {
+                throw ValidationException::withMessages([
+                    'items' => "Unable to resolve inventory product for {$product->product?->name}.",
+                ]);
+            }
+
+            try {
+                $consumeResult = $this->fifoStockService->consume($baseProductId, (float) $requiredQty, 'ecommerce');
+                $batchesByProduct[(string) $productId] = $consumeResult['batches_used'] ?? [];
+            } catch (InsufficientStockException $e) {
+                throw ValidationException::withMessages([
+                    'items' => $e->getMessage(),
+                ]);
+            }
         }
 
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
@@ -229,6 +351,8 @@ class OrderController extends Controller
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
             $product->save();
         }
+
+        return $batchesByProduct;
     }
 
     private function normalizeItemsPayload(mixed $items): array
@@ -372,25 +496,41 @@ class OrderController extends Controller
      */
     public function updateDeliveryStatus(Request $request, Order $order)
     {
+        if ($order->isLocked()) {
+            return back()->with('error', 'Delivered orders are locked and cannot be updated.');
+        }
+
+        if ($order->delivery_status === 'cancelled') {
+            return back()->with('error', 'Cancelled orders are locked and cannot be updated.');
+        }
+
         $request->validate([
             'delivery_status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
         $nextStatus = (string) $request->delivery_status;
-        $isFirstCancelTransition = $order->delivery_status !== 'cancelled' && $nextStatus === 'cancelled';
-        $shouldRestoreConnectIpsStock = $isFirstCancelTransition
-            && $order->payment_method === 'connectips'
-            && $order->payment_status === 'verified';
 
-        DB::transaction(function () use ($order, $nextStatus, $shouldRestoreConnectIpsStock) {
-            if ($shouldRestoreConnectIpsStock) {
-                $order->loadMissing('items');
+        if ($nextStatus === 'cancelled' && $order->delivery_status === 'shipped') {
+            return back()->with('error', 'Shipped orders cannot be cancelled.');
+        }
+
+        $isFirstCancelTransition = $order->delivery_status !== 'cancelled' && $nextStatus === 'cancelled';
+        $shouldRestoreStock = $isFirstCancelTransition;
+        $shouldCreateRefund = $isFirstCancelTransition && $order->isPaid();
+
+        DB::transaction(function () use ($order, $nextStatus, $shouldRestoreStock, $shouldCreateRefund) {
+            if ($shouldRestoreStock) {
+                $order->loadMissing('items.ecommerceProduct');
                 $this->restoreEcommerceStock($order->items);
             }
 
             $order->update([
                 'delivery_status' => $nextStatus,
             ]);
+
+            if ($shouldCreateRefund) {
+                $this->createRefundForOrder($order);
+            }
 
             $this->ecommerceIncomeSyncService->syncOrder($order);
         });
@@ -447,6 +587,45 @@ class OrderController extends Controller
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
             $product->save();
         }
+
+        foreach ($items as $item) {
+            $productId = trim((string) ($item->product_id ?? ''));
+            if ($productId === '') {
+                continue;
+            }
+
+            $product = $products->get($productId);
+            $baseProductId = (int) ($product?->product_id ?? 0);
+            if ($baseProductId <= 0) {
+                continue;
+            }
+
+            $batchesUsed = [];
+            if (!empty($item->batches_consumed)) {
+                $batchesUsed = is_array($item->batches_consumed)
+                    ? $item->batches_consumed
+                    : (json_decode($item->batches_consumed, true) ?: []);
+            }
+
+            $this->fifoStockService->reverse($baseProductId, (float) ($item->quantity ?? 0), $batchesUsed);
+        }
+    }
+
+    private function createRefundForOrder(Order $order): void
+    {
+        $refund = OrderRefund::firstOrNew(['order_id' => $order->id]);
+
+        $refund->customer_name = $order->customer_name;
+        $refund->customer_email = $order->customer_email;
+        $refund->customer_phone = $order->customer_phone;
+        $refund->refund_amount = (float) $order->total_amount;
+        $refund->cancelled_at = $refund->cancelled_at ?? now();
+
+        if (!$refund->exists) {
+            $refund->refund_status = 'pending';
+        }
+
+        $refund->save();
     }
 
     /**
@@ -454,6 +633,18 @@ class OrderController extends Controller
      */
     public function updatePaymentStatus(Request $request, Order $order)
     {
+        if ($order->isLocked()) {
+            return back()->with('error', 'Delivered orders are locked and cannot be updated.');
+        }
+
+        if ($order->delivery_status === 'cancelled') {
+            return back()->with('error', 'Cancelled orders are locked and cannot be updated.');
+        }
+
+        if ($order->isPaymentLocked()) {
+            return back()->with('error', 'Payment is locked and can only be changed through refunds.');
+        }
+
         if ($request->filled('payment_state')) {
             $request->validate([
                 'payment_state' => 'required|in:paid,unpaid',
@@ -462,7 +653,7 @@ class OrderController extends Controller
             $finalPaymentStatus = $request->payment_state === 'paid' ? 'verified' : 'pending';
         } else {
             $request->validate([
-                'payment_status' => 'required|in:pending,verified,failed,cod',
+                'payment_status' => 'required|in:pending,verified,failed',
             ]);
 
             $finalPaymentStatus = (string) $request->payment_status;
@@ -498,6 +689,18 @@ class OrderController extends Controller
      */
     public function verifyPaymentSlip(Request $request, Order $order)
     {
+        if ($order->isLocked()) {
+            return back()->with('error', 'Delivered orders are locked and cannot be updated.');
+        }
+
+        if ($order->delivery_status === 'cancelled') {
+            return back()->with('error', 'Cancelled orders are locked and cannot be updated.');
+        }
+
+        if ($order->isPaymentLocked()) {
+            return back()->with('error', 'Payment is already locked.');
+        }
+
         $request->validate([
             'payment_status' => 'required|in:verified,failed',
         ]);

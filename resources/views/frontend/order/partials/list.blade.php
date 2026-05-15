@@ -9,6 +9,12 @@
     </div>
 @else
     @foreach($orders as $order)
+        @php
+            $normalizedPaymentStatus = $order->payment_status === 'cod' ? 'pending' : $order->payment_status;
+            $paymentLabel = $normalizedPaymentStatus === 'verified'
+                ? 'Paid'
+                : ($normalizedPaymentStatus === 'pending' ? 'Unpaid' : ucfirst($normalizedPaymentStatus));
+        @endphp
         <div class="order-card">
             <div class="order-header">
                 <div>
@@ -19,8 +25,8 @@
                     <span class="order-status-badge status-{{ $order->delivery_status }}">
                         {{ ucfirst($order->delivery_status) }}
                     </span>
-                    <span class="payment-badge payment-{{ $order->payment_status }}">
-                        {{ $order->payment_status === 'cod' ? 'COD' : ucfirst($order->payment_status) }}
+                    <span class="payment-badge payment-{{ $normalizedPaymentStatus }}">
+                        {{ $paymentLabel }}
                     </span>
                 </div>
             </div>

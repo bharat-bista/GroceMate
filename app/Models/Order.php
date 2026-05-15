@@ -37,6 +37,26 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function refund()
+    {
+        return $this->hasOne(OrderRefund::class);
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->delivery_status === 'delivered';
+    }
+
+    public function isPaymentLocked(): bool
+    {
+        return $this->payment_status === 'verified';
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'verified';
+    }
+
     public static function generateOrderNumber(): string
     {
         $prefix = 'GM';

@@ -97,9 +97,9 @@ class EcommerceIncomeSyncService
 
     private function isOrderSettled(Order $order): bool
     {
-        $isVerified = $order->payment_method === 'esewa' || $order->payment_status === 'verified';
+        $isPaid = $order->payment_status === 'verified';
 
-        return $isVerified && $order->delivery_status !== 'cancelled';
+        return $isPaid && $order->delivery_status !== 'cancelled';
     }
 
     private function mapPaymentMethod(Order $order): string

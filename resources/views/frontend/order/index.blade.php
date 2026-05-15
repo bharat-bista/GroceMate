@@ -173,6 +173,89 @@
 </div>
 
 <script>
+const orderConfirmation = @json(session('order_confirmation'));
+const orderShowUrlTemplate = "{{ route('orders.show', ':id') }}";
+const continueShoppingUrl = "{{ route('home') }}";
+
+function formatCurrency(value) {
+    const amount = Number(value || 0);
+    const hasFraction = Math.abs(amount - Math.trunc(amount)) > 0.000001;
+
+    return 'Rs. ' + amount.toLocaleString('en-US', {
+        minimumFractionDigits: hasFraction ? 2 : 0,
+        maximumFractionDigits: 2
+    });
+}
+
+function getDeliveryLabel(value) {
+    const map = {
+        inside: 'Inside Valley',
+        outside: 'Outside Valley',
+        pickup: 'Store Pickup'
+    };
+    return map[value] || 'Standard Delivery';
+}
+
+function getPaymentMethodLabel(value) {
+    if (value === 'cod') return 'Cash on Delivery';
+    if (value === 'connectips') return 'Connect IPS';
+    if (value === 'esewa') return 'eSewa';
+    return value ? String(value) : 'Payment';
+}
+
+function showOrderConfirmation(details) {
+    const orderUrl = orderShowUrlTemplate.replace(':id', details.orderId);
+    const deliveryLabel = getDeliveryLabel(details.deliveryType);
+    const paymentLabel = getPaymentMethodLabel(details.paymentMethod);
+    const deliveryChargeLabel = formatCurrency(details.deliveryCharge);
+    const totalLabel = formatCurrency(details.totalAmount);
+
+    const summaryHtml = `
+        <div style="text-align: left; font-size: 0.95rem; line-height: 1.55;">
+            <div><strong>Order #:</strong> ${details.orderNumber}</div>
+            <div><strong>Payment:</strong> ${paymentLabel}</div>
+            <div><strong>Delivery:</strong> ${deliveryLabel}</div>
+            <div><strong>Delivery Charge:</strong> ${deliveryChargeLabel}</div>
+            <div><strong>Total:</strong> ${totalLabel}</div>
+        </div>
+    `;
+
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+        return window.Swal.fire({
+            icon: 'success',
+            title: 'Order confirmed!',
+            html: summaryHtml,
+            showCancelButton: true,
+            confirmButtonText: 'View Order',
+            cancelButtonText: 'Continue Shopping',
+            reverseButtons: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = orderUrl;
+                return;
+            }
+
+            window.location.href = continueShoppingUrl;
+        });
+    }
+
+    alert(
+        `Order confirmed!\nOrder #: ${details.orderNumber}\nPayment: ${paymentLabel}\nDelivery: ${deliveryLabel}\nDelivery Charge: ${deliveryChargeLabel}\nTotal: ${totalLabel}`
+    );
+    window.location.href = orderUrl;
+}
+
+if (orderConfirmation && orderConfirmation.order_id) {
+    showOrderConfirmation({
+        orderId: orderConfirmation.order_id,
+        orderNumber: orderConfirmation.order_number,
+        deliveryType: orderConfirmation.delivery_type || 'inside',
+        deliveryCharge: Number(orderConfirmation.delivery_charge || 0),
+        totalAmount: Number(orderConfirmation.total_amount || 0),
+        paymentMethod: orderConfirmation.payment_method || 'esewa',
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const results = document.getElementById('orders-results');
 

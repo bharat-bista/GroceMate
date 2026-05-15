@@ -182,6 +182,13 @@
     }
 </style>
 
+@php
+    $normalizedPaymentStatus = $order->payment_status === 'cod' ? 'pending' : $order->payment_status;
+    $paymentLabel = $normalizedPaymentStatus === 'verified'
+        ? 'Paid'
+        : ($normalizedPaymentStatus === 'pending' ? 'Unpaid' : ucfirst($normalizedPaymentStatus));
+@endphp
+
 <div class="order-detail-page">
     <div class="order-detail-container">
         <a href="{{ route('orders') }}" class="back-link">
@@ -200,8 +207,8 @@
                 <span class="status-badge status-{{ $order->delivery_status }}">
                     <i class="fas fa-truck"></i> {{ ucfirst($order->delivery_status) }}
                 </span>
-                <span class="status-badge payment-{{ $order->payment_status }}">
-                    <i class="fas fa-credit-card"></i> {{ $order->payment_status === 'cod' ? 'Cash on Delivery' : ucfirst($order->payment_status) }}
+                <span class="status-badge payment-{{ $normalizedPaymentStatus }}">
+                    <i class="fas fa-credit-card"></i> {{ $paymentLabel }}
                 </span>
             </div>
         </div>
@@ -290,8 +297,8 @@
                 </div>
                 <div class="info-item">
                     <label>Payment Status</label>
-                    <span class="status-badge payment-{{ $order->payment_status }}">
-                        {{ $order->payment_status === 'cod' ? 'Cash on Delivery' : ucfirst($order->payment_status) }}
+                    <span class="status-badge payment-{{ $normalizedPaymentStatus }}">
+                        {{ $paymentLabel }}
                     </span>
                 </div>
                 @if($order->transaction_id)

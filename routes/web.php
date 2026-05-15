@@ -10,6 +10,7 @@ use App\Http\Controllers\frontend\ContactController;
 use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\frontend\OrderController;
+use App\Http\Controllers\frontend\EcommerceDashboardController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\Inventory\DashboardController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Inventory\EcommerceProductController;
 use App\Http\Controllers\Inventory\EcommerceBrandController;
 use App\Http\Controllers\Inventory\EcommerceCategoryController;
 use App\Http\Controllers\Inventory\EcommerceIncomeController;
+use App\Http\Controllers\Inventory\EcommerceRefundController;
 use App\Http\Controllers\POS\SupplierPaymentController;
 use App\Http\Controllers\POS\CustomerController;
 use App\Http\Controllers\POS\InvoiceController;
@@ -73,6 +75,8 @@ Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::post('/checkout/esewa/initiate', [CheckoutController::class, 'initiateEsewa'])->name('frontend.checkout.esewa.initiate');
 Route::get('/checkout/esewa/callback', [CheckoutController::class, 'esewaCallback'])->name('frontend.checkout.esewa.callback');
+Route::post('/checkout/validate-stock', [OrderController::class, 'validateStock'])->name('frontend.checkout.validate-stock');
+Route::get('/cart/stock', [OrderController::class, 'getCartStock'])->name('frontend.cart.stock');
 Route::post('/checkout/order', [OrderController::class, 'store'])->name('frontend.order.store');
 
 // Frontend order routes
@@ -134,6 +138,9 @@ Route::middleware(['auth', 'admin_or_staff'])
 
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
+
+        Route::get('/ecommerce/dashboard', [EcommerceDashboardController::class, 'index'])
+            ->name('ecommerce.dashboard');
 
         Route::get('/products', [ProductController::class, 'index'])
             ->name('products.index');
@@ -206,6 +213,11 @@ Route::middleware(['auth', 'admin_or_staff'])
         // E-commerce Income routes
         Route::get('ecommerce-income', [EcommerceIncomeController::class, 'index'])->name('ecommerce-income.index');
         Route::get('ecommerce-income/export/{type}', [EcommerceIncomeController::class, 'export'])->name('ecommerce-income.export');
+
+        // E-commerce Refund routes
+        Route::patch('ecommerce-refunds/{refund}', [EcommerceRefundController::class, 'update'])
+            ->middleware('admin')
+            ->name('ecommerce-refunds.update');
     }
     
 );

@@ -196,10 +196,7 @@ class EcommerceIncomeController extends Controller
     private function settledOrdersQuery(): Builder
     {
         return DB::table('orders')
-            ->where(function ($query) {
-                $query->where('payment_method', 'esewa')
-                    ->orWhere('payment_status', 'verified');
-            })
+            ->where('payment_status', 'verified')
             ->where('delivery_status', '!=', 'cancelled');
     }
 
@@ -210,10 +207,7 @@ class EcommerceIncomeController extends Controller
             ->leftJoin('ecommerce_products', 'order_items.product_id', '=', 'ecommerce_products.id')
             ->leftJoin('products', 'ecommerce_products.product_id', '=', 'products.id')
             ->leftJoin('businesses', 'products.business_id', '=', 'businesses.id')
-            ->where(function ($query) {
-                $query->where('orders.payment_method', 'esewa')
-                    ->orWhere('orders.payment_status', 'verified');
-            })
+            ->where('orders.payment_status', 'verified')
             ->where('orders.delivery_status', '!=', 'cancelled');
     }
 

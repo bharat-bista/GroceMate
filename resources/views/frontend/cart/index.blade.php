@@ -368,6 +368,37 @@
     color: var(--gm-accent);
 }
 
+/* Cart item inline stock badge */
+.cart-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.cart-stock-ok     { background: rgba(46,125,50,0.08);  color: #1B5E20; border-color: rgba(46,125,50,0.22); }
+.cart-stock-low    { background: rgba(255,107,53,0.10); color: #c44b10; border-color: rgba(255,107,53,0.28); }
+.cart-stock-critical { background: rgba(220,38,38,0.08); color: #b91c1c; border-color: rgba(220,38,38,0.22); animation: cartStockPulse 1.6s ease-in-out infinite; }
+.cart-stock-loading { background: #f3f4f6; color: #9ca3af; border-color: #e5e7eb; }
+@keyframes cartStockPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.15); }
+    50%     { box-shadow: 0 0 0 5px rgba(220,38,38,0); }
+}
+.cart-stock-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.cart-stock-ok   .cart-stock-dot { background:#2E7D32; }
+.cart-stock-low  .cart-stock-dot { background:#FF6B35; }
+.cart-stock-critical .cart-stock-dot { background:#dc2626; }
+
 .order-summary {
     padding: 18px;
     height: fit-content;
@@ -819,6 +850,151 @@
         position: static;
     }
 }
+
+/* ==========================================
+   CUSTOM MODAL SYSTEM
+   ========================================== */
+.gm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.22s ease;
+    pointer-events: none;
+}
+.gm-modal-overlay.gm-modal-visible {
+    opacity: 1;
+    pointer-events: all;
+}
+.gm-modal-box {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(27, 94, 32, 0.18), 0 4px 16px rgba(0,0,0,0.10);
+    max-width: 420px;
+    width: 100%;
+    overflow: hidden;
+    transform: scale(0.88) translateY(24px);
+    transition: transform 0.26s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+    opacity: 0;
+    position: relative;
+}
+.gm-modal-overlay.gm-modal-visible .gm-modal-box {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.gm-modal-stripe {
+    height: 5px;
+    width: 100%;
+    background: linear-gradient(90deg, var(--gm-primary), #1e7e34 50%, var(--gm-primary-light));
+    background-size: 200% 100%;
+    animation: cartGradientShift 4s ease infinite;
+}
+.gm-modal-stripe.gm-stripe-warn {
+    background: linear-gradient(90deg, var(--gm-accent), #e55a2b 50%, #ff8c5a);
+    background-size: 200% 100%;
+}
+.gm-modal-stripe.gm-stripe-danger {
+    background: linear-gradient(90deg, #dc2626, #ef4444 50%, #f87171);
+    background-size: 200% 100%;
+}
+.gm-modal-body {
+    padding: 26px 28px 10px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.gm-modal-icon {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-top: 2px;
+}
+.gm-modal-icon.icon-info  { background: rgba(46,125,50,0.12); color: var(--gm-primary); }
+.gm-modal-icon.icon-warn  { background: rgba(255,107,53,0.12); color: var(--gm-accent); }
+.gm-modal-icon.icon-danger{ background: rgba(220,38,38,0.1);  color: #dc2626; }
+.gm-modal-icon.icon-success{ background: rgba(46,125,50,0.12); color: var(--gm-primary); }
+.gm-modal-text {
+    flex: 1;
+    min-width: 0;
+}
+.gm-modal-title {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--gm-dark);
+    line-height: 1.3;
+}
+.gm-modal-message {
+    margin: 0;
+    font-size: 0.93rem;
+    color: #4b5563;
+    line-height: 1.55;
+}
+.gm-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 28px 22px;
+}
+.gm-btn {
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.gm-btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+}
+.gm-btn-cancel:hover {
+    background: #e5e7eb;
+}
+.gm-btn-primary {
+    background: linear-gradient(135deg, var(--gm-primary), #1e7e34);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(27,94,32,0.25);
+}
+.gm-btn-primary:hover {
+    background: linear-gradient(135deg, var(--gm-primary-dark), #145a1b);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(27,94,32,0.30);
+}
+.gm-btn-danger {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(220,38,38,0.22);
+}
+.gm-btn-danger:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+    transform: translateY(-1px);
+}
+.gm-btn-warn {
+    background: linear-gradient(135deg, var(--gm-accent), var(--gm-accent-dark));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(255,107,53,0.22);
+}
+.gm-btn-warn:hover {
+    filter: brightness(0.93);
+    transform: translateY(-1px);
+}
 </style>
 
 <div class="cart-container">
@@ -892,6 +1068,27 @@
 </div>
 
 {{-- ==========================================
+    CUSTOM MODAL HTML
+    ========================================== --}}
+<div class="gm-modal-overlay" id="gm-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="gm-modal-title">
+    <div class="gm-modal-box" id="gm-modal-box">
+        <div class="gm-modal-stripe" id="gm-modal-stripe"></div>
+        <div class="gm-modal-body">
+            <div class="gm-modal-icon icon-info" id="gm-modal-icon">
+                <i class="fas fa-info-circle" id="gm-modal-icon-i"></i>
+            </div>
+            <div class="gm-modal-text">
+                <p class="gm-modal-title" id="gm-modal-title">Notice</p>
+                <p class="gm-modal-message" id="gm-modal-message"></p>
+            </div>
+        </div>
+        <div class="gm-modal-footer" id="gm-modal-footer">
+            <button class="gm-btn gm-btn-primary" id="gm-modal-ok"><i class="fas fa-check"></i> OK</button>
+        </div>
+    </div>
+</div>
+
+{{-- ==========================================
     CART FUNCTIONALITY JAVASCRIPT
     ========================================== --}}
 <script>
@@ -911,6 +1108,102 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteSelectedBtn = document.getElementById('delete-selected-btn');
     const applyPromoBtn = document.getElementById('apply-promo');
     var selectedItemIds = new Set();
+
+    /* =============================================
+       CUSTOM MODAL SYSTEM
+       ============================================= */
+    var modalOverlay   = document.getElementById('gm-modal-overlay');
+    var modalStripe    = document.getElementById('gm-modal-stripe');
+    var modalIcon      = document.getElementById('gm-modal-icon');
+    var modalIconI     = document.getElementById('gm-modal-icon-i');
+    var modalTitle     = document.getElementById('gm-modal-title');
+    var modalMessage   = document.getElementById('gm-modal-message');
+    var modalFooter    = document.getElementById('gm-modal-footer');
+    var modalOkBtn     = document.getElementById('gm-modal-ok');
+
+    /**
+     * Show an alert-style modal (single OK button).
+     * type: 'info' | 'warn' | 'danger' | 'success'
+     */
+    function gmAlert(message, options) {
+        options = options || {};
+        var type    = options.type    || 'info';
+        var title   = options.title   || (type === 'danger' ? 'Error' : type === 'warn' ? 'Warning' : 'Notice');
+        var btnText = options.btnText || 'OK';
+        var btnClass = type === 'danger' ? 'gm-btn-danger' : type === 'warn' ? 'gm-btn-warn' : 'gm-btn-primary';
+        var icons = { info: 'fa-info-circle', warn: 'fa-exclamation-triangle', danger: 'fa-times-circle', success: 'fa-check-circle' };
+        var stripes = { info: '', warn: 'gm-stripe-warn', danger: 'gm-stripe-danger', success: '' };
+
+        modalStripe.className  = 'gm-modal-stripe ' + (stripes[type] || '');
+        modalIcon.className    = 'gm-modal-icon icon-' + type;
+        modalIconI.className   = 'fas ' + (icons[type] || 'fa-info-circle');
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+
+        modalFooter.innerHTML =
+            '<button class="gm-btn ' + btnClass + '" id="gm-modal-ok"><i class="fas fa-check"></i> ' + btnText + '</button>';
+
+        modalOverlay.classList.add('gm-modal-visible');
+
+        return new Promise(function(resolve) {
+            document.getElementById('gm-modal-ok').onclick = function() {
+                gmModalClose();
+                resolve();
+            };
+        });
+    }
+
+    /**
+     * Show a confirm-style modal (Confirm + Cancel buttons).
+     * type: 'warn' | 'danger'
+     * Returns a Promise<boolean>.
+     */
+    function gmConfirm(message, options) {
+        options = options || {};
+        var type        = options.type        || 'warn';
+        var title       = options.title       || 'Are you sure?';
+        var confirmText = options.confirmText || 'Yes, Confirm';
+        var cancelText  = options.cancelText  || 'Cancel';
+        var confirmClass = type === 'danger' ? 'gm-btn-danger' : 'gm-btn-warn';
+        var icons = { warn: 'fa-exclamation-triangle', danger: 'fa-trash-alt' };
+        var stripes = { warn: 'gm-stripe-warn', danger: 'gm-stripe-danger' };
+
+        modalStripe.className  = 'gm-modal-stripe ' + (stripes[type] || 'gm-stripe-warn');
+        modalIcon.className    = 'gm-modal-icon icon-' + type;
+        modalIconI.className   = 'fas ' + (icons[type] || 'fa-exclamation-triangle');
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+
+        modalFooter.innerHTML =
+            '<button class="gm-btn gm-btn-cancel" id="gm-modal-cancel"><i class="fas fa-times"></i> ' + cancelText + '</button>' +
+            '<button class="gm-btn ' + confirmClass + '" id="gm-modal-confirm"><i class="fas fa-check"></i> ' + confirmText + '</button>';
+
+        modalOverlay.classList.add('gm-modal-visible');
+
+        return new Promise(function(resolve) {
+            document.getElementById('gm-modal-confirm').onclick = function() {
+                gmModalClose();
+                resolve(true);
+            };
+            document.getElementById('gm-modal-cancel').onclick = function() {
+                gmModalClose();
+                resolve(false);
+            };
+        });
+    }
+
+    function gmModalClose() {
+        modalOverlay.classList.remove('gm-modal-visible');
+    }
+
+    // Close modal when clicking the backdrop
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) gmModalClose();
+    });
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('gm-modal-visible')) gmModalClose();
+    });
 
     function getCartItems() {
         if (cartApi && typeof cartApi.getItems === 'function') {
@@ -941,6 +1234,31 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function resolveApiErrorMessage(data, fallbackMessage) {
+        if (data && data.errors && typeof data.errors === 'object') {
+            for (var key in data.errors) {
+                if (!Object.prototype.hasOwnProperty.call(data.errors, key)) {
+                    continue;
+                }
+
+                var fieldError = data.errors[key];
+                if (Array.isArray(fieldError) && fieldError.length > 0 && fieldError[0]) {
+                    return String(fieldError[0]);
+                }
+
+                if (typeof fieldError === 'string' && fieldError.trim() !== '') {
+                    return fieldError;
+                }
+            }
+        }
+
+        if (data && typeof data.message === 'string' && data.message.trim() !== '') {
+            return data.message;
+        }
+
+        return fallbackMessage;
     }
 
     function getCheckedItemIdsFromDom() {
@@ -1003,13 +1321,14 @@ document.addEventListener('DOMContentLoaded', function() {
             var rawId = String(item && item.id != null ? item.id : '').trim();
             var id = escapeHtml(rawId);
             var checkedAttr = selectedItemIds.has(rawId) ? ' checked' : '';
+            var maxStock = item.stock != null ? Number(item.stock) : 99;
 
-            return '<div class="cart-item" data-item-id="' + id + '" data-price="' + price + '">' +
+            return '<div class="cart-item" data-item-id="' + id + '" data-price="' + price + '" data-max-stock="' + maxStock + '">' +
                 '<div class="item-checkbox">' +
                     '<input type="checkbox" class="item-check" data-price="' + price + '" data-qty="' + qty + '"' + checkedAttr + '>' +
                 '</div>' +
                 '<div class="item-image">' +
-                    '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'">' +
+                    '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'\'>' +
                 '</div>' +
                 '<div class="item-details">' +
                     '<div>' +
@@ -1017,6 +1336,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     '</div>' +
                     '<div class="item-price-section">' +
                         '<span class="item-price">Rs.' + price + '</span>' +
+                        '<span class="cart-stock-badge cart-stock-loading" id="stock-badge-' + id + '">' +
+                            '<span class="cart-stock-dot"></span>' +
+                            '<span class="cart-stock-text">Checking stock...</span>' +
+                        '</span>' +
                     '</div>' +
                     '<div class="item-actions">' +
                         '<div class="item-quantity">' +
@@ -1034,6 +1357,79 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateSelectAllState();
         calculateTotals();
+        fetchAndApplyLiveStock();
+    }
+
+    /* -----------------------------------------------
+       LIVE STOCK FETCH — calls /cart/stock API
+       and updates data-max-stock + badge on each row
+       ----------------------------------------------- */
+    var stockFetchUrl = '{{ route("frontend.cart.stock") }}';
+
+    function fetchAndApplyLiveStock() {
+        var rows = Array.from(cartItemsList.querySelectorAll('.cart-item[data-item-id]'));
+        if (!rows.length) return;
+
+        var ids = rows.map(function(r) { return r.dataset.itemId; }).filter(Boolean);
+        var query = ids.map(function(id) { return 'ids[]=' + encodeURIComponent(id); }).join('&');
+
+        fetch(stockFetchUrl + '?' + query)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var stockMap = data.stock || {};
+                rows.forEach(function(row) {
+                    var productId = String(row.dataset.itemId);
+                    var info = stockMap[productId];
+                    var badge = document.getElementById('stock-badge-' + productId);
+                    if (!badge) return;
+
+                    if (!info) {
+                        badge.className = 'cart-stock-badge cart-stock-loading';
+                        badge.querySelector('.cart-stock-text').textContent = 'N/A';
+                        return;
+                    }
+
+                    var stock = info.stock;
+                    row.dataset.maxStock = String(stock);
+
+                    var cls, label;
+                    if (stock <= 0) {
+                        cls = 'cart-stock-critical';
+                        label = 'Out of stock';
+                    } else if (stock <= 3) {
+                        cls = 'cart-stock-critical';
+                        label = 'Only ' + Math.floor(stock) + ' left!';
+                    } else if (stock <= 10) {
+                        cls = 'cart-stock-low';
+                        label = Math.floor(stock) + ' items left';
+                    } else {
+                        cls = 'cart-stock-ok';
+                        label = Math.floor(stock) + ' in stock';
+                    }
+
+                    badge.className = 'cart-stock-badge ' + cls;
+                    badge.querySelector('.cart-stock-text').textContent = label;
+
+                    // Auto-clamp qty if it now exceeds live stock
+                    var qtyInput = row.querySelector('.qty-input');
+                    var checkbox = row.querySelector('.item-check');
+                    if (qtyInput && stock > 0) {
+                        var currentQty = parseInt(qtyInput.value) || 1;
+                        if (currentQty > stock) {
+                            var clamped = Math.max(1, Math.floor(stock));
+                            qtyInput.value = clamped;
+                            if (checkbox) checkbox.dataset.qty = clamped;
+                            var cartItems = getCartItems();
+                            var target = cartItems.find(function(i) { return String(i.id) === productId; });
+                            if (target) { target.qty = clamped; saveCartItems(cartItems); }
+                            calculateTotals();
+                        }
+                    }
+                });
+            })
+            .catch(function() {
+                // Silently fail — stock badges stay in loading state
+            });
     }
 
     function calculateTotals() {
@@ -1075,32 +1471,63 @@ document.addEventListener('DOMContentLoaded', function() {
             var input = row.querySelector('.qty-input');
             var checkbox = row.querySelector('.item-check');
             var value = parseInt(input.value);
-            if (value < 99) {
-                value++;
-                input.value = value;
-                if (checkbox) checkbox.dataset.qty = value;
-                var items = getCartItems();
-                var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
-                if (target) { target.qty = value; saveCartItems(items); }
-                calculateTotals();
+            var maxStock = row.dataset.maxStock != null && row.dataset.maxStock !== '' && row.dataset.maxStock !== '99'
+                ? parseInt(row.dataset.maxStock)
+                : 99;
+
+            if (maxStock <= 0) {
+                gmAlert('This product is currently out of stock.', {
+                    type: 'danger',
+                    title: 'Out of Stock',
+                    btnText: 'OK'
+                });
+                return;
             }
+
+            if (value >= maxStock) {
+                gmAlert(
+                    'Only ' + maxStock + ' unit' + (maxStock !== 1 ? 's' : '') +
+                    ' available in stock. You cannot add more than what is available.',
+                    {
+                        type: 'warn',
+                        title: '⚠️ Stock Limit Reached',
+                        btnText: 'Got it'
+                    }
+                );
+                return;
+            }
+
+            value++;
+            input.value = value;
+            if (checkbox) checkbox.dataset.qty = value;
+            var items = getCartItems();
+            var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
+            if (target) { target.qty = value; saveCartItems(items); }
+            calculateTotals();
             return;
         }
 
         // Remove item
         var removeBtn = e.target.closest('.item-remove');
         if (removeBtn) {
-            if (confirm('Are you sure you want to remove this item from your cart?')) {
-                var cartItem = removeBtn.closest('.cart-item');
-                var itemId = removeBtn.dataset.itemId;
-                cartItem.style.opacity = '0';
-                cartItem.style.transform = 'translateX(20px)';
-                setTimeout(function() {
-                    var items = getCartItems().filter(function(i) { return String(i.id) !== String(itemId); });
-                    saveCartItems(items);
-                    renderCart();
-                }, 300);
-            }
+            var cartItem = removeBtn.closest('.cart-item');
+            var itemId = removeBtn.dataset.itemId;
+            gmConfirm('Are you sure you want to remove this item from your cart?', {
+                type: 'danger',
+                title: 'Remove Item',
+                confirmText: 'Yes, Remove',
+                cancelText: 'Keep It'
+            }).then(function(confirmed) {
+                if (confirmed) {
+                    cartItem.style.opacity = '0';
+                    cartItem.style.transform = 'translateX(20px)';
+                    setTimeout(function() {
+                        var items = getCartItems().filter(function(i) { return String(i.id) !== String(itemId); });
+                        saveCartItems(items);
+                        renderCart();
+                    }, 300);
+                }
+            });
             return;
         }
     });
@@ -1130,22 +1557,33 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteSelectedBtn.addEventListener('click', function() {
             var selectedChecks = document.querySelectorAll('.item-check:checked');
             if (selectedChecks.length === 0) {
-                alert('Please select items to delete');
+                gmAlert('Please select at least one item to delete.', {
+                    type: 'warn',
+                    title: 'No Items Selected',
+                    btnText: 'Got it'
+                });
                 return;
             }
-            if (confirm('Are you sure you want to remove ' + selectedChecks.length + ' item(s) from your cart?')) {
-                var idsToRemove = [];
-                selectedChecks.forEach(function(cb) {
-                    var cartItem = cb.closest('.cart-item');
-                    if (cartItem) idsToRemove.push(String(cartItem.dataset.itemId));
-                });
-                idsToRemove.forEach(function(id) {
-                    selectedItemIds.delete(String(id));
-                });
-                var items = getCartItems().filter(function(i) { return idsToRemove.indexOf(String(i.id)) === -1; });
-                saveCartItems(items);
-                renderCart();
-            }
+            gmConfirm('Are you sure you want to remove ' + selectedChecks.length + ' item(s) from your cart?', {
+                type: 'danger',
+                title: 'Delete Selected Items',
+                confirmText: 'Yes, Delete',
+                cancelText: 'Cancel'
+            }).then(function(confirmed) {
+                if (confirmed) {
+                    var idsToRemove = [];
+                    document.querySelectorAll('.item-check:checked').forEach(function(cb) {
+                        var cartItem = cb.closest('.cart-item');
+                        if (cartItem) idsToRemove.push(String(cartItem.dataset.itemId));
+                    });
+                    idsToRemove.forEach(function(id) {
+                        selectedItemIds.delete(String(id));
+                    });
+                    var items = getCartItems().filter(function(i) { return idsToRemove.indexOf(String(i.id)) === -1; });
+                    saveCartItems(items);
+                    renderCart();
+                }
+            });
         });
     }
 
@@ -1153,8 +1591,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (applyPromoBtn) {
         applyPromoBtn.addEventListener('click', function() {
             var code = document.getElementById('promo-code-input').value.trim();
-            if (!code) { alert('Please enter a promo code'); return; }
-            alert('Promo code feature coming soon!');
+            if (!code) {
+                gmAlert('Please enter a promo code to apply.', {
+                    type: 'warn',
+                    title: 'Promo Code Required'
+                });
+                return;
+            }
+            gmAlert('Promo code feature is coming soon! Stay tuned for exciting discounts.', {
+                type: 'info',
+                title: '🎉 Coming Soon!',
+                btnText: 'Got it'
+            });
         });
     }
 
@@ -1164,7 +1612,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var selectedChecks = document.querySelectorAll('.item-check:checked');
 
             if (selectedChecks.length === 0) {
-                alert('Please select at least one item to proceed to checkout');
+                gmAlert('Please select at least one item to proceed to checkout.', {
+                    type: 'warn',
+                    title: 'No Items Selected',
+                    btnText: 'Got it'
+                });
                 return;
             }
 
@@ -1192,17 +1644,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            try {
-                localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(selectedCartItems));
+            checkoutBtn.disabled = true;
 
-                // Small delay to ensure localStorage is persisted before redirect
-                setTimeout(function() {
+            fetch('{{ route("frontend.checkout.validate-stock") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    items: selectedCartItems
+                })
+            })
+            .then(async function(response) {
+                var data = await response.json().catch(function() { return {}; });
+                if (!response.ok) {
+                    throw new Error(resolveApiErrorMessage(data, 'Unable to validate cart stock.'));
+                }
+                return data;
+            })
+            .then(function() {
+                try {
+                    localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(selectedCartItems));
+
+                    // Small delay to ensure localStorage is persisted before redirect
+                    setTimeout(function() {
+                        window.location.href = '{{ route("checkout") }}';
+                    }, 100);
+                } catch (e) {
+                    // Fallback: redirect anyway
                     window.location.href = '{{ route("checkout") }}';
-                }, 100);
-            } catch (e) {
-                // Fallback: redirect anyway
-                window.location.href = '{{ route("checkout") }}';
-            }
+                }
+            })
+            .catch(function(error) {
+                gmAlert(error.message || 'Unable to proceed to checkout. Please try again.', {
+                    type: 'danger',
+                    title: 'Stock Validation Failed',
+                    btnText: 'OK'
+                });
+                checkoutBtn.disabled = false;
+            });
         });
     }
 

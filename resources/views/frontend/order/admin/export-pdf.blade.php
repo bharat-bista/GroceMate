@@ -49,6 +49,12 @@
         </thead>
         <tbody>
             @foreach($orders as $order)
+                @php
+                    $normalizedPaymentStatus = $order->payment_status === 'cod' ? 'pending' : $order->payment_status;
+                    $paymentLabel = $normalizedPaymentStatus === 'verified'
+                        ? 'paid'
+                        : ($normalizedPaymentStatus === 'failed' ? 'failed' : 'unpaid');
+                @endphp
                 <tr>
                     <td>{{ $order->order_number }}</td>
                     <td>{{ $order->created_at->format('M d, Y') }}</td>
@@ -56,7 +62,7 @@
                     <td>{{ $order->customer_phone }}</td>
                     <td>{{ $order->items->count() }}</td>
                     <td>{{ strtoupper($order->payment_method) }}</td>
-                    <td>{{ $order->payment_method === 'esewa' ? 'paid' : $order->payment_status }}</td>
+                    <td>{{ $paymentLabel }}</td>
                     <td>{{ $order->delivery_status }}</td>
                     <td class="text-right">{{ number_format((float) $order->total_amount, 2) }}</td>
                 </tr>

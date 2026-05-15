@@ -811,6 +811,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const fallbackProductImage = @json(asset('assets/img/product/product1.jpg'));
 
   let selectedPaymentMethod = null;
+  const orderShowUrlTemplate = "{{ route('orders.show', ':id') }}";
+  const continueShoppingUrl = "{{ route('home') }}";
 
   function formatCurrency(value) {
     const amount = Number(value || 0);
@@ -846,6 +848,64 @@ document.addEventListener('DOMContentLoaded', function() {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function getDeliveryLabel(value) {
+    const map = {
+      inside: 'Inside Valley',
+      outside: 'Outside Valley',
+      pickup: 'Store Pickup'
+    };
+    return map[value] || 'Standard Delivery';
+  }
+
+  function getPaymentMethodLabel(value) {
+    if (value === 'cod') return 'Cash on Delivery';
+    if (value === 'connectips') return 'Connect IPS';
+    if (value === 'esewa') return 'eSewa';
+    return value ? String(value) : 'Payment';
+  }
+
+  function showOrderConfirmation(details) {
+    const orderUrl = orderShowUrlTemplate.replace(':id', details.orderId);
+    const deliveryLabel = getDeliveryLabel(details.deliveryType);
+    const paymentLabel = getPaymentMethodLabel(details.paymentMethod);
+    const deliveryChargeLabel = formatCurrency(details.deliveryCharge);
+    const totalLabel = formatCurrency(details.totalAmount);
+
+    const summaryHtml = `
+      <div style="text-align: left; font-size: 0.95rem; line-height: 1.55;">
+        <div><strong>Order #:</strong> ${escapeHtml(details.orderNumber)}</div>
+        <div><strong>Payment:</strong> ${escapeHtml(paymentLabel)}</div>
+        <div><strong>Delivery:</strong> ${escapeHtml(deliveryLabel)}</div>
+        <div><strong>Delivery Charge:</strong> ${escapeHtml(deliveryChargeLabel)}</div>
+        <div><strong>Total:</strong> ${escapeHtml(totalLabel)}</div>
+      </div>
+    `;
+
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+      return window.Swal.fire({
+        icon: 'success',
+        title: 'Order confirmed!',
+        html: summaryHtml,
+        showCancelButton: true,
+        confirmButtonText: 'View Order',
+        cancelButtonText: 'Continue Shopping',
+        reverseButtons: true,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = orderUrl;
+          return;
+        }
+
+        window.location.href = continueShoppingUrl;
+      });
+    }
+
+    alert(
+      `Order confirmed!\nOrder #: ${details.orderNumber}\nPayment: ${paymentLabel}\nDelivery: ${deliveryLabel}\nDelivery Charge: ${deliveryChargeLabel}\nTotal: ${totalLabel}`
+    );
+    window.location.href = orderUrl;
   }
 
   function readCartItems() {
@@ -1260,6 +1320,31 @@ document.addEventListener('DOMContentLoaded', function() {
       placeOrderBtn.disabled = true;
       placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Order...';
 
+      const resolveOrderErrorMessage = function(data, fallbackMessage) {
+        if (data && data.errors && typeof data.errors === 'object') {
+          for (var key in data.errors) {
+            if (!Object.prototype.hasOwnProperty.call(data.errors, key)) {
+              continue;
+            }
+
+            var fieldError = data.errors[key];
+            if (Array.isArray(fieldError) && fieldError.length > 0 && fieldError[0]) {
+              return String(fieldError[0]);
+            }
+
+            if (typeof fieldError === 'string' && fieldError.trim() !== '') {
+              return fieldError;
+            }
+          }
+        }
+
+        if (data && typeof data.message === 'string' && data.message.trim() !== '') {
+          return data.message;
+        }
+
+        return fallbackMessage;
+      };
+
       // Save order via AJAX
       fetch('{{ route("frontend.order.store") }}', {
         method: 'POST',
@@ -1272,7 +1357,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(async function(response) {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const message = data.message || 'Unable to place order.';
+          const message = resolveOrderErrorMessage(data, 'Unable to place order.');
           throw new Error(message);
         }
         return data;
@@ -1286,19 +1371,25 @@ document.addEventListener('DOMContentLoaded', function() {
             clearSelectedItems();
           }
 
-          // Show success and redirect to orders page
-          alert(
-            'Order placed successfully!\n' +
-            'Order #: ' + data.order_number + '\n' +
-            'Products: ' + checkoutItems.length + '\n' +
-            'Delivery: ' + formatCurrency(deliveryCharge) + '\n' +
-            'Total: ' + formatCurrency(total) + '\n' +
-            'Payment: ' + (selectedPaymentMethod === 'cod' ? 'Cash on Delivery' : 'Connect IPS')
-          );
+          const deliveryType = data.delivery_type || selectedDelivery?.value || 'inside';
+          const deliveryChargeValue = Number.isFinite(Number(data.delivery_charge))
+            ? Number(data.delivery_charge)
+            : deliveryCharge;
+          const totalValue = Number.isFinite(Number(data.total_amount))
+            ? Number(data.total_amount)
+            : total;
+          const paymentMethod = data.payment_method || selectedPaymentMethod;
 
-          window.location.href = '{{ route("orders") }}';
+          showOrderConfirmation({
+            orderId: data.order_id,
+            orderNumber: data.order_number,
+            deliveryType: deliveryType,
+            deliveryCharge: deliveryChargeValue,
+            totalAmount: totalValue,
+            paymentMethod: paymentMethod,
+          });
         } else {
-          alert('Error: ' + (data.message || 'Something went wrong'));
+          alert('Error: ' + resolveOrderErrorMessage(data, 'Something went wrong'));
           placeOrderBtn.disabled = false;
           placeOrderBtn.innerHTML = 'Place Order';
         }

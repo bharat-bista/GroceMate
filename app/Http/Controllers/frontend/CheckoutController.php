@@ -8,7 +8,9 @@ use App\Models\EcommerceProduct;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Mail\OrderConfirmationMail;
+use App\Exceptions\InsufficientStockException;
 use App\Services\EcommerceIncomeSyncService;
+use App\Services\FifoStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +20,10 @@ use Mail;
 
 class CheckoutController extends Controller
 {
-    public function __construct(private EcommerceIncomeSyncService $ecommerceIncomeSyncService)
+    public function __construct(
+        private EcommerceIncomeSyncService $ecommerceIncomeSyncService,
+        private FifoStockService $fifoStockService
+    )
     {
     }
 
@@ -165,7 +170,14 @@ class CheckoutController extends Controller
         if ($existingOrder) {
             session()->forget(['esewa_checkout_order', 'gm_checkout_selected_items']);
             return redirect()->route('orders')
-                ->with('success', 'Payment already verified. Order #: ' . $existingOrder->order_number);
+                ->with('order_confirmation', [
+                    'order_id' => $existingOrder->id,
+                    'order_number' => $existingOrder->order_number,
+                    'delivery_type' => $existingOrder->delivery_type,
+                    'delivery_charge' => (float) $existingOrder->delivery_charge,
+                    'total_amount' => (float) $existingOrder->total_amount,
+                    'payment_method' => 'esewa',
+                ]);
         }
 
         $subtotal = round((float) ($orderInfo['subtotal'] ?? 0), 2);
@@ -173,7 +185,7 @@ class CheckoutController extends Controller
         $total = round((float) ($orderInfo['total_amount'] ?? ($subtotal + $deliveryCharge)), 2);
 
         $order = DB::transaction(function () use ($orderInfo, $subtotal, $deliveryCharge, $total, $decoded) {
-            $this->deductEcommerceStock(collect($orderInfo['items'] ?? []));
+            $batchesByProduct = $this->deductEcommerceStock(collect($orderInfo['items'] ?? []));
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -203,6 +215,7 @@ class CheckoutController extends Controller
                     'quantity' => $qty,
                     'subtotal' => round($price * $qty, 2),
                     'image' => !empty($item['image']) ? (string) $item['image'] : null,
+                    'batches_consumed' => $batchesByProduct[(string) ($item['id'] ?? '')] ?? null,
                 ]);
             }
 
@@ -224,10 +237,17 @@ class CheckoutController extends Controller
         session()->forget(['esewa_checkout_order', 'gm_checkout_selected_items']);
 
         return redirect()->route('orders')
-            ->with('success', 'Payment successful! Order placed. Transaction ID: ' . $decoded['transaction_uuid']);
+            ->with('order_confirmation', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'delivery_type' => $order->delivery_type,
+                'delivery_charge' => (float) $order->delivery_charge,
+                'total_amount' => (float) $order->total_amount,
+                'payment_method' => 'esewa',
+            ]);
     }
 
-    private function deductEcommerceStock(Collection $items): void
+    private function deductEcommerceStock(Collection $items): array
     {
         $requiredQtyByProduct = $items
             ->map(function (array $item) {
@@ -252,6 +272,8 @@ class CheckoutController extends Controller
             ->get()
             ->keyBy(fn (EcommerceProduct $product) => (string) $product->id);
 
+        $batchesByProduct = [];
+
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
             $product = $products->get((string) $productId);
 
@@ -266,6 +288,22 @@ class CheckoutController extends Controller
                     'items' => "Insufficient ecommerce stock for {$product->product?->name}. Available: {$product->ecommerce_stock}, required: {$requiredQty}.",
                 ]);
             }
+
+            $baseProductId = (int) ($product->product_id ?? 0);
+            if ($baseProductId <= 0) {
+                throw ValidationException::withMessages([
+                    'items' => "Unable to resolve inventory product for {$product->product?->name}.",
+                ]);
+            }
+
+            try {
+                $consumeResult = $this->fifoStockService->consume($baseProductId, (float) $requiredQty, 'ecommerce');
+                $batchesByProduct[(string) $productId] = $consumeResult['batches_used'] ?? [];
+            } catch (InsufficientStockException $e) {
+                throw ValidationException::withMessages([
+                    'items' => $e->getMessage(),
+                ]);
+            }
         }
 
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
@@ -276,6 +314,8 @@ class CheckoutController extends Controller
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
             $product->save();
         }
+
+        return $batchesByProduct;
     }
 
     private function normalizeItemsPayload(mixed $items): array

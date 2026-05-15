@@ -45,6 +45,7 @@
           'pos.expenses.*'
         );
         $isEcommerceGroup = request()->routeIs(
+          'inventory.ecommerce.dashboard',
           'inventory.ecommerce-products.*',
           'inventory.ecommerce-brands.*',
           'inventory.ecommerce-categories.*',
@@ -200,6 +201,11 @@
 
     <!-- Dropdown Items -->
     <div x-show="open" x-transition class="ml-4 space-y-1">
+
+      <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce.dashboard')) }}"
+        href="{{ route('inventory.ecommerce.dashboard') }}">
+        Dashboard
+      </a>
 
       <a class="{{ $navLinkClass(request()->routeIs('inventory.ecommerce-products.*')) }}"
         href="{{ route('inventory.ecommerce-products.index') }}">

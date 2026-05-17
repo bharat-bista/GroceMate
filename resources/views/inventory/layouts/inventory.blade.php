@@ -345,7 +345,8 @@
       </div>
     </main>
   </div>
-   @stack('scripts')  {{-- ✅ THIS LINE --}}
+  @include('inventory.partials.admin-utils')
+  @stack('scripts')
   <script>
     document.addEventListener('click', function (event) {
       const backButton = event.target.closest('[data-back-button]');

@@ -164,6 +164,32 @@ Route groups:
 - **Vanna Mode** (optional): Python sidecar for complex SQL queries
 - Config: `config/chatbot.php`; env vars: `ADMIN_CHATBOT_VANNA_ENABLED`, `ADMIN_CHATBOT_VANNA_URL`
 
+## Shared Admin Utilities (S0-3)
+
+Three utilities defined in `resources/views/inventory/partials/admin-utils.blade.php` and included by the inventory layout. Available globally as `window.GroceMate.*` on every admin page.
+
+### `GroceMate.money` — whole-rupee money input
+- Add `data-money` to any `<input type="number">` to auto-enforce integer-only entry (blocks `.`, rounds on blur).
+- `GroceMate.money.parse('1,500')` → `1500`
+- `GroceMate.money.format(1500)` → `'Rs 1,500'`
+- `GroceMate.money.init(el)` — re-call after dynamic DOM changes.
+
+### `GroceMate.notify` — single client-side notification
+- Replaces bare `alert()` calls. Shows one banner at the top of the content pane; auto-dismisses success after 5 s.
+- `GroceMate.notify.success('Saved.')` / `GroceMate.notify.error('Failed.')`
+
+### `GroceMate.formGate` — multi-step form gating
+- Disables all line-item row inputs until every header field has a value. Used by purchase entry (S1-5) and POS new sale (S2-5).
+```js
+const gate = GroceMate.formGate.init({
+    watch:    ['select[name="business_id"]', 'select[name="supplier_id"]', 'input[name="invoice_no"]'],
+    gate:     '#itemsBody',     // container holding rows
+    rowClass: '.purchase-row', // selector for individual rows
+    addBtn:   '#addRow',       // optional Add Row button
+});
+gate.check(); // call after adding a new row dynamically
+```
+
 ## Important Patterns
 
 1. **Business Isolation**: Always filter queries by `business_id` in admin controllers.

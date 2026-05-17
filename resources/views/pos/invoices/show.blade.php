@@ -6,14 +6,8 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
-    @if(session('success'))
-        <div id="success-message" class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
-        
+
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-green-500 to-green-700 p-6 text-white">
             <div class="flex items-center">

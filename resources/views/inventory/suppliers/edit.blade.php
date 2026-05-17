@@ -7,12 +7,6 @@
 @section('content')
 <div class="max-w-5xl mx-auto">
 
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
         
         <!-- Header Section -->

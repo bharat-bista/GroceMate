@@ -326,6 +326,12 @@
           </div>
         @endif
 
+        @if(session('error'))
+          <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+            {{ session('error') }}
+          </div>
+        @endif
+
         @if($errors->any())
           <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
             <div class="font-semibold mb-2">Please fix the following:</div>

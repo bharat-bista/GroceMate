@@ -7,13 +7,6 @@
 @section('content')
 <div class="space-y-6">
 
-    {{-- Messages --}}
-    @if(session('error'))
-        <div class="p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     {{-- ── Summary Cards ── --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 

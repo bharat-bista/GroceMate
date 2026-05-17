@@ -91,7 +91,7 @@ class InvoiceController extends Controller
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
             'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'], // Unit for new products
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['required', 'integer', 'min:0', 'max:9999999'],
         ]);
 
         $sendEmail = $data['send_email'] ?? false;

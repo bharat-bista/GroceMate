@@ -378,7 +378,7 @@ class CustomerController extends Controller
             'vat_number' => 'nullable|string|max:50',
             'pan_number' => 'nullable|string|max:20',
             'customer_type' => 'required|in:retail,wholesale,regular',
-            'opening_due' => 'nullable|numeric|min:0',
+            'opening_due' => 'nullable|integer|min:0|max:9999999',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
@@ -419,12 +419,13 @@ class CustomerController extends Controller
             'vat_number' => 'nullable|string|max:50',
             'pan_number' => 'nullable|string|max:20',
             'customer_type' => 'required|in:retail,wholesale,regular',
-            'opening_due' => 'nullable|numeric|min:0',
+            'opening_due' => 'nullable|integer|min:0|max:9999999',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
         if (isset($validated['opening_due'])) {
+            $validated['opening_due'] = (int) round($validated['opening_due'] ?? 0);
             $customer->opening_due = $validated['opening_due'];
         }
 

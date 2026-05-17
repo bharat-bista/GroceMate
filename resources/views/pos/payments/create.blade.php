@@ -68,6 +68,7 @@
                         Payment Amount (NPR) <span class="text-red-500">*</span>
                     </label>
                     <input type="number" step="1" name="amount" id="payment-amount"
+                           data-money inputmode="numeric" max="9999999"
                            value="{{ old('amount') }}" placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5"
                            required>
@@ -187,6 +188,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Bank Charge</label>
                     <input type="number" step="1" name="bank_charge" value="{{ old('bank_charge', 0) }}"
+                           data-money inputmode="numeric" max="9999999"
                            placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5">
                 </div>

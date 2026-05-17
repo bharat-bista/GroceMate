@@ -14,7 +14,9 @@
       "Bash(git remote *)",
       "Bash(git fetch *)",
       "Bash(git log *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(grep -v \"company_discount\\\\|discount_percent\\\\|order\\\\b\\\\|days\\\\|reorder\\\\|qty\\\\|rowId\\\\|admin-utils\\\\|comment\\\\|//\")",
+      "Bash(grep -v \"^--$\")"
     ]
   }
 }

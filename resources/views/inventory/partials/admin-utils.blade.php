@@ -33,13 +33,33 @@ GroceMate.money = {
         root.querySelectorAll('input[data-money]').forEach(el => {
             if (el.dataset.moneyInit) return; // prevent double-binding
             el.dataset.moneyInit = '1';
+
+            const cap = parseInt(el.getAttribute('max'), 10) || 9999999;
+
             // Block decimal key entry
             el.addEventListener('keydown', e => {
                 if (e.key === '.' || e.key === ',') e.preventDefault();
             });
+
+            // Strip decimals + enforce cap on every input event.
+            // This catches floating-point artefacts the browser injects for
+            // very large numbers even when step="1" (IEEE 754 precision issue).
+            el.addEventListener('input', () => {
+                let v = el.value;
+                if (v.includes('.')) v = v.split('.')[0]; // strip FP decimal
+                v = v.replace(/[^0-9]/g, '');             // strip non-digits
+                const n = parseInt(v, 10);
+                if (!isNaN(n) && n > cap) v = String(cap);
+                if (el.value !== v) el.value = v;
+            });
+
             // Round on blur to catch paste / autofill
             el.addEventListener('blur', () => {
-                if (el.value !== '') el.value = Math.round(parseFloat(el.value) || 0);
+                if (el.value !== '') {
+                    let n = Math.round(parseFloat(el.value) || 0);
+                    if (n > cap) n = cap;
+                    el.value = n;
+                }
             });
         });
     }

@@ -81,7 +81,7 @@ class SupplierController extends Controller
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
             'business_account' => ['required','exists:businesses,id'],
-            'opening_due' => ['nullable','numeric','min:0'],
+            'opening_due' => ['nullable','integer','min:0','max:9999999'],
             'address' => ['nullable','string','max:2000'],
         ]);
 
@@ -113,7 +113,7 @@ class SupplierController extends Controller
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
             'business_account' => ['required','exists:businesses,id'],
-            'opening_due' => ['nullable','numeric','min:0'],
+            'opening_due' => ['nullable','integer','min:0','max:9999999'],
             'address' => ['nullable','string','max:2000'],
         ]);
 

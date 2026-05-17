@@ -23,8 +23,8 @@ class DeliveryFeeSettingController extends Controller
         }
 
         $validated = $request->validate([
-            'inside_fee' => 'required|numeric|min:0|max:999999.99',
-            'outside_fee' => 'required|numeric|min:0|max:999999.99',
+            'inside_fee' => 'required|integer|min:0|max:9999999',
+            'outside_fee' => 'required|integer|min:0|max:9999999',
         ]);
 
         $settings = DeliveryFeeSetting::current();

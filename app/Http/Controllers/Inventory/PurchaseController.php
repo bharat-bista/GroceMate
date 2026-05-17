@@ -108,7 +108,7 @@ class PurchaseController extends Controller
             'items.*.brand_id' => ['nullable', 'exists:brands,id'], // Brand for new products
             'items.*.brand_name' => ['nullable', 'string', 'max:255'], // Brand name for auto-creation
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['required', 'integer', 'min:0', 'max:9999999'],
             'items.*.expiry_date' => ['nullable', 'date'],
         ]);
 

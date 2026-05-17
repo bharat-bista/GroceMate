@@ -7,12 +7,6 @@
 @section('content')
 <div class="max-w-7xl mx-auto">
 
-    @if(session('success'))
-        <div id="success-message" class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Header with Add Button -->
     <div class="flex justify-between items-center mb-6">
         <div>

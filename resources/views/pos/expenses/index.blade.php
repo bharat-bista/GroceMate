@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-    @if(session('success'))
-        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white border-2 border-black">
             <div class="flex items-center justify-between">

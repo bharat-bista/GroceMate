@@ -7,20 +7,6 @@
 @section('content')
 <div class="max-w-5xl mx-auto">
 
-    <!-- Success Message -->
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <!-- Error Message -->
-    @if(session('error'))
-        <div class="mb-4 p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
 
         <!-- Header -->

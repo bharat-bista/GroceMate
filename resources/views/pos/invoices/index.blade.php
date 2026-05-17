@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    @if(session('success'))
-        <div id="success-message" class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Header with Actions -->
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden mb-6">
         <div class="p-6 border-b border-slate-200">

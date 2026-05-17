@@ -63,19 +63,19 @@
         </div>
 
         <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg relative">
-            <table class="w-full text-sm" id="itemsTable">
+            <table class="min-w-[1100px] w-full text-sm" id="itemsTable">
                 <thead class="text-slate-700 bg-slate-100">
                     <tr>
-                        <th class="text-left px-4 py-3 font-medium">Product</th>
-                        <th class="text-left px-4 py-3 font-medium">Category</th>
-                        <th class="text-left px-4 py-3 font-medium">Company</th>
-                        <th class="text-left px-4 py-3 font-medium">Unit</th>
-                        <th class="text-left px-4 py-3 font-medium">Qty</th>
-                        <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
-                        <th class="text-left px-4 py-3 font-medium">Base Cost</th>
-                        <th class="text-left px-4 py-3 font-medium">Subtotal</th>
-                        <th class="text-left px-4 py-3 font-medium">Expiry Date</th>
-                        <th class="text-center px-4 py-3 font-medium">Action</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[180px]">Product</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[130px]">Category</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[130px]">Company</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[90px]">Unit</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[80px]">Qty</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">Unit Cost</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">Base Cost</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">Subtotal</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap min-w-[130px]">Expiry Date</th>
+                        <th class="text-center px-4 py-3 font-medium whitespace-nowrap min-w-[70px]">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200" id="itemsBody">

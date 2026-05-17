@@ -46,8 +46,8 @@ class Supplier extends Model
         $openingDue = (float) ($this->opening_due ?? 0);
 
         $purchaseTotal = $this->relationLoaded('purchases')
-            ? (float) $this->purchases->sum('total_cost')
-            : (float) $this->purchases()->sum('total_cost');
+            ? (float) $this->purchases->where('payment_method', 'credit')->sum('total_cost')
+            : (float) $this->purchases()->where('payment_method', 'credit')->sum('total_cost');
 
         $paymentTotal = $this->relationLoaded('supplierPayments')
             ? (float) $this->supplierPayments->sum('amount')

@@ -45,6 +45,11 @@
         </div>
     </div>
 
+    @include('inventory.partials.payment-method', [
+        'paymentDefault' => 'cash',
+        'paymentLabel'   => 'How this purchase is being settled. Cash/Bank deducts from business balance; Credit adds to supplier due.',
+    ])
+
     <div class="border-t border-slate-200 pt-5">
         <div class="flex items-center justify-between mb-4">
             <div class="font-semibold text-lg">Purchase Items</div>

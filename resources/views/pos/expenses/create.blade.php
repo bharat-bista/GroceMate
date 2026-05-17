@@ -40,6 +40,7 @@
         <div>
             <label class="text-sm text-slate-600">Amount *</label>
             <input type="number" step="1" min="1" name="amount"
+                   data-money inputmode="numeric" max="9999999"
                    value="{{ old('amount') }}"
                    placeholder="0"
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"

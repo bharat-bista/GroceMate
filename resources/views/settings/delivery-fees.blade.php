@@ -25,6 +25,7 @@
             type="number"
             min="0"
             step="1"
+            data-money inputmode="numeric" max="9999999"
             value="{{ old('inside_fee', $settings->inside_fee) }}"
             class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             required
@@ -42,6 +43,7 @@
             type="number"
             min="0"
             step="1"
+            data-money inputmode="numeric" max="9999999"
             value="{{ old('outside_fee', $settings->outside_fee) }}"
             class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             required

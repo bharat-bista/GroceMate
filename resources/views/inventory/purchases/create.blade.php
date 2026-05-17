@@ -1011,8 +1011,8 @@ function createRow() {
         <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
        type="number"
-       step="1"
-       min="0"
+       step="1" min="0" max="9999999"
+       inputmode="numeric" data-money
        value="0"
        required
        class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
@@ -1078,6 +1078,9 @@ function createRow() {
 
     // remove row
     row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
+
+    // apply money sanitizer to dynamically created cost input
+    if (window.GroceMate) GroceMate.money.init(row);
 
     return row;
 }

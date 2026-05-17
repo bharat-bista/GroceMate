@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Income Dashboard')
 @section('heading','Income Dashboard')
@@ -14,7 +14,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium">Total Income</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalIncome, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalIncome, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -28,7 +28,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-green-100 text-sm font-medium">This Month</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthIncome, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthIncome, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -42,7 +42,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium">Today</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($todayIncome, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($todayIncome, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -77,7 +77,7 @@
                             <p class="text-sm text-slate-600">
                                 Balance:
                                 <span class="font-bold {{ ($business->current_balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600' }}">
-                                    Rs {{ number_format($business->current_balance ?? 0, 2) }}
+                                    Rs {{ number_format($business->current_balance ?? 0, 0) }}
                                 </span>
                             </p>
                             <p class="text-xs text-slate-500 mt-1">Net balance (income − expenses)</p>
@@ -121,7 +121,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-semibold text-slate-800">
-                                Rs {{ number_format($payment->total, 2) }}
+                                Rs {{ number_format($payment->total, 0) }}
                             </p>
                             <p class="text-xs text-slate-500">{{ $payment->count }} tx</p>
                         </div>
@@ -299,7 +299,7 @@
                                     <div class="text-xs text-slate-400">{{ $income->customer->phone ?? '' }}</div>
                                     @if($income->customer->total_due > 0)
                                         <div class="text-xs text-amber-600 font-semibold">
-                                            Due: Rs {{ number_format($income->customer->total_due, 2) }}
+                                            Due: Rs {{ number_format($income->customer->total_due, 0) }}
                                         </div>
                                     @else
                                         <div class="text-xs text-emerald-600">No Due</div>
@@ -320,7 +320,7 @@
 
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-semibold text-emerald-600">
-                                    + Rs {{ number_format($income->amount_received, 2) }}
+                                    + Rs {{ number_format($income->amount_received, 0) }}
                                 </div>
                             </td>
 

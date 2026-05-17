@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Expenses')
 @section('heading','Expenses')
@@ -11,7 +11,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium">Total Expenses</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalExpense, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalExpense, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -25,7 +25,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-green-100 text-sm font-medium">This Month</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthExpense, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthExpense, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -39,7 +39,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium">Today</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($todayExpense, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($todayExpense, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -151,7 +151,7 @@
                                     {{ ucfirst($expense->payment_method) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 font-semibold text-red-600">- Rs {{ number_format($expense->amount, 2) }}</td>
+                            <td class="px-6 py-4 font-semibold text-red-600">- Rs {{ number_format($expense->amount, 0) }}</td>
                             <td class="px-6 py-4">
                                 @if($expense->description)
                                     <div class="text-xs text-slate-500 max-w-xs truncate" title="{{ $expense->description }}">

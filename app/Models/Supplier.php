@@ -22,8 +22,8 @@ class Supplier extends Model
     ];
 
     protected $casts = [
-        'opening_due' => 'decimal:2',
-        'total_due' => 'decimal:2',
+        'opening_due' => 'integer',
+        'total_due' => 'integer',
     ];
 
     public function purchases(): HasMany

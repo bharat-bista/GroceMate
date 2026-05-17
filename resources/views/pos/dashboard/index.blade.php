@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','POS Dashboard')
 @section('heading','POS Dashboard')
@@ -13,7 +13,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Today's Sales</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_sales'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_sales'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">This Month Sales</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_sales'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_sales'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Total Due</p>
-                    <p class="text-2xl font-bold text-red-600">Rs {{ number_format($quickStats['total_due'], 2) }}</p>
+                    <p class="text-2xl font-bold text-red-600">Rs {{ number_format($quickStats['total_due'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +88,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Total Income</p>
-                    <p class="text-2xl font-bold text-green-600">Rs {{ number_format($quickStats['total_income'], 2) }}</p>
+                    <p class="text-2xl font-bold text-green-600">Rs {{ number_format($quickStats['total_income'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +103,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Today's Income</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_income'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_income'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +118,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Month Income</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_income'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_income'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +206,7 @@
                                     @if($transaction['type'] == 'income') +
                                     @else -
                                     @endif
-                                    Rs {{ number_format($transaction['amount'], 2) }}
+                                    Rs {{ number_format($transaction['amount'], 0) }}
                                 </p>
                             </div>
                         </div>

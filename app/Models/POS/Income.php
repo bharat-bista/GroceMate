@@ -30,7 +30,7 @@ class Income extends Model
 
     protected $casts = [
         'transaction_date' => 'date',
-        'amount_received'  => 'decimal:2',
+        'amount_received'  => 'integer',
     ];
 
     protected static function booted()
@@ -101,7 +101,7 @@ class Income extends Model
 
     public function getFormattedAmountAttribute(): string
     {
-        return 'Rs ' . number_format($this->amount_received, 2);
+        return 'Rs ' . number_format($this->amount_received, 0);
     }
 
     public function getAutoReferenceAttribute(): string

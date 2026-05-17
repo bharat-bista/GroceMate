@@ -143,7 +143,7 @@
 // ---------- Helpers ----------
 function formatCurrency(amount) {
     const n = Number(amount);
-    return (isNaN(n) ? 0 : n).toFixed(2);
+    return (isNaN(n) ? 0 : Math.round(n)).toString();
 }
 
 // Available units
@@ -247,8 +247,8 @@ function calculateRowTotal(rowId) {
     row.querySelector('.subtotal').textContent = formatCurrency(subtotal);
 
     // Hidden inputs
-    row.querySelector('.base-cost-input').value = baseCost.toFixed(2);
-    row.querySelector('.subtotal-input').value = subtotal.toFixed(2);
+    row.querySelector('.base-cost-input').value = Math.round(baseCost);
+    row.querySelector('.subtotal-input').value = Math.round(subtotal);
 
     return { baseCost, subtotal };
 }
@@ -1011,7 +1011,7 @@ function createRow() {
         <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
        type="number"
-       step="0.01"
+       step="1"
        min="0"
        value="0"
        required

@@ -12,7 +12,7 @@ class Purchase extends Model
 
     protected $casts = [
         'purchase_date' => 'date',
-        'total_cost' => 'decimal:2',
+        'total_cost' => 'integer',
     ];
 
     public function supplier() { return $this->belongsTo(Supplier::class); }

@@ -27,7 +27,7 @@ class Expense extends Model
 
     protected $casts = [
         'transaction_date' => 'date',
-        'amount' => 'decimal:2',
+        'amount' => 'integer',
     ];
 
     protected static function booted()

@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Ecommerce Dashboard')
 @section('heading','Ecommerce Dashboard')
@@ -43,7 +43,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Today's Net Revenue</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_revenue'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['today_revenue'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Month Net Revenue</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_revenue'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['this_month_revenue'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Net Revenue</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['total_revenue'], 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($quickStats['total_revenue'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +163,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Refunds Pending</p>
-                    <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($refundSummary['pending_amount'], 2) }}</p>
+                    <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($refundSummary['pending_amount'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,7 +177,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Refunds Completed</p>
-                    <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($refundSummary['completed_amount'], 2) }}</p>
+                    <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($refundSummary['completed_amount'], 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +263,7 @@
                                         </a>
                                     </td>
                                     <td class="py-3 px-4 text-slate-700">{{ $order['customer_name'] }}</td>
-                                    <td class="py-3 px-4 text-slate-900 font-medium">Rs {{ number_format($order['total_amount'], 2) }}</td>
+                                    <td class="py-3 px-4 text-slate-900 font-medium">Rs {{ number_format($order['total_amount'], 0) }}</td>
                                     <td class="py-3 px-4">
                                         <span class="px-3 py-1 rounded-full text-xs font-medium
                                             @if($order['delivery_status'] == 'pending') bg-yellow-100 text-yellow-800
@@ -371,7 +371,7 @@
                                     <p class="text-xs text-slate-500">{{ $order['customer_name'] }} • {{ $order['created_at']->format('M d, Y') }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-semibold text-slate-900">Rs {{ number_format($order['total_amount'], 2) }}</p>
+                                    <p class="font-semibold text-slate-900">Rs {{ number_format($order['total_amount'], 0) }}</p>
                                     <p class="text-xs text-red-600 font-medium">Cancelled</p>
                                 </div>
                             </div>
@@ -420,8 +420,8 @@
                                 <div class="text-xs text-slate-500">{{ $refund->customer_phone ?? '—' }}</div>
                             </td>
                             <td class="px-4 py-3 text-slate-600">{{ $productNames }}</td>
-                            <td class="px-4 py-3 text-slate-700">Rs {{ number_format((float) ($order?->total_amount ?? 0), 2) }}</td>
-                            <td class="px-4 py-3 text-slate-700">Rs {{ number_format((float) $refund->refund_amount, 2) }}</td>
+                            <td class="px-4 py-3 text-slate-700">Rs {{ number_format((float) ($order?->total_amount ?? 0), 0) }}</td>
+                            <td class="px-4 py-3 text-slate-700">Rs {{ number_format((float) $refund->refund_amount, 0) }}</td>
                             <td class="px-4 py-3">
                                 @if($refund->refund_status === 'completed')
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Completed</span>

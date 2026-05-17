@@ -95,7 +95,7 @@
                 <!-- Opening Due -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Opening Due Amount</label>
-                    <input type="number" step="0.01" name="opening_due"
+                    <input type="number" step="1" name="opening_due"
                            value="{{ old('opening_due', $supplier->opening_due) }}"
                            placeholder="0.00"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm px-4 py-2.5" />

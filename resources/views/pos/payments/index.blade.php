@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Supplier Payments')
 @section('heading','Supplier Payments')
@@ -14,7 +14,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium">Total Paid (All Time)</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalPaid, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalPaid, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -28,7 +28,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-amber-100 text-sm font-medium">This Month</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthPaid, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($thisMonthPaid, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -42,7 +42,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-red-100 text-sm font-medium">Total Outstanding Due</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalOutstandingDue, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($totalOutstandingDue, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -74,7 +74,7 @@
                             </div>
                         </div>
                         <div class="text-right min-w-[120px]">
-                            <p class="text-sm font-bold text-blue-600">Rs {{ number_format($ts->total_paid, 2) }}</p>
+                            <p class="text-sm font-bold text-blue-600">Rs {{ number_format($ts->total_paid, 0) }}</p>
                             <div class="w-24 bg-slate-200 rounded-full h-2 mt-1 ml-auto">
                                 <div class="bg-blue-500 h-2 rounded-full"
                                      style="width: {{ min(100, ($ts->total_paid / $maxPaid) * 100) }}%">
@@ -108,7 +108,7 @@
                             <span class="text-sm font-medium text-slate-700 capitalize">{{ ucfirst($pm->payment_method) }}</span>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm font-semibold text-slate-800">Rs {{ number_format($pm->total, 2) }}</p>
+                            <p class="text-sm font-semibold text-slate-800">Rs {{ number_format($pm->total, 0) }}</p>
                             <p class="text-xs text-slate-500">{{ $pm->count }} tx</p>
                         </div>
                     </div>
@@ -150,7 +150,7 @@
                     <div class="flex items-center gap-3">
                         <div class="text-right">
                             <p class="font-bold {{ $sd->total_due > 20000 ? 'text-red-600' : 'text-amber-600' }}">
-                                Rs {{ number_format($sd->total_due, 2) }}
+                                Rs {{ number_format($sd->total_due, 0) }}
                             </p>
                             <p class="text-xs text-slate-500">outstanding</p>
                         </div>
@@ -342,10 +342,10 @@
 
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-semibold text-red-600">
-                                    − Rs {{ number_format($payment->amount, 2) }}
+                                    − Rs {{ number_format($payment->amount, 0) }}
                                 </div>
                                 @if($payment->bank_charge > 0)
-                                    <div class="text-xs text-slate-400">+Rs {{ number_format($payment->bank_charge, 2) }} charge</div>
+                                    <div class="text-xs text-slate-400">+Rs {{ number_format($payment->bank_charge, 0) }} charge</div>
                                 @endif
                             </td>
 
@@ -370,7 +370,7 @@
                                 @if($payment->supplier)
                                     @if($payment->supplier->total_due > 0)
                                         <span class="text-sm font-semibold text-red-600">
-                                            Rs {{ number_format($payment->supplier->total_due, 2) }}
+                                            Rs {{ number_format($payment->supplier->total_due, 0) }}
                                         </span>
                                     @else
                                         <span class="text-sm font-semibold text-emerald-600">Cleared</span>

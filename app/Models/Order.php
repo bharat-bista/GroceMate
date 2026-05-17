@@ -27,9 +27,9 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'delivery_charge' => 'decimal:2',
-        'total_amount' => 'decimal:2',
+        'subtotal' => 'integer',
+        'delivery_charge' => 'integer',
+        'total_amount' => 'integer',
     ];
 
     public function items(): HasMany

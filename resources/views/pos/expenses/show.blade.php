@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Expense Details')
 @section('heading','Expense Details')
@@ -14,7 +14,7 @@
             </div>
             <div class="text-right">
                 <p class="text-sm text-slate-500">Amount</p>
-                <p class="text-2xl font-bold text-red-600">- Rs {{ number_format($expense->amount, 2) }}</p>
+                <p class="text-2xl font-bold text-red-600">- Rs {{ number_format($expense->amount, 0) }}</p>
             </div>
         </div>
 

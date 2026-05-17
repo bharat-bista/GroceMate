@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -48,8 +48,8 @@
                     <td>{{ $payment->business_account ?? 'N/A' }}</td>
                     <td>{{ ucfirst($payment->payment_method) }}</td>
                     <td>{{ ucfirst($payment->payment_type ?? 'external') }}</td>
-                    <td class="text-right expense">Rs {{ number_format($payment->amount, 2) }}</td>
-                    <td>Rs {{ number_format($payment->bank_charge, 2) }}</td>
+                    <td class="text-right expense">Rs {{ number_format($payment->amount, 0) }}</td>
+                    <td>Rs {{ number_format($payment->bank_charge, 0) }}</td>
                     <td>{{ $payment->tds_applicable ? 'Yes' : 'No' }}</td>
                     <td>{{ $payment->note ?? '-' }}</td>
                 </tr>
@@ -58,8 +58,8 @@
         <tfoot>
             <tr class="total-row">
                 <td colspan="6"><strong>Total Amount</strong></td>
-                <td class="text-right"><strong>Rs {{ number_format($payments->sum('amount'), 2) }}</strong></td>
-                <td><strong>Rs {{ number_format($payments->sum('bank_charge'), 2) }}</strong></td>
+                <td class="text-right"><strong>Rs {{ number_format($payments->sum('amount'), 0) }}</strong></td>
+                <td><strong>Rs {{ number_format($payments->sum('bank_charge'), 0) }}</strong></td>
                 <td></td>
                 <td></td>
             </tr>

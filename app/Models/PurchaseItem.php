@@ -24,10 +24,10 @@ class PurchaseItem extends Model
 
     protected $casts = [
         'qty' => 'decimal:3',
-        'unit_cost' => 'decimal:2',
-        'base_cost' => 'decimal:2',
-        'tax_total' => 'decimal:2',
-        'line_total' => 'decimal:2',
+        'unit_cost' => 'integer',
+        'base_cost' => 'integer',
+        'tax_total' => 'integer',
+        'line_total' => 'integer',
         'expiry_date' => 'date',
     ];
 

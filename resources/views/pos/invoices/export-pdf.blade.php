@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -41,7 +41,7 @@
                     <td>{{ $invoice->business->business_name ?? 'N/A' }}</td>
                     <td>{{ $invoice->customer->name ?? 'N/A' }}</td>
                     <td>{{ $invoice->invoice_no ?? 'N/A' }}</td>
-                    <td class="text-right">{{ number_format($invoice->total_cost, 2) }}</td>
+                    <td class="text-right">{{ number_format($invoice->total_cost, 0) }}</td>
                     <td>{{ $invoice->creator->name ?? 'N/A' }}</td>
                 </tr>
             @endforeach
@@ -49,7 +49,7 @@
         <tfoot>
             <tr class="total-row">
                 <td colspan="4"><strong>Total</strong></td>
-                <td class="text-right"><strong>{{ number_format($invoices->sum('total_cost'), 2) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($invoices->sum('total_cost'), 0) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

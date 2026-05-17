@@ -22,8 +22,8 @@ class SupplierPayment extends Model
 
     protected $casts = [
         'date' => 'date',
-        'amount' => 'decimal:2',
-        'bank_charge' => 'decimal:2',
+        'amount' => 'integer',
+        'bank_charge' => 'integer',
         'tds_applicable' => 'boolean',
     ];
 

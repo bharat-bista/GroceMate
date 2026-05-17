@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     protected $fillable = [
+        'business_id',
         'name',
         'phone',
         'email',
@@ -21,8 +22,8 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'opening_due' => 'decimal:2',
-        'total_due' => 'decimal:2',
+        'opening_due' => 'integer',
+        'total_due' => 'integer',
     ];
 
     public function invoices(): HasMany

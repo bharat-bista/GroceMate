@@ -58,8 +58,8 @@
                 <!-- Amount -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Payment Amount <span class="text-red-500">*</span></label>
-                    <input type="number" step="0.01" name="amount" value="{{ old('amount', $supplierPayment->amount) }}"
-                           placeholder="0.00"
+                    <input type="number" step="1" name="amount" value="{{ old('amount', $supplierPayment->amount) }}"
+                           placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5"
                            required />
                 </div>
@@ -88,8 +88,8 @@
                 <!-- Bank Charge -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Bank Charge</label>
-                    <input type="number" step="0.01" name="bank_charge" value="{{ old('bank_charge', $supplierPayment->bank_charge) }}"
-                           placeholder="0.00"
+                    <input type="number" step="1" name="bank_charge" value="{{ old('bank_charge', $supplierPayment->bank_charge) }}"
+                           placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5" />
                 </div>
 

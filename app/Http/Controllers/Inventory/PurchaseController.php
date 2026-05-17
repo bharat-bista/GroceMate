@@ -94,11 +94,12 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'business_id' => ['required', 'exists:businesses,id'],
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'purchase_date' => ['required', 'date'],
-            'invoice_no' => ['required', 'string', 'max:100'],
-            'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'business_id'    => ['required', 'exists:businesses,id'],
+            'supplier_id'    => ['required', 'exists:suppliers,id'],
+            'purchase_date'  => ['required', 'date'],
+            'invoice_no'     => ['required', 'string', 'max:100'],
+            'payment_method' => ['required', 'in:cash,credit,bank'],
+            'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
@@ -115,12 +116,13 @@ class PurchaseController extends Controller
         DB::transaction(function () use ($data) {
             // Create purchase header
             $purchase = Purchase::create([
-                'business_id' => $data['business_id'],
-                'supplier_id' => $data['supplier_id'],
-                'created_by' => auth()->id(),
-                'purchase_date' => $data['purchase_date'],
-                'invoice_no' => $data['invoice_no'] ?? null,
-                'total_cost' => 0,
+                'business_id'    => $data['business_id'],
+                'supplier_id'    => $data['supplier_id'],
+                'created_by'     => auth()->id(),
+                'purchase_date'  => $data['purchase_date'],
+                'invoice_no'     => $data['invoice_no'] ?? null,
+                'payment_method' => $data['payment_method'],
+                'total_cost'     => 0,
             ]);
 
             $purchaseBaseTotal = 0;
@@ -299,9 +301,20 @@ class PurchaseController extends Controller
             }
 
             // Update purchase total with final tax
-            $purchaseTotal = $purchaseBaseTotal + $finalTaxAmount;
+            $purchaseTotal = (int) round($purchaseBaseTotal + $finalTaxAmount);
             $purchase->update(['total_cost' => $purchaseTotal]);
 
+            // Money movements based on payment method
+            if (in_array($data['payment_method'], ['cash', 'bank'])) {
+                // Paid immediately — deduct from business balance
+                $business = \App\Models\Business::find($data['business_id']);
+                if ($business) {
+                    $business->decrement('balance', $purchaseTotal);
+                }
+            }
+
+            // Always sync supplier due (credit purchases increase it; cash/bank do not
+            // because calculateTotalDue() now only sums credit purchases)
             $supplier = Supplier::find($data['supplier_id']);
             if ($supplier) {
                 $supplier->syncTotalDue();

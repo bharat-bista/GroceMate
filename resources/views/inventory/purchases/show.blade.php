@@ -99,6 +99,14 @@
                         <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->purchase_date->format('M d, Y') }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Payment Method:</span>
+                        @php $pm = $purchase->payment_method ?? 'credit'; @endphp
+                        <span class="text-sm font-medium text-right
+                            {{ $pm === 'cash' ? 'text-green-700' : ($pm === 'bank' ? 'text-purple-700' : 'text-yellow-700') }}">
+                            {{ ucfirst($pm) }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between gap-4">
                         <span class="text-sm text-slate-600">Created By:</span>
                         <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->creator->name ?? 'N/A' }}</span>
                     </div>

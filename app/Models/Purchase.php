@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Purchase extends Model
 {
     protected $fillable = [
-        'business_id','supplier_id','created_by','purchase_date','invoice_no','total_cost'
+        'business_id','supplier_id','created_by','purchase_date','invoice_no','payment_method','total_cost'
     ];
 
     protected $casts = [

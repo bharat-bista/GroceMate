@@ -51,9 +51,9 @@
 
         <div>
             <label class="text-sm text-slate-600">Amount Received *</label>
-            <input type="number" step="0.01" name="amount_received"
+            <input type="number" step="1" name="amount_received"
                    value="{{ old('amount_received') }}"
-                   placeholder="0.00"
+                   placeholder="0"
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
                    required />
         </div>

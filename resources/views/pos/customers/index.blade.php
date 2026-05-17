@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Customers')
 @section('heading','Customers')
@@ -28,7 +28,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-amber-100 text-sm font-medium">Total Outstanding Due</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($grandTotalDue, 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($grandTotalDue, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -183,7 +183,7 @@
                                 @if($customer->calculated_total_due > 0)
                                     <div class="flex items-center">
                                         <span class="text-sm font-semibold text-red-600">
-                                            Rs {{ number_format($customer->calculated_total_due, 2) }}
+                                            Rs {{ number_format($customer->calculated_total_due, 0) }}
                                         </span>
                                         <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
                                             Due

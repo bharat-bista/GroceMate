@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -28,39 +28,39 @@
     <table class="summary">
         <tr>
             <td class="label">Total Sales</td>
-            <td>Rs {{ number_format($salesTotal, 2) }}</td>
+            <td>Rs {{ number_format($salesTotal, 0) }}</td>
             <td class="label">Total Purchases</td>
-            <td>Rs {{ number_format($purchaseTotal, 2) }}</td>
+            <td>Rs {{ number_format($purchaseTotal, 0) }}</td>
         </tr>
         <tr>
             <td class="label">Income Received</td>
-            <td>Rs {{ number_format($incomeTotal, 2) }}</td>
+            <td>Rs {{ number_format($incomeTotal, 0) }}</td>
             <td class="label">Supplier Payments</td>
-            <td>Rs {{ number_format($supplierPaymentTotal, 2) }}</td>
+            <td>Rs {{ number_format($supplierPaymentTotal, 0) }}</td>
         </tr>
         <tr>
             <td class="label">Net Cash Flow</td>
-            <td>Rs {{ number_format($netCashFlow, 2) }}</td>
+            <td>Rs {{ number_format($netCashFlow, 0) }}</td>
             <td class="label">Other Income</td>
-            <td>Rs {{ number_format($otherIncomeTotal, 2) }}</td>
+            <td>Rs {{ number_format($otherIncomeTotal, 0) }}</td>
         </tr>
         <tr>
             <td class="label">Gross Profit/Loss</td>
-            <td>Rs {{ number_format($grossProfitLoss, 2) }}</td>
+            <td>Rs {{ number_format($grossProfitLoss, 0) }}</td>
             <td class="label">Net Profit/Loss</td>
-            <td>Rs {{ number_format($netProfitLoss, 2) }}</td>
+            <td>Rs {{ number_format($netProfitLoss, 0) }}</td>
         </tr>
         <tr>
             <td class="label">Profit Margin</td>
             <td>{{ is_null($profitMargin) ? 'N/A' : number_format($profitMargin, 2) . '%' }}</td>
             <td class="label">Due Collections</td>
-            <td>Rs {{ number_format($dueCollectionTotal, 2) }}</td>
+            <td>Rs {{ number_format($dueCollectionTotal, 0) }}</td>
         </tr>
         <tr>
             <td class="label">Sale Income Entries</td>
-            <td>Rs {{ number_format($saleIncomeTotal, 2) }}</td>
+            <td>Rs {{ number_format($saleIncomeTotal, 0) }}</td>
             <td class="label">Current Balance</td>
-            <td>Rs {{ number_format((float) $business->balance, 2) }}</td>
+            <td>Rs {{ number_format((float) $business->balance, 0) }}</td>
         </tr>
     </table>
 
@@ -84,7 +84,7 @@
                     <td>{{ $activity['reference'] }}</td>
                     <td>{{ $activity['party'] }}</td>
                     <td>{{ $activity['direction'] }}</td>
-                    <td class="text-right">Rs {{ number_format($activity['amount'], 2) }}</td>
+                    <td class="text-right">Rs {{ number_format($activity['amount'], 0) }}</td>
                 </tr>
             @empty
                 <tr>

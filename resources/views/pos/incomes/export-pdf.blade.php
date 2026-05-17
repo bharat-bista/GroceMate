@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -48,7 +48,7 @@
                     <td>{{ ucfirst($income->payment_method) }}</td>
                     <td>{{ $income->income_type ?? 'Other' }}</td>
                     <td class="text-right {{ $income->amount_received > 0 ? 'income' : 'expense' }}">
-                        {{ number_format($income->amount_received, 2) }}
+                        {{ number_format($income->amount_received, 0) }}
                     </td>
                     <td>{{ $income->notes ?? $income->description ?? '-' }}</td>
                 </tr>
@@ -57,7 +57,7 @@
         <tfoot>
             <tr class="total-row">
                 <td colspan="6"><strong>Total</strong></td>
-                <td class="text-right"><strong>{{ number_format($incomes->sum('amount_received'), 2) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($incomes->sum('amount_received'), 0) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

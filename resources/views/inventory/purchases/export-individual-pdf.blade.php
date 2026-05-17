@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -29,9 +29,9 @@
         <div><strong>Supplier:</strong> {{ $purchase->supplier->name ?? 'N/A' }}</div>
         <div><strong>Invoice No:</strong> {{ $purchase->invoice_no ?? 'N/A' }}</div>
         <div><strong>Created By:</strong> {{ $purchase->creator->name ?? 'N/A' }}</div>
-        <div><strong>Base Total:</strong> Rs {{ number_format($purchase->items->sum('base_cost'), 2) }}</div>
-        <div><strong>Tax Applied:</strong> Rs {{ number_format($purchase->total_cost - $purchase->items->sum('base_cost'), 2) }}</div>
-        <div><strong>Total Cost:</strong> Rs {{ number_format($purchase->total_cost, 2) }}</div>
+        <div><strong>Base Total:</strong> Rs {{ number_format($purchase->items->sum('base_cost'), 0) }}</div>
+        <div><strong>Tax Applied:</strong> Rs {{ number_format($purchase->total_cost - $purchase->items->sum('base_cost'), 0) }}</div>
+        <div><strong>Total Cost:</strong> Rs {{ number_format($purchase->total_cost, 0) }}</div>
     </div>
     
     <table>
@@ -49,8 +49,8 @@
                 <tr>
                     <td>{{ $item->product_name }}</td>
                     <td class="text-right">{{ $item->qty }}</td>
-                    <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->line_total, 2) }}</td>
+                    <td class="text-right">{{ number_format($item->unit_cost, 0) }}</td>
+                    <td class="text-right">{{ number_format($item->line_total, 0) }}</td>
                     <td>{{ $item->expiry_date?->format('Y-m-d') ?? 'N/A' }}</td>
                 </tr>
             @endforeach
@@ -58,7 +58,7 @@
         <tfoot>
             <tr class="total-row">
                 <td colspan="3"><strong>Total</strong></td>
-                <td class="text-right"><strong>Rs {{ number_format($purchase->total_cost, 2) }}</strong></td>
+                <td class="text-right"><strong>Rs {{ number_format($purchase->total_cost, 0) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

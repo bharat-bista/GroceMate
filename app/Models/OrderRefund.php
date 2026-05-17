@@ -19,7 +19,7 @@ class OrderRefund extends Model
     ];
 
     protected $casts = [
-        'refund_amount' => 'decimal:2',
+        'refund_amount' => 'integer',
         'cancelled_at' => 'datetime',
         'refunded_at' => 'datetime',
     ];

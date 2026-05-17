@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Purchases')
 @section('heading', 'Purchases (Stock-In)')
@@ -156,7 +156,7 @@
                                 <div class="text-sm text-slate-900">{{ $purchase->creator->name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $purchase->total_cost, 2) }}</div>
+                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $purchase->total_cost, 0) }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex space-x-2">

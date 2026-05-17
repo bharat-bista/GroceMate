@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Inventory Dashboard')
 @section('heading','Dashboard')
@@ -101,7 +101,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Today's Purchases</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($todayPurchaseTotal, 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($todayPurchaseTotal, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +115,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-1">Month Purchases</p>
-                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($monthPurchaseTotal, 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-900">Rs {{ number_format($monthPurchaseTotal, 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

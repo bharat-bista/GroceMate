@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Invoice Details')
 @section('heading', 'Invoice Details')
@@ -135,25 +135,25 @@
                                 <td class="px-4 py-3">{{ $item->product_name }}</td>
                                 <td class="px-4 py-3">{{ $item->unit }}</td>
                                 <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
-                                <td class="px-4 py-3">Rs {{ number_format($item->unit_cost, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($item->line_total, 2) }}</td>
+                                <td class="px-4 py-3">Rs {{ number_format($item->unit_cost, 0) }}</td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($item->line_total, 0) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-300">
                         <tr>
                             <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
-                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($invoice->items->sum('line_total'), 2) }}</td>
+                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($invoice->items->sum('line_total'), 0) }}</td>
                         </tr>
                         @if($invoice->total_cost > $invoice->items->sum('line_total'))
                             <tr>
                                 <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
-                                <td class="px-4 py-3 font-semibold text-red-600">Rs {{ number_format($invoice->total_cost - $invoice->items->sum('line_total'), 2) }}</td>
+                                <td class="px-4 py-3 font-semibold text-red-600">Rs {{ number_format($invoice->total_cost - $invoice->items->sum('line_total'), 0) }}</td>
                             </tr>
                         @endif
                         <tr class="bg-slate-100">
                             <td colspan="4" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
-                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format($invoice->total_cost, 2) }}</td>
+                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format($invoice->total_cost, 0) }}</td>
                         </tr>
                     </tfoot>
                 </table>

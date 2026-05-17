@@ -87,8 +87,8 @@ class SupplierController extends Controller
 
         // Set default values if not provided
         $data['supplier_type'] = $data['supplier_type'] ?? 'retail';
-        $data['opening_due'] = $data['opening_due'] ?? 0;
-        $data['total_due'] = $data['opening_due']; // Set total_due to opening_due initially
+        $data['opening_due'] = (int) round($data['opening_due'] ?? 0);
+        $data['total_due'] = $data['opening_due'];
 
         Supplier::create($data);
 

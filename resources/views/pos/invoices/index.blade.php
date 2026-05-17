@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Invoices')
 @section('heading', 'Sales Invoices')
@@ -126,13 +126,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($invoice->payment_method === 'credit')
-                                    <div class="text-sm font-semibold text-red-600">Rs {{ number_format($invoice->customer_total_due, 2) }}</div>
+                                    <div class="text-sm font-semibold text-red-600">Rs {{ number_format($invoice->customer_total_due, 0) }}</div>
                                 @else
                                     <div class="text-sm text-slate-500">-</div>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($invoice->total_cost, 2) }}</div>
+                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($invoice->total_cost, 0) }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex space-x-2">

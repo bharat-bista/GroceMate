@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Products')
 @section('heading', 'Products')
@@ -89,7 +89,7 @@
                                 <div class="text-sm text-slate-900">{{ $product->category->name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $product->selling_price, 2) }}</div>
+                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $product->selling_price, 0) }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">

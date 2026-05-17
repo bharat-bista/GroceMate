@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Stock Batches')
 @section('heading', 'Stock Batches')
@@ -73,7 +73,7 @@
                         <td class="px-5 py-4">{{ $batch->purchased_on?->format('Y-m-d') ?? '—' }}</td>
                         <td class="px-5 py-4">{{ number_format((float) $batch->qty_received, 3) }}</td>
                         <td class="px-5 py-4">{{ number_format((float) $batch->qty_remaining, 3) }}</td>
-                        <td class="px-5 py-4">Rs {{ number_format((float) $batch->unit_cost, 2) }}</td>
+                        <td class="px-5 py-4">Rs {{ number_format((float) $batch->unit_cost, 0) }}</td>
                         <td class="px-5 py-4">{{ $batch->expiry_date?->format('Y-m-d') ?? '—' }}</td>
                         <td class="px-5 py-4">
                             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ $statusClass }}">
@@ -90,7 +90,7 @@
             <tfoot class="bg-slate-50 border-t border-slate-200">
                 <tr>
                     <td colspan="6" class="px-5 py-4 text-right font-semibold text-slate-700">Active Stock Valuation:</td>
-                    <td class="px-5 py-4 font-semibold text-emerald-700">Rs {{ number_format((float) $valuationTotal, 2) }}</td>
+                    <td class="px-5 py-4 font-semibold text-emerald-700">Rs {{ number_format((float) $valuationTotal, 0) }}</td>
                 </tr>
             </tfoot>
         </table>

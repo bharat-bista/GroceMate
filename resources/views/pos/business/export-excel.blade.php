@@ -1,4 +1,4 @@
-<table border="1">
+﻿<table border="1">
     <tr>
         <th colspan="6" style="background:#dbeafe;font-size:16px;">{{ $business->business_name }} Report</th>
     </tr>
@@ -19,18 +19,18 @@
         <th style="background:#f1f5f9;">Metric</th>
         <th style="background:#f1f5f9;">Amount</th>
     </tr>
-    <tr><td>Total Sales</td><td>Rs {{ number_format($salesTotal, 2) }}</td></tr>
-    <tr><td>Total Purchases</td><td>Rs {{ number_format($purchaseTotal, 2) }}</td></tr>
-    <tr><td>Income Received</td><td>Rs {{ number_format($incomeTotal, 2) }}</td></tr>
-    <tr><td>Other Income</td><td>Rs {{ number_format($otherIncomeTotal, 2) }}</td></tr>
-    <tr><td>Sale Income Entries</td><td>Rs {{ number_format($saleIncomeTotal, 2) }}</td></tr>
-    <tr><td>Due Collections</td><td>Rs {{ number_format($dueCollectionTotal, 2) }}</td></tr>
-    <tr><td>Supplier Payments</td><td>Rs {{ number_format($supplierPaymentTotal, 2) }}</td></tr>
-    <tr><td>Gross Profit/Loss</td><td>Rs {{ number_format($grossProfitLoss, 2) }}</td></tr>
-    <tr><td>Net Profit/Loss</td><td>Rs {{ number_format($netProfitLoss, 2) }}</td></tr>
+    <tr><td>Total Sales</td><td>Rs {{ number_format($salesTotal, 0) }}</td></tr>
+    <tr><td>Total Purchases</td><td>Rs {{ number_format($purchaseTotal, 0) }}</td></tr>
+    <tr><td>Income Received</td><td>Rs {{ number_format($incomeTotal, 0) }}</td></tr>
+    <tr><td>Other Income</td><td>Rs {{ number_format($otherIncomeTotal, 0) }}</td></tr>
+    <tr><td>Sale Income Entries</td><td>Rs {{ number_format($saleIncomeTotal, 0) }}</td></tr>
+    <tr><td>Due Collections</td><td>Rs {{ number_format($dueCollectionTotal, 0) }}</td></tr>
+    <tr><td>Supplier Payments</td><td>Rs {{ number_format($supplierPaymentTotal, 0) }}</td></tr>
+    <tr><td>Gross Profit/Loss</td><td>Rs {{ number_format($grossProfitLoss, 0) }}</td></tr>
+    <tr><td>Net Profit/Loss</td><td>Rs {{ number_format($netProfitLoss, 0) }}</td></tr>
     <tr><td>Profit Margin</td><td>{{ is_null($profitMargin) ? 'N/A' : number_format($profitMargin, 2) . '%' }}</td></tr>
-    <tr><td>Net Cash Flow</td><td>Rs {{ number_format($netCashFlow, 2) }}</td></tr>
-    <tr><td>Current Balance</td><td>Rs {{ number_format((float) $business->balance, 2) }}</td></tr>
+    <tr><td>Net Cash Flow</td><td>Rs {{ number_format($netCashFlow, 0) }}</td></tr>
+    <tr><td>Current Balance</td><td>Rs {{ number_format((float) $business->balance, 0) }}</td></tr>
 </table>
 
 <br>
@@ -54,7 +54,7 @@
                 <td>{{ $activity['reference'] }}</td>
                 <td>{{ $activity['party'] }}</td>
                 <td>{{ $activity['direction'] }}</td>
-                <td>Rs {{ number_format($activity['amount'], 2) }}</td>
+                <td>Rs {{ number_format($activity['amount'], 0) }}</td>
             </tr>
         @empty
             <tr>

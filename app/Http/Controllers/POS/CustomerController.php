@@ -4,6 +4,7 @@ namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
 use App\Models\POS\Customer;
+use App\Models\Business;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -382,7 +383,13 @@ class CustomerController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['total_due'] = $validated['opening_due'] ?? 0;
+        $validated['opening_due'] = (int) round($validated['opening_due'] ?? 0);
+        $validated['total_due'] = $validated['opening_due'];
+
+        $defaultBusinessId = Business::min('id');
+        if ($defaultBusinessId) {
+            $validated['business_id'] = $defaultBusinessId;
+        }
 
         Customer::create($validated);
 

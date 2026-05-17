@@ -117,9 +117,8 @@ class SupplierController extends Controller
             'address' => ['nullable','string','max:2000'],
         ]);
 
-        // Set default values if not provided
         $data['supplier_type'] = $data['supplier_type'] ?? 'retail';
-        $data['opening_due'] = $data['opening_due'] ?? 0;
+        $data['opening_due'] = (int) round($data['opening_due'] ?? 0);
 
         $supplier->update($data);
         $supplier->syncTotalDue();

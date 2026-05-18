@@ -47,6 +47,9 @@ Route::post('/pos/stock-check', [StockCheckController::class, 'check'])->name('p
 // POS product search endpoint (no auth required).
 Route::get('/pos/products/search', [ProductSearchController::class, 'searchProductsForPOS'])->name('pos.products.search');
 
+// POS batch search endpoint — returns individual active batches for batch-wise sale selection.
+Route::get('/pos/batches/search', [ProductSearchController::class, 'searchBatchesForPOS'])->name('pos.batches.search');
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('root');

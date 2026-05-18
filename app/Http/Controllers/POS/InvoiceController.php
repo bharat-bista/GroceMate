@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\POS\Invoice;
 use App\Models\POS\InvoiceItem;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Tax;
 use App\Services\FifoStockService;
 use App\Services\InvoiceNumberService;
@@ -87,11 +88,12 @@ class InvoiceController extends Controller
             'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'send_email' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
-            'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
-            'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'], // Unit for new products
-            'items.*.qty' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'integer', 'min:0', 'max:9999999'],
+            'items.*.product_id'   => ['nullable', 'exists:products,id'],
+            'items.*.batch_id'     => ['nullable', 'integer', 'exists:stock_batches,id'],
+            'items.*.product_name' => ['required', 'string', 'max:255'],
+            'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
+            'items.*.qty'          => ['required', 'numeric', 'gt:0'],
+            'items.*.unit_cost'    => ['required', 'integer', 'min:0', 'max:9999999'],
         ]);
 
         $sendEmail = $data['send_email'] ?? false;
@@ -101,13 +103,21 @@ class InvoiceController extends Controller
         $errors = [];
         $fifoService = $this->fifoService ?? app(FifoStockService::class);
         foreach ($data['items'] as $index => $row) {
-            $productId = (int) ($row['product_id'] ?? 0);
-            $qty = (float) $row['qty'];
-            $check = $fifoService->canConsume($productId, $qty, 'pos');
+            $qty   = (float) $row['qty'];
+            $label = $row['product_name'];
 
-            if (!$check['ok']) {
-                $productLabel = $row['product_name'];
-                $errors["items.{$index}.qty"] = "{$productLabel} — only {$check['available']} available, you need {$qty}";
+            if (!empty($row['batch_id'])) {
+                // Batch-specific: check the chosen batch has enough remaining stock.
+                $batch = StockBatch::find((int) $row['batch_id']);
+                if (!$batch || $batch->status !== 'active' || (float) $batch->qty_remaining < $qty) {
+                    $available = $batch ? (float) $batch->qty_remaining : 0;
+                    $errors["items.{$index}.qty"] = "{$label} — batch only has {$available} available, you need {$qty}";
+                }
+            } else {
+                $check = $fifoService->canConsume((int) ($row['product_id'] ?? 0), $qty, 'pos');
+                if (!$check['ok']) {
+                    $errors["items.{$index}.qty"] = "{$label} — only {$check['available']} available, you need {$qty}";
+                }
             }
         }
 
@@ -177,8 +187,12 @@ class InvoiceController extends Controller
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
 
-                // Consume FIFO batches for POS and store the batch breakdown on the item.
-                $result = $fifoService->consume($productId, $qty, 'pos');
+                // Consume from the user-selected batch, or fall back to FIFO order.
+                if (!empty($row['batch_id'])) {
+                    $result = $fifoService->consumeFromBatch((int) $row['batch_id'], $qty);
+                } else {
+                    $result = $fifoService->consume($productId, $qty, 'pos');
+                }
                 $invoiceItem->update([
                     'batches_consumed' => json_encode($result['batches_used']),
                 ]);

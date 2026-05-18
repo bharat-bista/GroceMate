@@ -167,6 +167,57 @@ class FifoStockService
     }
 
     /**
+     * Consume stock from one specific batch (user-selected, bypasses FIFO order).
+     * Returns the same shape as consume() so the reverse() path works unchanged.
+     *
+     * @return array{success: bool, consumed: float, batches_used: array<int, array{batch_id: int, qty_taken: float, unit_cost: float}>}
+     *
+     * @throws InsufficientStockException
+     */
+    public function consumeFromBatch(int $batchId, float $qty): array
+    {
+        return DB::transaction(function () use ($batchId, $qty) {
+            $batch = $this->stockBatch->newQuery()
+                ->where('id', $batchId)
+                ->where('status', 'active')
+                ->where('qty_remaining', '>', 0)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((float) $batch->qty_remaining < $qty) {
+                $productName = (string) ($this->product->newQuery()
+                    ->where('id', $batch->product_id)
+                    ->value('name') ?? 'Unknown product');
+
+                throw new InsufficientStockException($productName, $qty, (float) $batch->qty_remaining);
+            }
+
+            $batch->qty_remaining = (float) $batch->qty_remaining - $qty;
+            if ($batch->qty_remaining <= 0) {
+                $batch->qty_remaining = 0;
+                $batch->status        = 'depleted';
+            }
+            $batch->save();
+
+            $stock = $this->stock->newQuery()->firstOrCreate(
+                ['product_id' => $batch->product_id],
+                ['quantity' => 0, 'reorder_level' => 0]
+            );
+            $stock->decrement('quantity', $qty);
+
+            return [
+                'success'      => true,
+                'consumed'     => $qty,
+                'batches_used' => [[
+                    'batch_id'  => $batch->id,
+                    'qty_taken' => $qty,
+                    'unit_cost' => (float) $batch->unit_cost,
+                ]],
+            ];
+        });
+    }
+
+    /**
      * Reverse a prior consumption by restoring batches or creating a new batch.
      */
     public function reverse(int $productId, float $qty, array $batchesUsed = []): void

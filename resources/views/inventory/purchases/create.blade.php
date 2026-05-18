@@ -334,6 +334,11 @@ function updateProductFromInput(rowId, payload) {
 
     productInput.value = name;
     productIdInput.value = id || '';
+    // Keep the hidden product_name in sync — setting productInput.value
+    // programmatically does not fire 'input', so handleProductSearch won't
+    // update it; we must mirror it here.
+    const productNameHidden = row.querySelector('.product-name-hidden');
+    if (productNameHidden) productNameHidden.value = name;
     unitSelect.value = unit;
     unitDisplay.textContent = unit;
 

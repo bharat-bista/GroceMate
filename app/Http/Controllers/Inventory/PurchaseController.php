@@ -138,6 +138,7 @@ class PurchaseController extends Controller
                 // Get category and brand names for snapshot
                 $categoryName = null;
                 $companyName = null;
+                $productSnapshotName = $row['product_name']; // default; overridden below
 
                 // Check if product exists, if not create it
                 if (!empty($row['product_id'])) {
@@ -145,6 +146,7 @@ class PurchaseController extends Controller
                     $productId = $row['product_id'];
                     $existingProduct = Product::with(['category', 'brandRelation'])->find($productId);
                     if ($existingProduct) {
+                        $productSnapshotName = $existingProduct->name; // canonical name for snapshot
                         $brandId = $this->resolveBrandId($row);
 
                         if ($brandId && (int) $existingProduct->brand_id !== (int) $brandId) {
@@ -226,6 +228,8 @@ class PurchaseController extends Controller
                         $companyName = $brand->name ?? null;
                     }
 
+                    $productSnapshotName = $normalizedProductName; // new product uses the typed name
+
                     // Create new product with category and brand
                     $product = Product::create([
                         'business_id' => $businessId,
@@ -250,7 +254,7 @@ class PurchaseController extends Controller
                 $purchaseItem = PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
-                    'product_name' => $row['product_name'],         // snapshot
+                    'product_name' => $productSnapshotName,         // snapshot
                     'category_name' => $categoryName,               // snapshot
                     'company_name' => $companyName,                 // snapshot
                     'unit' => $row['product_unit'],  

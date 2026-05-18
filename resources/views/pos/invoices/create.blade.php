@@ -114,6 +114,20 @@
 
                         <td></td>
                     </tr>
+                    <tr>
+                        <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="discountInput" name="discount_pct"
+                                       step="0.01" min="0" max="100"
+                                       value="0"
+                                       class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                                <span class="text-sm text-slate-500 shrink-0">%</span>
+                            </div>
+                            <div class="text-xs text-blue-600 text-right mt-0.5" id="discountRupees"></div>
+                        </td>
+                        <td></td>
+                    </tr>
                     <tr class="bg-slate-100">
                         <td colspan="5" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
                         <td class="px-4 py-4 font-bold text-lg text-green-700 text-right" id="grandTotal">0.00</td>
@@ -325,10 +339,17 @@ function applyFinalTax(totalBase) {
         }
     }
     
-    const grandTotal = totalBase + taxAmount;
-    
-    totalTaxElement.textContent = formatCurrency(taxAmount);
-    grandTotalElement.textContent = formatCurrency(grandTotal);
+    const discountPct    = parseFloat(document.getElementById('discountInput')?.value) || 0;
+    const discountAmount = Math.round((totalBase + taxAmount) * discountPct / 100);
+    const grandTotal     = Math.max(0, totalBase + taxAmount - discountAmount);
+
+    const discountRupees = document.getElementById('discountRupees');
+    if (discountRupees) {
+        discountRupees.textContent = discountPct > 0 ? `− Rs ${formatCurrency(discountAmount)}` : '';
+    }
+
+    totalTaxElement.textContent    = formatCurrency(taxAmount);
+    grandTotalElement.textContent  = formatCurrency(grandTotal);
 }
 
 // ---------- Row population from a batch result ----------
@@ -730,6 +751,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Final tax change event
     document.getElementById('finalTaxSelect').addEventListener('change', function() {
+        const totalBaseText = document.getElementById('totalBaseCost').textContent;
+        const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
+        applyFinalTax(totalBase);
+    });
+
+    // Discount change event
+    document.getElementById('discountInput').addEventListener('input', function() {
         const totalBaseText = document.getElementById('totalBaseCost').textContent;
         const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
         applyFinalTax(totalBase);

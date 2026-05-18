@@ -15,6 +15,7 @@ class Invoice extends Model
         'invoice_date',
         'invoice_no',
         'total_cost',
+        'discount',
         'payment_method',
         'status',
         'cancellation_status',
@@ -26,6 +27,7 @@ class Invoice extends Model
     protected $casts = [
         'invoice_date' => 'date',
         'total_cost' => 'integer',
+        'discount'   => 'integer',
         'cancelled_at' => 'datetime',
     ];
 

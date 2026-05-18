@@ -902,10 +902,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    alert(
-      `Order confirmed!\nOrder #: ${details.orderNumber}\nPayment: ${paymentLabel}\nDelivery: ${deliveryLabel}\nDelivery Charge: ${deliveryChargeLabel}\nTotal: ${totalLabel}`
-    );
-    window.location.href = orderUrl;
+    Swal.fire({
+      icon: 'success',
+      title: 'Order Confirmed!',
+      html: summaryHtml,
+      confirmButtonText: 'View Order',
+      confirmButtonColor: '#2e7d32',
+      showCancelButton: true,
+      cancelButtonText: 'Continue Shopping',
+      reverseButtons: true,
+    }).then((result) => {
+      window.location.href = result.isConfirmed ? orderUrl : continueShoppingUrl;
+    });
   }
 
   function readCartItems() {
@@ -1156,14 +1164,14 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validate file type
       var validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid image (JPG, PNG) or PDF file.');
+        Swal.fire({ icon: 'error', title: 'Invalid File', text: 'Please upload a valid image (JPG, PNG) or PDF file.', confirmButtonColor: '#2e7d32' });
         paymentSlipInput.value = '';
         return;
       }
 
       // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB.');
+        Swal.fire({ icon: 'error', title: 'File Too Large', text: 'File size must be less than 5MB.', confirmButtonColor: '#2e7d32' });
         paymentSlipInput.value = '';
         return;
       }
@@ -1209,12 +1217,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const isStorePickup = selectedDelivery && selectedDelivery.value === 'pickup';
     
     if (!name || !phone || (!address && !isStorePickup)) {
-      alert('Please fill all required fields.');
+      Swal.fire({ icon: 'warning', title: 'Missing Information', text: 'Please fill all required fields.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
     if (!selectedPaymentMethod) {
-      alert('Please select a payment method.');
+      Swal.fire({ icon: 'warning', title: 'Payment Method Required', text: 'Please select a payment method.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
@@ -1222,22 +1230,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedPaymentMethod === 'connectips') {
       var paymentSlipData = document.getElementById('payment-slip-data');
       if (!paymentSlipData || !paymentSlipData.value) {
-        alert('Please upload your payment slip before placing the order.');
+        Swal.fire({ icon: 'warning', title: 'Payment Slip Required', text: 'Please upload your payment slip before placing the order.', confirmButtonColor: '#2e7d32' });
         return;
       }
     }
 
     if (!document.getElementById('termsCheck').checked) {
-      alert('Please agree to terms and conditions.');
+      Swal.fire({ icon: 'warning', title: 'Terms Required', text: 'Please agree to terms and conditions before placing your order.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
     if (checkoutItems.length === 0) {
-      alert(
-        isBuyNowMode
-          ? 'No product selected for direct checkout.'
-          : 'Your cart is empty. Please add products before checkout.'
-      );
+      Swal.fire({
+        icon: 'warning',
+        title: 'Cart Empty',
+        text: isBuyNowMode ? 'No product selected for direct checkout.' : 'Your cart is empty. Please add products before checkout.',
+        confirmButtonColor: '#2e7d32',
+      });
       return;
     }
 
@@ -1296,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => {
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
-        alert('Error initiating payment. Please try again.');
+        Swal.fire({ icon: 'error', title: 'Payment Error', text: 'Error initiating payment. Please try again.', confirmButtonColor: '#2e7d32' });
       });
     } else {
       // Handle other payment methods (COD, Connect IPS)
@@ -1389,13 +1398,13 @@ document.addEventListener('DOMContentLoaded', function() {
             paymentMethod: paymentMethod,
           });
         } else {
-          alert('Error: ' + resolveOrderErrorMessage(data, 'Something went wrong'));
+          Swal.fire({ icon: 'error', title: 'Order Failed', text: resolveOrderErrorMessage(data, 'Something went wrong'), confirmButtonColor: '#2e7d32' });
           placeOrderBtn.disabled = false;
           placeOrderBtn.innerHTML = 'Place Order';
         }
       })
       .catch(function(error) {
-        alert(error.message || 'Error placing order. Please try again.');
+        Swal.fire({ icon: 'error', title: 'Order Failed', text: error.message || 'Error placing order. Please try again.', confirmButtonColor: '#2e7d32' });
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
       });

@@ -237,13 +237,13 @@ let rowCounter = 0;
 let activeAutocomplete = null;
 let searchTimeout = null;
 
-async function searchProductsApi(query) {
+async function searchBatchesApi(query) {
     try {
         const businessId = document.querySelector('select[name="business_id"]')?.value || '';
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
         const response = await fetch(
-            `/pos/products/search?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
+            `/pos/batches/search?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
             {
                 headers: {
                     'Accept': 'application/json',
@@ -261,13 +261,7 @@ async function searchProductsApi(query) {
 
         return data;
     } catch (e) {
-        // Fallback: filter page-injected products by query and business
-        const qLower = query.toLowerCase();
-        const selectedBusinessId = document.querySelector('select[name="business_id"]')?.value || '';
-        return products
-            .filter(p => p.name.toLowerCase().includes(qLower) &&
-                         (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId)))
-            .slice(0, 10);
+        return [];
     }
 }
 
@@ -337,38 +331,29 @@ function applyFinalTax(totalBase) {
     grandTotalElement.textContent = formatCurrency(grandTotal);
 }
 
-// ---------- Product selection ----------
-function updateProductFromInput(rowId, payload) {
+// ---------- Row population from a batch result ----------
+function updateRowFromBatch(rowId, batch) {
     const row = document.getElementById(`row-${rowId}`);
     if (!row) return;
 
-    const productInput = row.querySelector('.product-name-input');
-    const productIdInput = row.querySelector('.product-id-input');
-    const unitSelect = row.querySelector('.unit-select');
+    row.querySelector('.product-name-input').value  = batch.product_name;
+    row.querySelector('.product-id-input').value    = batch.product_id;
+    row.querySelector('.product-name-hidden').value = batch.product_name;
+    row.querySelector('.batch-id-input').value      = batch.batch_id;
+
+    const unit = batch.unit || 'pcs';
+    const unitSelect  = row.querySelector('.unit-select');
     const unitDisplay = row.querySelector('.unit-display');
-    const costInput = row.querySelector('.cost-input');
-
-    const name = payload.name || '';
-    const id = payload.id ? Number(payload.id) : null;
-    const unit = payload.unit || 'pcs';
-    // Use selling price as the default unit price for POS.
-    const sellingPrice = payload.selling_price || 0;
-
-    productInput.value = name;
-    productIdInput.value = id || '';
     unitSelect.value = unit;
     unitDisplay.textContent = unit;
+    unitSelect.classList.add('hidden');
+    unitDisplay.classList.remove('hidden');
 
-    // Show/hide select for new/existing
-    if (id) {
-        unitSelect.classList.add('hidden');
-        unitDisplay.classList.remove('hidden');
-    } else {
-        unitSelect.classList.remove('hidden');
-        unitDisplay.classList.add('hidden');
-    }
+    row.querySelector('.cost-input').value = batch.selling_price || 0;
 
-    costInput.value = sellingPrice;
+    const qtyInput = row.querySelector('.qty-input');
+    qtyInput.max   = batch.qty_remaining;
+    qtyInput.value = Math.min(parseFloat(qtyInput.value) || 1, batch.qty_remaining);
 
     updateAllTotals();
 }
@@ -415,66 +400,48 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
         list.appendChild(empty);
     }
 
-    if (results.length > 0) {
-        results.slice(0, 10).forEach((p) => {
-            // Prevent selection of items that have no POS-available stock.
-            const posAvailable = Number(p.pos_available ?? 0);
-            const inStock = posAvailable > 0;
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.disabled = !inStock;
-            item.className = inStock
-                ? 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate'
-                : 'block w-full px-3 py-2 text-sm text-slate-400 rounded-xl cursor-not-allowed opacity-60 truncate';
-            
-            // highlight matching text
-            const name = p.name || '';
-            const idx = name.toLowerCase().indexOf(qLower);
-            const highlighted =
-                idx >= 0
-                    ? name.substring(0, idx) +
-                      `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>` +
-                      name.substring(idx + query.length)
-                    : name;
+    results.forEach((batch) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'block w-full px-3 py-2 text-left hover:bg-slate-50 border-b border-slate-100 last:border-0';
 
-            item.innerHTML = `
-                <div class="flex items-center justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
-                        <div class="text-[11px] text-slate-500 leading-tight">
-                            ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'} •
-                            ${inStock ? `In stock: ${posAvailable} units` : '<span class="text-red-600">Out of stock</span>'}
-                        </div>
-                    </div>
-                    <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
-                        Price: Rs ${formatCurrency(p.selling_price ?? 0)}
+        const name    = batch.product_name || '';
+        const idx     = name.toLowerCase().indexOf(qLower);
+        const highlighted = idx >= 0
+            ? name.substring(0, idx)
+              + `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>`
+              + name.substring(idx + query.length)
+            : name;
+
+        const expiryHtml = batch.expiry_date
+            ? `<span class="text-orange-600">Exp: ${batch.expiry_date}</span>`
+            : '';
+
+        item.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
+                    <div class="text-[11px] text-slate-500 leading-tight mt-0.5">
+                        Batch: <span class="font-medium text-slate-700">${batch.batch_no}</span>
+                        &nbsp;|&nbsp; Avail: <span class="font-medium text-green-700">${batch.qty_remaining} ${batch.unit}</span>
+                        ${expiryHtml ? `&nbsp;|&nbsp; ${expiryHtml}` : ''}
                     </div>
                 </div>
-            `;
+                <div class="text-[11px] font-bold text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0 whitespace-nowrap">
+                    Rs ${formatCurrency(batch.selling_price ?? 0)}/${batch.unit}
+                </div>
+            </div>
+        `;
 
-            item.addEventListener('click', () => {
-                if (!inStock) {
-                    return;
-                }
-
-                updateProductFromInput(rowId, {
-                    id: p.id,
-                    name: p.name,
-                    unit: p.unit,
-                    selling_price: p.selling_price,
-                    pos_available: p.pos_available
-                });
-
-                dropdown.remove();
-                activeAutocomplete = null;
-
-                const row = document.getElementById(`row-${rowId}`);
-                row.querySelector('.qty-input')?.focus();
-            });
-
-            list.appendChild(item);
+        item.addEventListener('click', () => {
+            updateRowFromBatch(rowId, batch);
+            dropdown.remove();
+            activeAutocomplete = null;
+            document.getElementById(`row-${rowId}`)?.querySelector('.qty-input')?.focus();
         });
-    }
+
+        list.appendChild(item);
+    });
 
     dropdown.appendChild(list);
     wrapper.appendChild(dropdown);
@@ -504,7 +471,7 @@ async function handleProductSearch(rowId, inputElement) {
     }
 
     searchTimeout = setTimeout(async () => {
-        const results = await searchProductsApi(query);
+        const results = await searchBatchesApi(query);
         createAutocompleteDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -527,6 +494,7 @@ function createRow() {
                        autocomplete="off" />
                 <input type="hidden" name="items[${rowId}][product_id]" class="product-id-input" />
                 <input type="hidden" name="items[${rowId}][product_name]" class="product-name-hidden" />
+                <input type="hidden" name="items[${rowId}][batch_id]" class="batch-id-input" />
             </div>
         </td>
         <td class="px-4 py-3">
@@ -820,6 +788,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (!(qty > 0)) {
                 GroceMate.notify.error(`Row ${i + 1}: Quantity must be greater than 0.`);
+                return;
+            }
+            const qtyMax = parseFloat(rows[i].querySelector('.qty-input').max);
+            if (!isNaN(qtyMax) && qty > qtyMax) {
+                GroceMate.notify.error(`Row ${i + 1}: Quantity exceeds available batch stock (${qtyMax}).`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {

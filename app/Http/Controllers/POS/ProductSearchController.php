@@ -4,6 +4,7 @@ namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\StockBatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,48 @@ class ProductSearchController extends Controller
                 'available_stock' => $availableStock,
                 'pos_available' => $product->posAvailableStock(),
                 'business_id' => $product->business_id,
+            ];
+        });
+
+        return response()->json($results);
+    }
+
+    public function searchBatchesForPOS(Request $request): JsonResponse
+    {
+        $q          = trim($request->get('q', ''));
+        $businessId = $request->get('business_id');
+
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $batches = StockBatch::active()
+            ->with('product')
+            ->whereHas('product', function ($query) use ($q, $businessId) {
+                $query->where('name', 'LIKE', '%' . $q . '%');
+                if ($businessId) {
+                    $query->where('business_id', $businessId);
+                }
+            })
+            ->orderBy('purchased_on')
+            ->orderBy('id')
+            ->limit(20)
+            ->get();
+
+        $results = $batches->map(function (StockBatch $batch) {
+            $product = $batch->product;
+
+            return [
+                'batch_id'      => $batch->id,
+                'batch_no'      => $batch->batch_no,
+                'product_id'    => $batch->product_id,
+                'product_name'  => $product?->name ?? '',
+                'unit'          => $product?->unit ?? 'pcs',
+                'selling_price' => (float) ($product?->selling_price ?? 0),
+                'unit_cost'     => (float) $batch->unit_cost,
+                'qty_remaining' => (float) $batch->qty_remaining,
+                'expiry_date'   => $batch->expiry_date?->format('Y-m-d'),
+                'business_id'   => $product?->business_id,
             ];
         });
 

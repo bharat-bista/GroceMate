@@ -401,20 +401,36 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedFiles.forEach(function (file, idx) {
             const reader = new FileReader();
             reader.onload = function (e) {
+                // No overflow-hidden on wrap — that clips the remove button at the corners.
                 const wrap = document.createElement('div');
-                wrap.className = 'relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100';
+                wrap.className = 'relative border border-slate-200 bg-slate-100 rounded-xl';
                 wrap.style.aspectRatio = '1';
-                wrap.innerHTML =
-                    `<img src="${e.target.result}" class="w-full h-full object-cover" alt="${file.name}" />`
-                    + (idx === 0 ? '<div class="absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5">Main</div>' : '')
-                    + `<button type="button" data-idx="${idx}"
-                               class="remove-thumb absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center leading-none shadow hover:bg-red-700 focus:outline-none"
-                               title="Remove">&times;</button>`;
-                wrap.querySelector('.remove-thumb').addEventListener('click', function () {
-                    selectedFiles.splice(parseInt(this.dataset.idx), 1);
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = file.name;
+                img.className = 'absolute inset-0 w-full h-full object-cover rounded-xl';
+                wrap.appendChild(img);
+
+                if (idx === 0) {
+                    const badge = document.createElement('div');
+                    badge.className = 'absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5 rounded-b-xl z-10';
+                    badge.textContent = 'Main';
+                    wrap.appendChild(badge);
+                }
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.title = 'Remove';
+                btn.className = 'absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow hover:bg-red-700 focus:outline-none';
+                btn.textContent = '×';
+                btn.addEventListener('click', function () {
+                    selectedFiles.splice(idx, 1);
                     syncFileInput();
                     renderPreviews();
                 });
+                wrap.appendChild(btn);
+
                 thumbnailPreviewGrid.appendChild(wrap);
             };
             reader.readAsDataURL(file);

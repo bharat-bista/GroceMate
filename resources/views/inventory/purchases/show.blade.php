@@ -152,11 +152,24 @@
                             <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
                             <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 0) }}</td>
                         </tr>
-                        @if($purchase->total_cost > $purchase->items->sum('line_total'))
+                        @php
+                            $subtotal = $purchase->items->sum('line_total');
+                            $discount = (int) ($purchase->discount ?? 0);
+                            $tax = $purchase->total_cost - $subtotal + $discount;
+                        @endphp
+                        @if($tax > 0)
                             <tr>
                                 <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
                                 <td class="px-4 py-3 font-semibold text-red-600">
-                                    Rs {{ number_format((float) ($purchase->total_cost - $purchase->items->sum('line_total')), 0) }}
+                                    Rs {{ number_format((float) $tax, 0) }}
+                                </td>
+                            </tr>
+                        @endif
+                        @if($discount > 0)
+                            <tr>
+                                <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                                <td class="px-4 py-3 font-semibold text-blue-600">
+                                    &minus; Rs {{ number_format((float) $discount, 0) }}
                                 </td>
                             </tr>
                         @endif

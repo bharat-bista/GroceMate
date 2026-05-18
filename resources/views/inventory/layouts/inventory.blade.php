@@ -32,8 +32,7 @@
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',
-          'inventory.alerts.*',
-          'inventory.invoices.*'
+          'inventory.alerts.*'
         );
         $isPosGroup = request()->routeIs(
             'pos.dashboard',

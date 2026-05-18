@@ -61,19 +61,20 @@ class EcommerceProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'business_id' => ['required', 'exists:businesses,id'],
-            'product_id' => ['required', 'exists:products,id', 'unique:ecommerce_products,product_id'],
-            'sku' => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku'],
-            'mrp' => ['required', 'numeric', 'min:0'],
+            'business_id'      => ['required', 'exists:businesses,id'],
+            'product_id'       => ['required', 'exists:products,id'],
+            'sku'              => ['nullable', 'string', 'max:50', 'unique:ecommerce_products,sku'],
+            'mrp'              => ['required', 'numeric', 'min:0'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'ecommerce_stock' => ['required', 'numeric', 'min:0'],
-            'meta_keywords' => ['nullable', 'string', 'max:500'],
-            'description' => ['nullable', 'string'],
-            'thumbnails' => ['nullable', 'array'],
-            'thumbnails.*' => ['image', 'max:2048'],
+            'ecommerce_stock'  => ['required', 'numeric', 'min:0'],
+            'meta_keywords'    => ['nullable', 'string', 'max:500'],
+            'description'      => ['nullable', 'string'],
+            'thumbnails'       => ['nullable', 'array'],
+            'thumbnails.*'     => ['image', 'max:2048'],
         ]);
 
-        $product = Product::with('latestPurchaseItem')->where('id', $data['product_id'])
+        $product = Product::with(['latestPurchaseItem', 'stock'])
+            ->where('id', $data['product_id'])
             ->where('business_id', $data['business_id'])
             ->first();
 
@@ -83,7 +84,15 @@ class EcommerceProductController extends Controller
                 ->withInput();
         }
 
-        $totalStock = (float) ($product->stock->quantity ?? 0);
+        // Block if an active listing (ecommerce_stock > 0) already exists for this product.
+        $existing = EcommerceProduct::where('product_id', $data['product_id'])->first();
+        if ($existing && (float) $existing->ecommerce_stock > 0) {
+            return back()
+                ->withErrors(['product_id' => 'This product already has an active ecommerce listing. Edit it instead.'])
+                ->withInput();
+        }
+
+        $totalStock    = (float) ($product->stock->quantity ?? 0);
         $reservedStock = (float) $data['ecommerce_stock'];
 
         if ($reservedStock > $totalStock) {
@@ -92,16 +101,12 @@ class EcommerceProductController extends Controller
                 ->withInput();
         }
 
-        // Calculate display price
         $discountPercent = $data['discount_percent'] ?? 0;
-        $mrp = $data['mrp'];
-        $displayPrice = $mrp - ($mrp * $discountPercent / 100);
+        $mrp             = $data['mrp'];
+        $displayPrice    = $mrp - ($mrp * $discountPercent / 100);
+        $purchasePrice   = $product->latestPurchaseItem->unit_cost ?? 0;
+        $profit          = $displayPrice - $purchasePrice;
 
-        // Get purchase price for profit calculation
-        $purchasePrice = $product->latestPurchaseItem->unit_cost ?? 0;
-        $profit = $displayPrice - $purchasePrice;
-
-        // Handle thumbnail uploads
         $thumbnailPaths = [];
         if ($request->hasFile('thumbnails')) {
             foreach ($request->file('thumbnails') as $thumbnailFile) {
@@ -111,23 +116,31 @@ class EcommerceProductController extends Controller
             }
         }
 
-        $thumbnailPath = $thumbnailPaths[0] ?? null;
-        $status = $reservedStock > 0 ? 'in_stock' : 'out_of_stock';
-
-        $ecommerceProduct = EcommerceProduct::create([
-            'product_id' => $data['product_id'],
-            'sku' => $data['sku'],
-            'status' => $status,
-            'display_section' => 'product_grid',
-            'mrp' => $mrp,
+        $payload = [
+            'sku'              => $data['sku'],
+            'status'           => $reservedStock > 0 ? 'in_stock' : 'out_of_stock',
+            'display_section'  => 'product_grid',
+            'mrp'              => $mrp,
             'discount_percent' => $discountPercent,
-            'display_price' => $displayPrice,
-            'profit' => $profit,
-            'ecommerce_stock' => $reservedStock,
-            'meta_keywords' => $data['meta_keywords'],
-            'description' => $data['description'],
-            'thumbnail' => $thumbnailPath,
-        ]);
+            'display_price'    => $displayPrice,
+            'profit'           => $profit,
+            'ecommerce_stock'  => $reservedStock,
+            'meta_keywords'    => $data['meta_keywords'],
+            'description'      => $data['description'],
+        ];
+
+        if (!empty($thumbnailPaths)) {
+            $payload['thumbnail'] = $thumbnailPaths[0];
+        }
+
+        if ($existing) {
+            // Re-listing a depleted product — update the existing row (DB unique constraint).
+            $existing->update($payload);
+            $ecommerceProduct = $existing;
+        } else {
+            $payload['product_id'] = $data['product_id'];
+            $ecommerceProduct = EcommerceProduct::create($payload);
+        }
 
         $this->saveEcommerceImages($ecommerceProduct, $thumbnailPaths);
 

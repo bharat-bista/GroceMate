@@ -36,6 +36,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function getNameAttribute(): string
+    {
+        return $this->full_name ?? '';
+    }
+
     public function isAdmin(): bool
     {
         return $this->role_id === 1;

@@ -92,7 +92,7 @@
                       <label class="text-sm font-medium text-slate-700">Purchase Price</label>
                       <input type="text" id="purchase-price-display" readonly
                           class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500"
-                          value="0.00" />
+                          value="0" />
                 </div>
 
                 <div>
@@ -118,9 +118,10 @@
 
                 <div>
                     <label class="text-sm font-medium text-slate-700">Ecommerce Stock *</label>
-                    <input name="ecommerce_stock" type="number" step="0.001" min="0" value="{{ old('ecommerce_stock', 0) }}"
+                    <input name="ecommerce_stock" id="ecommerce-stock-input" type="number" step="0.001" min="0" value="{{ old('ecommerce_stock', 0) }}"
                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
                            placeholder="0.000" />
+                    <p id="ecommerce-stock-error" class="hidden text-xs text-red-600 mt-1 font-medium"></p>
                     <p class="text-xs text-slate-500 mt-1">Reserve how much inventory stock should be available for ecommerce.</p>
                 </div>
 
@@ -196,20 +197,23 @@
             </div>
             <div>
                 <label class="text-sm font-medium text-slate-700">Upload Thumbnails</label>
-                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-xl hover:border-slate-400 transition-all duration-200">
-                    <div class="space-y-1 text-center">
-                        <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <div class="flex text-sm text-slate-600">
-                            <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                <span>Upload files</span>
-                                <input type="file" name="thumbnails[]" accept="image/jpeg,image/png,image/jpg" multiple class="sr-only" />
-                            </label>
-                            <p class="pl-1">or drag and drop multiple images</p>
+                <div class="mt-1 border-2 border-slate-300 border-dashed rounded-xl hover:border-slate-400 transition-all duration-200">
+                    <div id="thumbnail-drop-zone" class="flex justify-center px-6 pt-5 pb-6">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-slate-600">
+                                <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                    <span>Upload files</span>
+                                    <input type="file" id="thumbnails-input" name="thumbnails[]" accept="image/jpeg,image/png,image/jpg" multiple class="sr-only" />
+                                </label>
+                                <p class="pl-1">or drag and drop multiple images</p>
+                            </div>
+                            <p class="text-xs text-slate-500">PNG, JPG up to 2MB each | First image becomes the main thumbnail</p>
                         </div>
-                        <p class="text-xs text-slate-500">PNG, JPG up to 2MB each | First image becomes the main thumbnail</p>
                     </div>
+                    <div id="thumbnail-preview-grid" class="hidden px-4 pb-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
                 </div>
             </div>
         </div>
@@ -237,25 +241,28 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const businessFilter      = document.getElementById('business-filter');
-    const batchSearchInput    = document.getElementById('batch-search-input');
-    const batchDropdown       = document.getElementById('batch-dropdown');
-    const productIdInput      = document.getElementById('product-id-input');
-    const batchIdInput        = document.getElementById('batch-id-input');
-    const selectedBatchInfo   = document.getElementById('selected-batch-info');
-    const batchInfoText       = document.getElementById('batch-info-text');
+    const businessFilter         = document.getElementById('business-filter');
+    const batchSearchInput       = document.getElementById('batch-search-input');
+    const batchDropdown          = document.getElementById('batch-dropdown');
+    const productIdInput         = document.getElementById('product-id-input');
+    const batchIdInput           = document.getElementById('batch-id-input');
+    const selectedBatchInfo      = document.getElementById('selected-batch-info');
+    const batchInfoText          = document.getElementById('batch-info-text');
     const selectedCategoryInput  = document.getElementById('selected-category');
     const selectedCompanyInput   = document.getElementById('selected-company');
-    const mrpInput            = document.getElementById('mrp-input');
-    const discountInput       = document.getElementById('discount-input');
-    const displayPriceInput   = document.getElementById('display-price');
-    const profitDisplay       = document.getElementById('profit-display');
+    const mrpInput               = document.getElementById('mrp-input');
+    const discountInput          = document.getElementById('discount-input');
+    const displayPriceInput      = document.getElementById('display-price');
+    const profitDisplay          = document.getElementById('profit-display');
     const purchasePriceDisplay   = document.getElementById('purchase-price-display');
     const inventoryStockDisplay  = document.getElementById('inventory-stock-display');
-    const stockLeftDisplay    = document.getElementById('stock-left-display');
-    const ecommerceStockInput = document.querySelector('input[name="ecommerce_stock"]');
-    const descriptionInput    = document.getElementById('description-input');
-    const form                = document.querySelector('form');
+    const stockLeftDisplay       = document.getElementById('stock-left-display');
+    const ecommerceStockInput    = document.getElementById('ecommerce-stock-input');
+    const stockErrorEl           = document.getElementById('ecommerce-stock-error');
+    const thumbnailsInput        = document.getElementById('thumbnails-input');
+    const thumbnailPreviewGrid   = document.getElementById('thumbnail-preview-grid');
+    const descriptionInput       = document.getElementById('description-input');
+    const form                   = document.querySelector('form');
 
     let purchasePrice  = 0;
     let inventoryStock = 0;
@@ -273,6 +280,23 @@ document.addEventListener('DOMContentLoaded', function () {
         profitDisplay.value     = profit.toFixed(2);
         if (inventoryStockDisplay) inventoryStockDisplay.value = inventoryStock.toFixed(3);
         if (stockLeftDisplay)     stockLeftDisplay.value = Math.max(inventoryStock - ecomStock, 0).toFixed(3);
+    }
+
+    // ── Ecommerce stock real-time cap ───────────────────────────────────────
+    function validateEcommerceStock() {
+        if (!ecommerceStockInput || inventoryStock === 0) return true;
+        const entered = parseFloat(ecommerceStockInput.value) || 0;
+        if (entered > inventoryStock) {
+            ecommerceStockInput.classList.add('border-red-400', 'focus:border-red-400', 'focus:ring-red-100');
+            ecommerceStockInput.classList.remove('border-slate-300', 'focus:border-blue-500', 'focus:ring-blue-500');
+            stockErrorEl.textContent = `Cannot exceed batch qty (${inventoryStock.toFixed(3)})`;
+            stockErrorEl.classList.remove('hidden');
+            return false;
+        }
+        ecommerceStockInput.classList.remove('border-red-400', 'focus:border-red-400', 'focus:ring-red-100');
+        ecommerceStockInput.classList.add('border-slate-300', 'focus:border-blue-500', 'focus:ring-blue-500');
+        stockErrorEl.classList.add('hidden');
+        return true;
     }
 
     // ── Batch search ────────────────────────────────────────────────────────
@@ -310,8 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function selectBatch(b) {
-        productIdInput.value = b.product_id;
-        batchIdInput.value   = b.batch_id;
+        productIdInput.value   = b.product_id;
+        batchIdInput.value     = b.batch_id;
         batchSearchInput.value = b.product_name;
         batchDropdown.classList.add('hidden');
 
@@ -324,10 +348,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         purchasePrice  = parseFloat(b.unit_cost)     || 0;
         inventoryStock = parseFloat(b.qty_remaining) || 0;
-        purchasePriceDisplay.value = purchasePrice.toFixed(2);
+        purchasePriceDisplay.value = Math.round(purchasePrice);
 
         if (ecommerceStockInput) ecommerceStockInput.max = inventoryStock;
-
+        validateEcommerceStock();
         calculatePrices();
     }
 
@@ -348,16 +372,49 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ── Pricing inputs ──────────────────────────────────────────────────────
+    // ── Pricing / stock inputs ──────────────────────────────────────────────
     mrpInput.addEventListener('input', calculatePrices);
     discountInput.addEventListener('input', calculatePrices);
-    if (ecommerceStockInput) ecommerceStockInput.addEventListener('input', calculatePrices);
+    if (ecommerceStockInput) {
+        ecommerceStockInput.addEventListener('input', function () {
+            validateEcommerceStock();
+            calculatePrices();
+        });
+    }
+
+    // ── Thumbnail preview ───────────────────────────────────────────────────
+    thumbnailsInput.addEventListener('change', function () {
+        thumbnailPreviewGrid.innerHTML = '';
+        const files = Array.from(this.files);
+        if (!files.length) {
+            thumbnailPreviewGrid.classList.add('hidden');
+            return;
+        }
+        thumbnailPreviewGrid.classList.remove('hidden');
+        files.forEach(function (file, idx) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wrap = document.createElement('div');
+                wrap.className = 'relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100';
+                wrap.style.aspectRatio = '1';
+                wrap.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" alt="${file.name}" />`
+                    + (idx === 0 ? '<div class="absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5">Main</div>' : '');
+                thumbnailPreviewGrid.appendChild(wrap);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
 
     // ── Form submit guard ───────────────────────────────────────────────────
     form.addEventListener('submit', function (e) {
         if (!productIdInput.value) {
             e.preventDefault();
             GroceMate.notify.error('Please select a product batch before saving.');
+            return;
+        }
+        if (!validateEcommerceStock()) {
+            e.preventDefault();
+            GroceMate.notify.error('Ecommerce stock cannot exceed the batch quantity.');
         }
     }, true);
 

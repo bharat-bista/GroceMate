@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const supplierId = getFieldValue('select[name="supplier_id"]');
         const amount     = getFieldValue('#payment-amount');
 
-        if (!supplierId) { alert('⚠️ Please select a supplier.'); return; }
-        if (!amount || parseFloat(amount) <= 0) { alert('⚠️ Please enter a valid amount.'); return; }
+        if (!supplierId) { GroceMate.notify.error('Please select a supplier.'); return; }
+        if (!amount || parseFloat(amount) <= 0) { GroceMate.notify.error('Please enter a valid amount.'); return; }
 
         // Build fresh form
         const form = document.createElement('form');

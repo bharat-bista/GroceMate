@@ -91,7 +91,7 @@ class AdminChatbotService
         }
 
         return $this->buildResponse(
-            answer: "Sorry, for inconvience but i only give a anser which are related to the system  data or mathematical operation.",
+            answer: "I can only answer questions related to system data (stock, sales, purchases, customers, suppliers) or mathematical calculations. Please try rephrasing your question.",
             source: 'fallback',
             meta: [
                 'vanna_enabled' => config('chatbot.vanna.enabled'),
@@ -441,6 +441,7 @@ class AdminChatbotService
 
         $query = InvoiceItem::query()
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->where('invoices.cancellation_status', 'active')
             ->leftJoin('products', 'invoice_items.product_id', '=', 'products.id')
             ->leftJoin('businesses', 'invoices.business_id', '=', 'businesses.id')
             ->selectRaw('COALESCE(products.name, invoice_items.product_name) as product_name')
@@ -506,6 +507,7 @@ class AdminChatbotService
         $limit = (int) config('chatbot.limits.business_rows', 5);
 
         $query = Invoice::query()
+            ->where('invoices.cancellation_status', 'active')
             ->join('businesses', 'invoices.business_id', '=', 'businesses.id')
             ->selectRaw('businesses.id as business_id')
             ->selectRaw('businesses.business_name as business_name')
@@ -560,7 +562,7 @@ class AdminChatbotService
             return null;
         }
 
-        $totalSales = (float) Invoice::query()->sum('total_cost');
+        $totalSales = (float) Invoice::query()->where('cancellation_status', 'active')->sum('total_cost');
         $totalPurchases = (float) Purchase::query()->sum('total_cost');
         $customerReceivable = (float) Customer::query()->sum('total_due');
         $supplierPayable = (float) Supplier::query()->sum('total_due');
@@ -611,7 +613,7 @@ class AdminChatbotService
         $days = $this->extractDaysWindow($normalizedMessage);
 
         if ($business) {
-            $salesQuery = $business->invoices();
+            $salesQuery = $business->invoices()->where('cancellation_status', 'active');
             $purchaseQuery = $business->purchases();
             $incomeQuery = $business->incomes()->where('amount_received', '>', 0);
             $paymentQuery = $business->supplierPayments();
@@ -657,6 +659,7 @@ class AdminChatbotService
         }
 
         $rows = Invoice::query()
+            ->where('invoices.cancellation_status', 'active')
             ->join('businesses', 'invoices.business_id', '=', 'businesses.id')
             ->selectRaw('businesses.business_name as business_name')
             ->selectRaw('SUM(invoices.total_cost) as total_sales')

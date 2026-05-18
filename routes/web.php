@@ -184,7 +184,9 @@ Route::middleware(['auth', 'admin_or_staff'])
             ->name('purchases.store-brand');
         Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
-        Route::post('/chatbot/message', [AdminChatbotController::class, 'message'])->name('chatbot.message');
+        Route::post('/chatbot/message', [AdminChatbotController::class, 'message'])
+            ->middleware('admin')
+            ->name('chatbot.message');
         
         // Purchase resource routes (must come AFTER custom routes)
         Route::resource('purchases', PurchaseController::class);

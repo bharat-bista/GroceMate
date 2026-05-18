@@ -126,9 +126,11 @@
                     <thead class="text-slate-700 bg-slate-100">
                         <tr>
                             <th class="text-left px-4 py-3 font-medium">Product</th>
+                            <th class="text-left px-4 py-3 font-medium">Category</th>
+                            <th class="text-left px-4 py-3 font-medium">Company</th>
                             <th class="text-left px-4 py-3 font-medium">Batch No</th>
                             <th class="text-left px-4 py-3 font-medium">Unit</th>
-                            <th class="text-left px-4 py-3 font-medium">Quantity</th>
+                            <th class="text-left px-4 py-3 font-medium">Qty</th>
                             <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
                             <th class="text-left px-4 py-3 font-medium">Expiry</th>
                             <th class="text-left px-4 py-3 font-medium">Line Total</th>
@@ -138,6 +140,8 @@
                         @foreach($purchase->items as $item)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">{{ $item->product_name ?? $item->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3 text-slate-500">{{ $item->category_name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-slate-500">{{ $item->company_name ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->batch_no ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->unit ?? $item->product->unit ?? 'N/A' }}</td>
                                 <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
@@ -149,7 +153,7 @@
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-300">
                         <tr>
-                            <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
+                            <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
                             <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 0) }}</td>
                         </tr>
                         @php
@@ -159,7 +163,7 @@
                         @endphp
                         @if($tax > 0)
                             <tr>
-                                <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
+                                <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
                                 <td class="px-4 py-3 font-semibold text-red-600">
                                     Rs {{ number_format((float) $tax, 0) }}
                                 </td>
@@ -167,14 +171,14 @@
                         @endif
                         @if($discount > 0)
                             <tr>
-                                <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                                <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
                                 <td class="px-4 py-3 font-semibold text-blue-600">
                                     &minus; Rs {{ number_format((float) $discount, 0) }}
                                 </td>
                             </tr>
                         @endif
                         <tr class="bg-slate-100">
-                            <td colspan="6" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
+                            <td colspan="8" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
                             <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format((float) $purchase->total_cost, 0) }}</td>
                         </tr>
                     </tfoot>

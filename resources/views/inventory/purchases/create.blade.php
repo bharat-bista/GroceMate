@@ -688,33 +688,29 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
 async function createNewCategory(rowId, name) {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    
     try {
         const response = await fetch('/inventory/purchases/store-category', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
+                'X-CSRF-TOKEN': token,
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name }),
         });
-        
         const data = await response.json();
-        
-        if (data.success) {
-            const row = document.getElementById(`row-${rowId}`);
-            if (row) {
-                row.querySelector('.category-name-input').value = data.category.name;
-                row.querySelector('.category-id-input').value = data.category.id;
-            }
-        } else {
-            alert(data.message || 'Failed to create category');
+        if (!response.ok) {
+            GroceMate.notify.error(data.errors?.name?.[0] || data.message || 'Failed to create category.');
+            return;
+        }
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) {
+            row.querySelector('.category-name-input').value = data.category.name;
+            row.querySelector('.category-id-input').value = data.category.id;
         }
     } catch (e) {
-        console.error('Error creating category:', e);
-        alert('Failed to create category. Please try again.');
+        GroceMate.notify.error('Failed to create category. Please try again.');
     }
 }
 
@@ -838,8 +834,6 @@ function createBrandDropdown(rowId, inputElement, results) {
         });
 
         list.appendChild(createBtn);
-    } else {
-        console.log('🚫 Not showing create option (has exact match or empty query)');
     }
 
     dropdown.appendChild(list);
@@ -860,33 +854,29 @@ function createBrandDropdown(rowId, inputElement, results) {
 
 async function createNewBrand(rowId, name) {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    
     try {
         const response = await fetch('/inventory/purchases/store-brand', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
+                'X-CSRF-TOKEN': token,
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name }),
         });
-        
         const data = await response.json();
-        
-        if (data.success) {
-            const row = document.getElementById(`row-${rowId}`);
-            if (row) {
-                row.querySelector('.brand-name-input').value = data.brand.name;
-                row.querySelector('.brand-id-input').value = data.brand.id;
-            }
-        } else {
-            alert(data.message || 'Failed to create company');
+        if (!response.ok) {
+            GroceMate.notify.error(data.errors?.name?.[0] || data.message || 'Failed to create company.');
+            return;
+        }
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) {
+            row.querySelector('.brand-name-input').value = data.brand.name;
+            row.querySelector('.brand-id-input').value = data.brand.id;
         }
     } catch (e) {
-        console.error('Error creating company:', e);
-        alert('Failed to create company. Please try again.');
+        GroceMate.notify.error('Failed to create company. Please try again.');
     }
 }
 
@@ -1054,7 +1044,7 @@ function createRow() {
 function removeRow(rowId) {
     const rows = document.querySelectorAll('.purchase-row');
     if (rows.length <= 1) {
-        alert('At least one item is required.');
+        GroceMate.notify.error('At least one item is required.');
         return;
     }
     const row = document.getElementById(`row-${rowId}`);
@@ -1110,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const supplier = document.querySelector('select[name="supplier_id"]').value;
         if (!supplier) {
             e.preventDefault();
-            alert('Please select a supplier');
+            GroceMate.notify.error('Please select a supplier.');
             return;
         }
 
@@ -1122,17 +1112,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!productName) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Please enter a product name`);
+                GroceMate.notify.error(`Row ${i + 1}: Please enter a product name.`);
                 return;
             }
             if (!(qty > 0)) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Quantity must be greater than 0`);
+                GroceMate.notify.error(`Row ${i + 1}: Quantity must be greater than 0.`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Unit cost cannot be negative`);
+                GroceMate.notify.error(`Row ${i + 1}: Unit cost cannot be negative.`);
                 return;
             }
         }

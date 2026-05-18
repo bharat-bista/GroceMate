@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\User;
 use App\Models\OtpReset;
@@ -223,6 +224,63 @@ class AccountController extends Controller
         }
 
         return redirect()->route('home')->with('success', 'Logged in with Google!');
+    }
+
+    // =========================
+    // ACCOUNT PROFILE
+    // =========================
+    public function profile()
+    {
+        return view('frontend.account.profile', ['user' => auth()->user()]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'full_name'    => 'required|string|max:100',
+            'phone_number' => 'nullable|string|max:20',
+            'address'      => 'nullable|string|max:255',
+            'image'        => 'nullable|image|max:2048|mimes:jpg,jpeg,png,gif',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
+            }
+            $ext = $request->file('image')->getClientOriginalExtension();
+            $path = $request->file('image')->storeAs('avatars', \Str::uuid() . '.' . $ext, 'public');
+            $validated['image'] = $path;
+        } else {
+            unset($validated['image']);
+        }
+
+        $user->update($validated);
+
+        return back()->with('profile_success', 'Profile updated successfully.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->password) {
+            return back()->with('password_error', 'Your account uses Google sign-in and does not have a password to change.');
+        }
+
+        $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required|min:8|confirmed',
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('password_error', 'Current password is incorrect.');
+        }
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        return back()->with('password_success', 'Password updated successfully.');
     }
 
     // =========================

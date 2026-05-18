@@ -51,7 +51,7 @@
           <span>Account</span>
         </button>
         <div class="account-menu" role="menu" data-account-panel>
-          <a href="{{ auth()->check() ? route('home') : route('page-login') }}" class="account-menu-item" role="menuitem">
+          <a href="{{ auth()->check() ? route('account.profile') : route('page-login') }}" class="account-menu-item" role="menuitem">
             Manage My Account
           </a>
           <a href="{{ auth()->check() ? route('orders') : route('page-login') }}" class="account-menu-item" role="menuitem">
@@ -123,7 +123,7 @@
           <span class="icon-label">Account</span>
         </button>
         <div class="account-menu" role="menu" data-account-panel>
-          <a href="{{ auth()->check() ? route('home') : route('page-login') }}" class="account-menu-item" role="menuitem">
+          <a href="{{ auth()->check() ? route('account.profile') : route('page-login') }}" class="account-menu-item" role="menuitem">
             Manage My Account
           </a>
           <a href="{{ auth()->check() ? route('orders') : route('page-login') }}" class="account-menu-item" role="menuitem">

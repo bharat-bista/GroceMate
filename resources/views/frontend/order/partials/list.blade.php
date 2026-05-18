@@ -56,6 +56,22 @@
                 <a href="{{ route('orders.show', $order) }}" class="btn-view">
                     <i class="fas fa-eye"></i> View Details
                 </a>
+                @php
+                    $canCancel = $order->canRequestCancellation();
+                @endphp
+                @if($order->cancellation_request_status === 'pending')
+                    <span class="cancel-badge cancel-pending"><i class="fas fa-hourglass-half"></i> Cancellation Requested</span>
+                @elseif($order->cancellation_request_status === 'rejected')
+                    <span class="cancel-badge cancel-rejected"><i class="fas fa-times-circle"></i> Cancellation Rejected</span>
+                @elseif(!in_array($order->delivery_status, ['cancelled', 'delivered']) && $order->cancellation_request_status === null)
+                    @if($canCancel)
+                        <button class="btn-cancel-request" onclick="openCancelModal('{{ $order->id }}', '{{ $order->order_number }}')">
+                            <i class="fas fa-times-circle"></i> Request Cancellation
+                        </button>
+                    @else
+                        <span class="cancel-expired-text"><i class="fas fa-clock"></i> Cancellation period expired</span>
+                    @endif
+                @endif
             </div>
         </div>
     @endforeach

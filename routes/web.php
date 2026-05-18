@@ -62,6 +62,12 @@ Route::post('/login', [AccountController::class, 'store'])->name('login.post');
 // Logout route
 Route::post('/logout', [AccountController::class, 'logout'])->name('logout')->middleware('auth');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/account/profile', [AccountController::class, 'profile'])->name('account.profile');
+    Route::post('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::post('/account/profile/password', [AccountController::class, 'updatePassword'])->name('account.profile.password');
+});
+
 // home after login
 Route::get('/home', [HomeController::class, 'home'])->middleware('auth')->name('home');
 
@@ -85,6 +91,7 @@ Route::post('/checkout/order', [OrderController::class, 'store'])->name('fronten
 // Frontend order routes
 Route::get('/orders', [OrderController::class, 'index'])->name('orders');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::middleware('auth')->post('/orders/{order}/cancel-request', [OrderController::class, 'requestCancellation'])->name('orders.cancel-request');
 
 // Admin order routes
 Route::middleware(['auth', 'admin_or_staff'])
@@ -97,6 +104,8 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::patch('/{order}/delivery-status', [OrderController::class, 'updateDeliveryStatus'])->name('delivery-status');
         Route::patch('/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('payment-status');
         Route::patch('/{order}/verify-slip', [OrderController::class, 'verifyPaymentSlip'])->name('verify-slip');
+        Route::patch('/{order}/cancel-request/approve', [OrderController::class, 'approveCancellationRequest'])->name('cancel-request.approve');
+        Route::patch('/{order}/cancel-request/reject', [OrderController::class, 'rejectCancellationRequest'])->name('cancel-request.reject');
         Route::get('/export/{type}', [OrderController::class, 'export'])->name('export');
     });
 

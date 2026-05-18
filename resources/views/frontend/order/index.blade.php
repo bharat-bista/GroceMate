@@ -157,6 +157,140 @@
             align-items: flex-start;
         }
     }
+    .cancel-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+    .cancel-pending {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+    .cancel-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+    .btn-cancel-request {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: #fff5f5;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-cancel-request:hover {
+        background: #fee2e2;
+    }
+    .cancel-expired-text {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.85rem;
+        color: #9ca3af;
+        padding: 7px 0;
+    }
+    .cancel-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+    .cancel-modal-overlay.open {
+        display: flex;
+    }
+    .cancel-modal-card {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .cancel-modal-card h3 {
+        margin: 0 0 6px;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .cancel-modal-card p {
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+    .cancel-modal-card textarea {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        resize: vertical;
+        min-height: 100px;
+        box-sizing: border-box;
+        font-family: inherit;
+        margin-bottom: 4px;
+    }
+    .cancel-modal-card textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+    .cancel-modal-error {
+        font-size: 0.85rem;
+        color: #dc2626;
+        margin-bottom: 12px;
+        display: none;
+    }
+    .cancel-modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+    .cancel-modal-actions .btn-cancel-confirm {
+        flex: 1;
+        padding: 10px;
+        background: #dc2626;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .cancel-modal-actions .btn-cancel-confirm:hover {
+        background: #b91c1c;
+    }
+    .cancel-modal-actions .btn-cancel-dismiss {
+        flex: 1;
+        padding: 10px;
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .cancel-modal-actions .btn-cancel-dismiss:hover {
+        background: #e5e7eb;
+    }
 </style>
 
 <div class="orders-page">
@@ -172,7 +306,110 @@
     </div>
 </div>
 
+{{-- Cancellation Request Modal --}}
+<div class="cancel-modal-overlay" id="cancelModal">
+    <div class="cancel-modal-card">
+        <h3><i class="fas fa-times-circle" style="color:#dc2626;margin-right:6px;"></i> Request Cancellation</h3>
+        <p id="cancelModalSubtitle">Please provide a reason for your cancellation request.</p>
+        <textarea id="cancelReasonInput" placeholder="Reason for cancellation..."></textarea>
+        <div class="cancel-modal-error" id="cancelModalError">Please provide a reason.</div>
+        <div id="cancelModalFeedback" style="display:none;font-size:0.9rem;margin-bottom:8px;"></div>
+        <div class="cancel-modal-actions">
+            <button class="btn-cancel-confirm" id="cancelConfirmBtn" onclick="submitCancelRequest()">
+                <i class="fas fa-check"></i> Confirm Request
+            </button>
+            <button class="btn-cancel-dismiss" onclick="closeCancelModal()">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
+const cancelRequestUrlTemplate = "{{ route('orders.cancel-request', ':id') }}";
+const csrfToken = "{{ csrf_token() }}";
+let activeCancelOrderId = null;
+
+function openCancelModal(orderId, orderNumber) {
+    activeCancelOrderId = orderId;
+    document.getElementById('cancelModalSubtitle').textContent = 'Request cancellation for Order #' + orderNumber;
+    document.getElementById('cancelReasonInput').value = '';
+    document.getElementById('cancelModalError').style.display = 'none';
+    document.getElementById('cancelModalFeedback').style.display = 'none';
+    document.getElementById('cancelConfirmBtn').disabled = false;
+    document.getElementById('cancelConfirmBtn').innerHTML = '<i class="fas fa-check"></i> Confirm Request';
+    document.getElementById('cancelModal').classList.add('open');
+}
+
+function closeCancelModal() {
+    document.getElementById('cancelModal').classList.remove('open');
+    activeCancelOrderId = null;
+}
+
+function submitCancelRequest() {
+    const reason = document.getElementById('cancelReasonInput').value.trim();
+    const errorEl = document.getElementById('cancelModalError');
+    const feedbackEl = document.getElementById('cancelModalFeedback');
+    const confirmBtn = document.getElementById('cancelConfirmBtn');
+
+    if (!reason) {
+        errorEl.style.display = 'block';
+        return;
+    }
+    errorEl.style.display = 'none';
+
+    const url = cancelRequestUrlTemplate.replace(':id', activeCancelOrderId);
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+    })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (data.success) {
+                feedbackEl.style.color = '#065f46';
+                feedbackEl.style.background = '#d1fae5';
+                feedbackEl.style.padding = '8px 12px';
+                feedbackEl.style.borderRadius = '8px';
+                feedbackEl.textContent = data.message;
+                feedbackEl.style.display = 'block';
+                confirmBtn.style.display = 'none';
+                setTimeout(function () {
+                    closeCancelModal();
+                    window.location.reload();
+                }, 1500);
+            } else {
+                feedbackEl.style.color = '#991b1b';
+                feedbackEl.style.background = '#fee2e2';
+                feedbackEl.style.padding = '8px 12px';
+                feedbackEl.style.borderRadius = '8px';
+                feedbackEl.textContent = data.message || 'Unable to submit request.';
+                feedbackEl.style.display = 'block';
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Request';
+            }
+        })
+        .catch(function () {
+            feedbackEl.style.color = '#991b1b';
+            feedbackEl.style.background = '#fee2e2';
+            feedbackEl.style.padding = '8px 12px';
+            feedbackEl.style.borderRadius = '8px';
+            feedbackEl.textContent = 'Something went wrong. Please try again.';
+            feedbackEl.style.display = 'block';
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Request';
+        });
+}
+
+document.getElementById('cancelModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeCancelModal();
+});
+
 const orderConfirmation = @json(session('order_confirmation'));
 const orderShowUrlTemplate = "{{ route('orders.show', ':id') }}";
 const continueShoppingUrl = "{{ route('home') }}";

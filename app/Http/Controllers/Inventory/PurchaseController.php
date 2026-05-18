@@ -651,18 +651,18 @@ public function exportIndividual(Purchase $purchase, $type)
  */
 public function storeCategory(Request $request)
 {
-    $data = $request->validate([
-        'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
     ]);
 
-    $category = Category::create(['name' => $data['name']]);
+    $category = Category::firstOrCreate(
+        ['name' => trim($request->input('name'))],
+        ['name' => trim($request->input('name'))]
+    );
 
     return response()->json([
         'success' => true,
-        'category' => [
-            'id' => $category->id,
-            'name' => $category->name,
-        ]
+        'category' => ['id' => $category->id, 'name' => $category->name],
     ]);
 }
 
@@ -693,18 +693,18 @@ public function searchCategories(Request $request)
  */
 public function storeBrand(Request $request)
 {
-    $data = $request->validate([
-        'name' => ['required', 'string', 'max:255', 'unique:brands,name'],
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
     ]);
 
-    $brand = Brand::create(['name' => $data['name']]);
+    $brand = Brand::firstOrCreate(
+        ['name' => trim($request->input('name'))],
+        ['name' => trim($request->input('name'))]
+    );
 
     return response()->json([
         'success' => true,
-        'brand' => [
-            'id' => $brand->id,
-            'name' => $brand->name,
-        ]
+        'brand' => ['id' => $brand->id, 'name' => $brand->name],
     ]);
 }
 

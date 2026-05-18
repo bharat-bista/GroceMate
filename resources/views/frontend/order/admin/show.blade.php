@@ -207,28 +207,48 @@
                                     class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed"
                                     disabled>
                                 <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
-                                <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                                <option value="unpaid" selected>Unpaid</option>
                             </select>
                             <p class="text-xs text-slate-500 mt-1">Order is locked and cannot be changed</p>
                         @elseif($order->payment_method === 'esewa')
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Auto-Verified (eSewa)</span>
+                            {{-- eSewa is always auto-verified at checkout; no manual override. --}}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1.5"></i> Auto-Verified (eSewa)
+                            </span>
+                        @elseif($order->payment_method === 'connectips')
+                            {{-- Bank transfer: payment state is set only via the slip verification card above. --}}
+                            @if($order->payment_status === 'verified')
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1.5"></i> Payment Verified
+                                </span>
+                            @elseif($order->payment_status === 'failed')
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1.5"></i> Payment Rejected
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1.5"></i> Awaiting Slip Verification
+                                </span>
+                                <p class="text-xs text-slate-500 mt-1">Use the payment slip card to verify or reject.</p>
+                            @endif
                         @elseif($order->isPaymentLocked())
                             <select name="payment_state"
                                     class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed"
                                     disabled>
-                                <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
-                                <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                                <option value="paid" selected>Paid</option>
+                                <option value="unpaid">Unpaid</option>
                             </select>
                             <p class="text-xs text-slate-500 mt-1">Status is locked and cannot be changed</p>
                         @else
+                            {{-- COD only: admin marks as paid when cash is collected at delivery. --}}
                             <form method="POST" action="{{ route('inventory.orders.payment-status', $order) }}">
                                 @csrf
                                 @method('PATCH')
                                 <select name="payment_state"
                                         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                         onchange="this.form.submit()">
-                                    <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
-                                    <option value="unpaid" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Unpaid</option>
+                                    <option value="paid" {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid (cash collected)</option>
+                                    <option value="unpaid" {{ $order->payment_status !== 'verified' ? 'selected' : '' }}>Unpaid</option>
                                 </select>
                             </form>
                         @endif

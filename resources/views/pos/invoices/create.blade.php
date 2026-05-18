@@ -715,7 +715,7 @@ function createRow() {
 function removeRow(rowId) {
     const rows = document.querySelectorAll('.purchase-row');
     if (rows.length <= 1) {
-        alert('At least one item is required.');
+        GroceMate.notify.error('At least one item is required.');
         return;
     }
     const row = document.getElementById(`row-${rowId}`);
@@ -860,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
     saveInvoiceBtn.addEventListener('click', async function() {
         const customer = document.querySelector('select[name="customer_id"]').value;
         if (!customer) {
-            alert('Please select a customer');
+            GroceMate.notify.error('Please select a customer.');
             return;
         }
 
@@ -918,15 +918,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const cost = parseFloat(rows[i].querySelector('.cost-input').value);
 
             if (!productName) {
-                alert(`Row ${i + 1}: Please enter a product name`);
+                GroceMate.notify.error(`Row ${i + 1}: Please enter a product name.`);
                 return;
             }
             if (!(qty > 0)) {
-                alert(`Row ${i + 1}: Quantity must be greater than 0`);
+                GroceMate.notify.error(`Row ${i + 1}: Quantity must be greater than 0.`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {
-                alert(`Row ${i + 1}: Unit cost cannot be negative`);
+                GroceMate.notify.error(`Row ${i + 1}: Unit cost cannot be negative.`);
                 return;
             }
         }

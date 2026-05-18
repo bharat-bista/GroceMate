@@ -135,6 +135,8 @@ class CustomerController extends Controller
                 FROM invoices
                 WHERE invoices.customer_id = customers.id
                   AND invoices.payment_method = 'credit'
+                  AND (invoices.cancellation_status IS NULL
+                       OR invoices.cancellation_status != 'cancelled')
             ), 0)
             - COALESCE((
                 SELECT SUM(incomes.amount_received)
@@ -169,6 +171,10 @@ class CustomerController extends Controller
 
         $sales = \App\Models\POS\Invoice::where('customer_id', $customer->id)
             ->where('payment_method', 'credit')
+            ->where(function ($q) {
+                $q->whereNull('cancellation_status')
+                  ->orWhere('cancellation_status', '!=', 'cancelled');
+            })
             ->get()
             ->map(function ($sale) {
                 $saleDateTime = $sale->invoice_date

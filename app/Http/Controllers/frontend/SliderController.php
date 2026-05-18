@@ -85,7 +85,7 @@ class SliderController extends Controller
             $data['image'] = $request->file('image')->store('sliders', 'public');
         }
 
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->boolean('is_active');
         Slider::create($data);
 
         return redirect()
@@ -158,7 +158,7 @@ class SliderController extends Controller
             $data['image'] = $request->file('image')->store('sliders', 'public');
         }
 
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->boolean('is_active');
         $slider->update($data);
 
         return redirect()

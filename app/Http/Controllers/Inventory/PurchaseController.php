@@ -99,6 +99,7 @@ class PurchaseController extends Controller
             'purchase_date'  => ['required', 'date'],
             'invoice_no'     => ['required', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
+            'discount'       => ['nullable', 'integer', 'min:0', 'max:9999999'],
             'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
@@ -122,6 +123,7 @@ class PurchaseController extends Controller
                 'purchase_date'  => $data['purchase_date'],
                 'invoice_no'     => $data['invoice_no'] ?? null,
                 'payment_method' => $data['payment_method'],
+                'discount'       => (int) ($data['discount'] ?? 0),
                 'total_cost'     => 0,
             ]);
 
@@ -300,8 +302,9 @@ class PurchaseController extends Controller
                 }
             }
 
-            // Update purchase total with final tax
-            $purchaseTotal = (int) round($purchaseBaseTotal + $finalTaxAmount);
+            // Update purchase total: base + tax - discount (floor at 0)
+            $discountAmount = (int) ($data['discount'] ?? 0);
+            $purchaseTotal = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
             $purchase->update(['total_cost' => $purchaseTotal]);
 
             // Money movements based on payment method

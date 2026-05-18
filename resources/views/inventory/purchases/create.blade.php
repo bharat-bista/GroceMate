@@ -116,6 +116,17 @@
 
                         <td></td>
                     </tr>
+                    <tr>
+                        <td colspan="7" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                        <td class="px-4 py-3">
+                            <input type="number" id="discountInput" name="discount"
+                                   step="1" min="0" max="9999999"
+                                   inputmode="numeric" data-money
+                                   value="0"
+                                   class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
                     <tr class="bg-slate-100">
                         <td colspan="7" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
                         <td class="px-4 py-4 font-bold text-lg text-green-700 text-right" id="grandTotal">0.00</td>
@@ -297,8 +308,9 @@ function applyFinalTax(totalBase) {
         }
     }
     
-    const grandTotal = totalBase + taxAmount;
-    
+    const discount = parseInt(document.getElementById('discountInput')?.value) || 0;
+    const grandTotal = Math.max(0, totalBase + taxAmount - discount);
+
     totalTaxElement.textContent = formatCurrency(taxAmount);
     grandTotalElement.textContent = formatCurrency(grandTotal);
 }
@@ -1116,6 +1128,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Final tax change event
     document.getElementById('finalTaxSelect').addEventListener('change', function() {
+        const totalBaseText = document.getElementById('totalBaseCost').textContent;
+        const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
+        applyFinalTax(totalBase);
+    });
+
+    // Discount change event
+    document.getElementById('discountInput').addEventListener('input', function() {
         const totalBaseText = document.getElementById('totalBaseCost').textContent;
         const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
         applyFinalTax(totalBase);

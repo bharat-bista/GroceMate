@@ -215,6 +215,7 @@ const products = [
     sku: "{{ $product['sku'] ?? '' }}",
     selling_price: {{ $product['selling_price'] ?? 0 }},
     pos_available: {{ $product['pos_available_stock'] ?? 0 }},
+    business_id: {{ $product['business_id'] ?? 0 }},
 },
 @endforeach
 ];
@@ -238,51 +239,35 @@ let searchTimeout = null;
 
 async function searchProductsApi(query) {
     try {
-        console.log('🔍 Searching:', query);
-        
-        // Get CSRF token
+        const businessId = document.querySelector('select[name="business_id"]')?.value || '';
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        const response = await fetch(`/pos/products/search?q=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: { 
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            credentials: 'same-origin'
-        });
-        
-        console.log('📡 Status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ API Error:', response.status, errorText);
-            throw new Error('API Error');
-        }
-        
+
+        const response = await fetch(
+            `/pos/products/search?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': token,
+                },
+                credentials: 'same-origin',
+            }
+        );
+
+        if (!response.ok) throw new Error('API ' + response.status);
+
         const data = await response.json();
-        console.log('✅ Results:', data);
-        
-        // Ensure data is an array
-        if (!Array.isArray(data)) {
-            console.error('❌ Invalid response format:', data);
-            throw new Error('Invalid response');
-        }
-        
+        if (!Array.isArray(data)) throw new Error('Invalid response');
+
         return data;
     } catch (e) {
-        console.error('🚨 API Failed, using fallback search:', e);
-        
-        // Fallback: search in the injected products array
+        // Fallback: filter page-injected products by query and business
         const qLower = query.toLowerCase();
-        const fallbackResults = products.filter(p => 
-            p.name.toLowerCase().includes(qLower)
-        ).slice(0, 10);
-        
-        console.log('🔄 Fallback results:', fallbackResults);
-        return fallbackResults;
+        const selectedBusinessId = document.querySelector('select[name="business_id"]')?.value || '';
+        return products
+            .filter(p => p.name.toLowerCase().includes(qLower) &&
+                         (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId)))
+            .slice(0, 10);
     }
 }
 
@@ -421,11 +406,15 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
     const list = document.createElement('div');
     list.className = 'max-h-80 overflow-y-auto';
 
-    // Check exact match (ignore case)
     const qLower = query.toLowerCase();
-    const hasExact = results.some(p => (p.name || '').toLowerCase() === qLower);
 
-    // --- Existing products first ---
+    if (results.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'px-3 py-4 text-sm text-slate-500 text-center';
+        empty.textContent = 'No products found for this business.';
+        list.appendChild(empty);
+    }
+
     if (results.length > 0) {
         results.slice(0, 10).forEach((p) => {
             // Prevent selection of items that have no POS-available stock.
@@ -487,40 +476,6 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
         });
     }
 
-    // --- Create new: only if no exact match ---
-    if (!hasExact) {
-        const createBtn = document.createElement('button');
-        createBtn.type = 'button';
-        createBtn.className = 'w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 outline-none';
-
-        createBtn.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-white text-sm">+</span>
-                <div class="text-sm font-medium text-green-800">
-                    Create new product: <span class="font-semibold">"${query}"</span>
-                </div>
-            </div>
-        `;
-
-        createBtn.addEventListener('click', () => {
-            updateProductFromInput(rowId, { name: query });
-
-            dropdown.remove();
-            activeAutocomplete = null;
-
-            const row = document.getElementById(`row-${rowId}`);
-            row.querySelector('.unit-select')?.focus();
-        });
-
-        // add separator if there are results
-        if (results.length > 0) {
-            const sep = document.createElement('div');
-            sep.className = 'h-px bg-slate-200';
-            list.appendChild(sep);
-        }
-        list.appendChild(createBtn);
-    }
-
     dropdown.appendChild(list);
     wrapper.appendChild(dropdown);
     activeAutocomplete = dropdown;
@@ -542,25 +497,14 @@ async function handleProductSearch(rowId, inputElement) {
     clearTimeout(searchTimeout);
 
     const query = inputElement.value.trim();
-    console.log('🎯 Search triggered for:', query, 'in row:', rowId);
-
-    // always update hidden product_name (because server needs it)
-    const row = document.getElementById(`row-${rowId}`);
-    if (row) {
-        row.querySelector('.product-name-hidden').value = query;
-    }
 
     if (query.length < 2) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     searchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching after delay for:', query);
         const results = await searchProductsApi(query);
-        console.log('📦 Got results:', results.length, 'items');
-        // show dropdown ALWAYS (includes Create New + results)
         createAutocompleteDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -865,6 +809,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const qty = parseFloat(rows[i].querySelector('.qty-input').value);
             const cost = parseFloat(rows[i].querySelector('.cost-input').value);
 
+            const productId = rows[i].querySelector('.product-id-input').value.trim();
+            if (!productId) {
+                GroceMate.notify.error(`Row ${i + 1}: Please select a product from the list.`);
+                return;
+            }
             if (!productName) {
                 GroceMate.notify.error(`Row ${i + 1}: Please enter a product name.`);
                 return;

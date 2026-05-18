@@ -133,7 +133,7 @@ class SupplierPaymentController extends Controller
                 'amount_received'  => -$validated['amount'],
                 'payment_method'   => $paymentMethod,
                 'reference_no'     => 'PAY-' . $supplierPayment->id,
-                'notes'            => 'Supplier payment to ' . $supplier->name . ': ' . ($validated['note'] ?? ''),
+                'notes'            => 'Supplier payment to ' . ($supplier?->name ?? 'supplier') . ': ' . ($validated['note'] ?? ''),
             ]);
         });
 
@@ -198,7 +198,7 @@ class SupplierPaymentController extends Controller
                 'amount_received'  => -$validated['amount'],
                 'payment_method'   => $validated['payment_method'],
                 'reference_no'     => 'PAY-' . $supplierPayment->id,
-                'notes'            => 'Supplier payment to ' . $supplier->name . ': ' . ($validated['note'] ?? ''),
+                'notes'            => 'Supplier payment to ' . ($supplier?->name ?? 'supplier') . ': ' . ($validated['note'] ?? ''),
             ]);
         });
 

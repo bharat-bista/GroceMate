@@ -53,7 +53,7 @@ class Supplier extends Model
             ? (float) $this->supplierPayments->sum('amount')
             : (float) $this->supplierPayments()->sum('amount');
 
-        return $openingDue + $purchaseTotal - $paymentTotal;
+        return max(0.0, $openingDue + $purchaseTotal - $paymentTotal);
     }
 
     public function syncTotalDue(): float

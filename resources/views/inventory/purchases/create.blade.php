@@ -199,54 +199,35 @@ let activeAutocomplete = null;
 let searchTimeout = null;
 async function searchProductsApi(query) {
     try {
-        console.log('🔍 Searching:', query);
         const businessId = document.querySelector('select[name="business_id"]')?.value || '';
-        
-        // Get CSRF token
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        const response = await fetch(`/inventory/purchases/search-products?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`, {
-            method: 'GET',
-            headers: { 
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            credentials: 'same-origin'
-        });
-        
-        console.log('📡 Status:', response.status);
-        console.log('📡 Headers:', response.headers);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ API Error:', response.status, errorText);
-            throw new Error('API Error');
-        }
-        
+
+        const response = await fetch(
+            `/inventory/purchases/search-products?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': token,
+                },
+                credentials: 'same-origin',
+            }
+        );
+
+        if (!response.ok) throw new Error('API ' + response.status);
+
         const data = await response.json();
-        console.log('✅ Results:', data);
-        
-        // Ensure data is an array
-        if (!Array.isArray(data)) {
-            console.error('❌ Invalid response format:', data);
-            throw new Error('Invalid response');
-        }
-        
+        if (!Array.isArray(data)) throw new Error('Invalid response');
+
         return data;
     } catch (e) {
-        console.error('🚨 API Failed, using fallback search:', e);
-        
-        // Fallback: search in the injected products array
+        // Fallback: search the page-injected product list
         const qLower = query.toLowerCase();
         const selectedBusinessId = document.querySelector('select[name="business_id"]')?.value || '';
-        const fallbackResults = products.filter(p => 
-            p.name.toLowerCase().includes(qLower) && (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId))
-        ).slice(0, 10);
-        
-        console.log('🔄 Fallback results:', fallbackResults);
-        return fallbackResults;
+        return products
+            .filter(p => p.name.toLowerCase().includes(qLower) &&
+                         (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId)))
+            .slice(0, 10);
     }
 }
 
@@ -571,7 +552,6 @@ async function handleProductSearch(rowId, inputElement) {
     clearTimeout(searchTimeout);
 
     const query = inputElement.value.trim();
-    console.log('🎯 Search triggered for:', query, 'in row:', rowId);
 
     // always update hidden product_name (because server needs it)
     const row = document.getElementById(`row-${rowId}`);
@@ -580,16 +560,12 @@ async function handleProductSearch(rowId, inputElement) {
     }
 
     if (query.length < 2) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     searchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching after delay for:', query);
         const results = await searchProductsApi(query);
-        console.log('📦 Got results:', results.length, 'items');
-        // show dropdown ALWAYS (includes Create New + results)
         createAutocompleteDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -610,12 +586,8 @@ async function searchCategoriesApi(query) {
             credentials: 'same-origin'
         });
         
-        console.log('🔍 Category search API response:', response.status);
-        
         if (!response.ok) throw new Error('API Error');
-        const data = await response.json();
-        console.log('📦 Category search results:', data);
-        return data;
+        return await response.json();
     } catch (e) {
         console.error('Category search failed:', e);
         return [];
@@ -628,8 +600,6 @@ function createCategoryDropdown(rowId, inputElement, results) {
     const query = inputElement.value.trim();
     if (!query) return;
 
-    console.log('🎯 Creating category dropdown for query:', JSON.stringify(query), 'with results:', results);
-
     const wrapper = inputElement.closest('.relative');
     if (!wrapper) return;
 
@@ -641,16 +611,9 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
     const qLower = query.toLowerCase();
     const hasExact = results.some(c => (c.name || '').toLowerCase() === qLower);
-    
-    console.log('🔍 Exact match check:');
-    console.log('  Query:', JSON.stringify(query));
-    console.log('  Query lowercase:', JSON.stringify(qLower));
-    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
-    console.log('  Has exact match:', hasExact);
 
     // Show existing categories
     if (results.length > 0) {
-        console.log('📋 Showing', results.length, 'categories');
         results.forEach((cat) => {
             const item = document.createElement('button');
             item.type = 'button';
@@ -676,13 +639,10 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
             list.appendChild(item);
         });
-    } else {
-        console.log('📭 No categories found');
     }
 
     // Create new option (always show if query has length, but don't show if exact match)
     if (!hasExact && query.length > 0) {
-        console.log('➕ Showing create new category option');
         if (results.length > 0) {
             const sep = document.createElement('div');
             sep.className = 'h-px bg-slate-200';
@@ -708,8 +668,6 @@ function createCategoryDropdown(rowId, inputElement, results) {
         });
 
         list.appendChild(createBtn);
-    } else {
-        console.log('🚫 Not showing create option (has exact match or empty query)');
     }
 
     dropdown.appendChild(list);
@@ -765,24 +723,19 @@ async function handleCategorySearch(rowId, inputElement) {
 
     const query = inputElement.value.trim();
     const row = document.getElementById(`row-${rowId}`);
-    
-    console.log('🔍 Category search triggered for:', query, 'in row:', rowId);
-    
+
     // Clear category_id if user is typing (changed from selected)
     if (row) {
         row.querySelector('.category-id-input').value = '';
     }
 
     if (query.length < 1) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     categorySearchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching categories after delay for:', query);
         const results = await searchCategoriesApi(query);
-        console.log('📦 Got category results:', results.length, 'items');
         createCategoryDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -817,8 +770,6 @@ function createBrandDropdown(rowId, inputElement, results) {
     const query = inputElement.value.trim();
     if (!query) return;
 
-    console.log('🎯 Creating brand dropdown for query:', JSON.stringify(query), 'with results:', results);
-
     const wrapper = inputElement.closest('.relative');
     if (!wrapper) return;
 
@@ -830,16 +781,9 @@ function createBrandDropdown(rowId, inputElement, results) {
 
     const qLower = query.toLowerCase();
     const hasExact = results.some(b => (b.name || '').toLowerCase() === qLower);
-    
-    console.log('🔍 Brand exact match check:');
-    console.log('  Query:', JSON.stringify(query));
-    console.log('  Query lowercase:', JSON.stringify(qLower));
-    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
-    console.log('  Has exact match:', hasExact);
 
     // Show existing brands
     if (results.length > 0) {
-        console.log('📋 Showing', results.length, 'brands');
         results.forEach((brand) => {
             const item = document.createElement('button');
             item.type = 'button';
@@ -865,13 +809,10 @@ function createBrandDropdown(rowId, inputElement, results) {
 
             list.appendChild(item);
         });
-    } else {
-        console.log('📭 No brands found');
     }
 
     // Create new option (if no exact match)
     if (!hasExact && query.length > 0) {
-        console.log('➕ Showing create new brand option');
         if (results.length > 0) {
             const sep = document.createElement('div');
             sep.className = 'h-px bg-slate-200';

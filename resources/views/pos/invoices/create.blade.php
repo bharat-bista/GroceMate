@@ -355,6 +355,8 @@ function updateRowFromBatch(rowId, batch) {
     qtyInput.max   = batch.qty_remaining;
     qtyInput.value = Math.min(parseFloat(qtyInput.value) || 1, batch.qty_remaining);
 
+    validateQtyRow(row);
+    updateSaveButtonState();
     updateAllTotals();
 }
 
@@ -555,10 +557,10 @@ function createRow() {
     // also trigger search on focus
     productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
 
-    // update totals when qty or cost changes
+    // update totals when qty or cost changes; validate batch limit in real time
     row.querySelector('.qty-input').addEventListener('input', () => {
-        // Clear any previous stock errors when quantities change.
-        clearStockErrors();
+        validateQtyRow(row);
+        updateSaveButtonState();
         updateAllTotals();
     });
     row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
@@ -606,6 +608,38 @@ function showStockError(row, available) {
     }
 
     errorEl.textContent = `Only ${available} available`;
+}
+
+function clearRowStockError(row) {
+    row.querySelector('.qty-input')?.classList.remove('border-red-500');
+    row.querySelector('.stock-error')?.remove();
+}
+
+function validateQtyRow(row) {
+    const qtyInput = row.querySelector('.qty-input');
+    if (!qtyInput) return true;
+    const qty    = parseFloat(qtyInput.value) || 0;
+    const maxQty = parseFloat(qtyInput.max);
+    if (!isNaN(maxQty) && qty > maxQty) {
+        showStockError(row, maxQty);
+        return false;
+    }
+    clearRowStockError(row);
+    return true;
+}
+
+function updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveInvoiceBtn');
+    if (!saveBtn) return;
+    const hasError = Array.from(document.querySelectorAll('.purchase-row')).some(r => {
+        const qi = r.querySelector('.qty-input');
+        if (!qi) return false;
+        const max = parseFloat(qi.max);
+        return !isNaN(max) && (parseFloat(qi.value) || 0) > max;
+    });
+    saveBtn.disabled = hasError;
+    saveBtn.classList.toggle('opacity-50', hasError);
+    saveBtn.classList.toggle('cursor-not-allowed', hasError);
 }
 
 async function checkStock() {

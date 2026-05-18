@@ -119,7 +119,7 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-1">
                                 <input type="number" id="discountInput" name="discount_pct"
-                                       step="0.01" min="0" max="100"
+                                       step="any" min="0" max="100"
                                        value="0"
                                        class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
                                 <span class="text-sm text-slate-500 shrink-0">%</span>
@@ -373,8 +373,9 @@ function updateRowFromBatch(rowId, batch) {
     row.querySelector('.cost-input').value = batch.selling_price || 0;
 
     const qtyInput = row.querySelector('.qty-input');
-    qtyInput.max   = batch.qty_remaining;
-    qtyInput.value = Math.min(parseFloat(qtyInput.value) || 1, batch.qty_remaining);
+    const batchMax = Math.floor(batch.qty_remaining);
+    qtyInput.max   = batchMax;
+    qtyInput.value = Math.min(parseInt(qtyInput.value) || 1, batchMax);
 
     validateQtyRow(row);
     updateSaveButtonState();
@@ -530,8 +531,8 @@ function createRow() {
         <td class="px-4 py-3">
             <input name="items[${rowId}][qty]"
                    type="number"
-                   step="0.001"
-                   min="0.001"
+                   step="1" min="1"
+                   inputmode="numeric"
                    value="1"
                    required
                    class="qty-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">

@@ -99,7 +99,7 @@ class PurchaseController extends Controller
             'purchase_date'  => ['required', 'date'],
             'invoice_no'     => ['required', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
-            'discount'       => ['nullable', 'integer', 'min:0', 'max:9999999'],
+            'discount_pct'   => ['nullable', 'numeric', 'min:0', 'max:100'],
             'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
@@ -123,7 +123,7 @@ class PurchaseController extends Controller
                 'purchase_date'  => $data['purchase_date'],
                 'invoice_no'     => $data['invoice_no'] ?? null,
                 'payment_method' => $data['payment_method'],
-                'discount'       => (int) ($data['discount'] ?? 0),
+                'discount'       => 0,
                 'total_cost'     => 0,
             ]);
 
@@ -303,9 +303,10 @@ class PurchaseController extends Controller
             }
 
             // Update purchase total: base + tax - discount (floor at 0)
-            $discountAmount = (int) ($data['discount'] ?? 0);
+            $discountPct = (float) ($data['discount_pct'] ?? 0);
+            $discountAmount = (int) round(($purchaseBaseTotal + $finalTaxAmount) * $discountPct / 100);
             $purchaseTotal = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
-            $purchase->update(['total_cost' => $purchaseTotal]);
+            $purchase->update(['total_cost' => $purchaseTotal, 'discount' => $discountAmount]);
 
             // Money movements based on payment method
             if (in_array($data['payment_method'], ['cash', 'bank'])) {

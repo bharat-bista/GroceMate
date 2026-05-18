@@ -119,11 +119,14 @@
                     <tr>
                         <td colspan="7" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
                         <td class="px-4 py-3">
-                            <input type="number" id="discountInput" name="discount"
-                                   step="1" min="0" max="9999999"
-                                   inputmode="numeric" data-money
-                                   value="0"
-                                   class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="discountInput" name="discount_pct"
+                                       step="0.01" min="0" max="100"
+                                       value="0"
+                                       class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                                <span class="text-sm text-slate-500 shrink-0">%</span>
+                            </div>
+                            <div class="text-xs text-blue-600 text-right mt-0.5" id="discountRupees"></div>
                         </td>
                         <td colspan="2"></td>
                     </tr>
@@ -308,8 +311,14 @@ function applyFinalTax(totalBase) {
         }
     }
     
-    const discount = parseInt(document.getElementById('discountInput')?.value) || 0;
-    const grandTotal = Math.max(0, totalBase + taxAmount - discount);
+    const discountPct = parseFloat(document.getElementById('discountInput')?.value) || 0;
+    const discountAmount = Math.round((totalBase + taxAmount) * discountPct / 100);
+    const grandTotal = Math.max(0, totalBase + taxAmount - discountAmount);
+
+    const discountRupees = document.getElementById('discountRupees');
+    if (discountRupees) {
+        discountRupees.textContent = discountPct > 0 ? `− Rs ${formatCurrency(discountAmount)}` : '';
+    }
 
     totalTaxElement.textContent = formatCurrency(taxAmount);
     grandTotalElement.textContent = formatCurrency(grandTotal);

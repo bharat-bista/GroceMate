@@ -50,28 +50,10 @@ class EcommerceProductController extends Controller
     public function create(Request $request)
     {
         $businesses = Business::orderBy('business_name')->get();
-        $businessId = $request->input('business_id');
-
-        if (!$businessId) {
-            $businessId = $businesses->first()?->id;
-        }
-
-        // Load all products for the selected business and flag already-added ecommerce items in the UI.
-        $products = Product::query()
-            ->when($businessId, fn($query) => $query->where('business_id', $businessId))
-            ->with(['category', 'brandRelation', 'latestPurchaseItem', 'stock', 'ecommerceProduct'])
-            ->orderBy('name')
-            ->get();
-
-        $products->each(function ($product) {
-            $totalStock = (float) ($product->stock->quantity ?? 0);
-            $reservedStock = (float) ($product->ecommerceProduct->ecommerce_stock ?? 0);
-            $product->available_stock = max($totalStock - $reservedStock, 0);
-        });
+        $businessId = $request->input('business_id') ?? $businesses->first()?->id;
 
         return view('frontend.product.create', [
-            'products' => $products,
-            'businesses' => $businesses,
+            'businesses'         => $businesses,
             'selectedBusinessId' => $businessId,
         ]);
     }

@@ -54,20 +54,26 @@ class ProductSearchController extends Controller
 
     public function searchBatchesForPOS(Request $request): JsonResponse
     {
-        $q          = trim($request->get('q', ''));
-        $businessId = $request->get('business_id');
+        $q               = trim($request->get('q', ''));
+        $businessId      = $request->get('business_id');
+        $excludeEcommerce = $request->boolean('exclude_ecommerce');
 
         if (strlen($q) < 2) {
             return response()->json([]);
         }
 
         $batches = StockBatch::active()
-            ->with('product')
+            ->with(['product.category', 'product.brandRelation'])
             ->whereHas('product', function ($query) use ($q, $businessId) {
                 $query->where('name', 'LIKE', '%' . $q . '%');
                 if ($businessId) {
                     $query->where('business_id', $businessId);
                 }
+            })
+            ->when($excludeEcommerce, function ($query) {
+                $query->whereHas('product', function ($q2) {
+                    $q2->doesntHave('ecommerceProduct');
+                });
             })
             ->orderBy('purchased_on')
             ->orderBy('id')
@@ -88,6 +94,8 @@ class ProductSearchController extends Controller
                 'qty_remaining' => (float) $batch->qty_remaining,
                 'expiry_date'   => $batch->expiry_date?->format('Y-m-d'),
                 'business_id'   => $product?->business_id,
+                'category'      => $product?->category?->name ?? 'N/A',
+                'brand'         => $product?->brandRelation?->name ?? 'N/A',
             ];
         });
 

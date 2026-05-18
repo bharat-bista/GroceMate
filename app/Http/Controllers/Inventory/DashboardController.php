@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Supplier;
-use App\Models\PurchaseItem;
 use App\Models\Purchase;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -37,13 +37,19 @@ class DashboardController extends Controller
       ->get();
     
       $supplierCount = Supplier::count();
-      // 1. Expiring Soon: Not yet expired, but expires within 30 days
-        $expiringSoonCount = PurchaseItem::whereNotNull('expiry_date')
+
+        // Expiring soon: active batches (status=active, qty_remaining>0) expiring within 30 days.
+        // Mirrors the expiry alerts page so dashboard counts stay consistent with the detail view.
+        $expiringSoonCount = StockBatch::active()
+            ->whereNotNull('expiry_date')
             ->whereBetween('expiry_date', [$today, $soonThreshold])
             ->count();
 
-        // 2. Expired: Expiry date is before today
-        $expiredCount = PurchaseItem::whereNotNull('expiry_date')
+        // Expired: any batch still holding stock that is past today.
+        // Does not filter by status=active because expired batches carry status='expired'.
+        $expiredCount = StockBatch::query()
+            ->where('qty_remaining', '>', 0)
+            ->whereNotNull('expiry_date')
             ->where('expiry_date', '<', $today)
             ->count();
     // DAILY (last 7 days - always continuous)

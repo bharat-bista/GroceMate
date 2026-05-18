@@ -374,36 +374,34 @@ public function searchProducts(Request $request)
         return response()->json([]);
     }
 
-    // Search real products so we don't hide items that were never purchased.
+    // Purchase form always searches all products regardless of stock level,
+    // because the point is to restock — including products currently at 0.
     $products = Product::query()
-        ->with(['stock', 'ecommerceProduct', 'latestPurchaseItem'])
+        ->with(['stock', 'latestPurchaseItem', 'category', 'brandRelation'])
         ->when($businessId, fn($query) => $query->where('business_id', $businessId))
         ->where('name', 'LIKE', '%' . $q . '%')
-        ->when(!$showAll, function ($query) {
-            $query->whereHas('stock', function ($stockQuery) {
-                $stockQuery->where('quantity', '>', 0);
-            });
-        })
         ->orderBy('name')
         ->limit(10)
         ->get();
 
     $results = $products->map(function (Product $product) {
         $lastPurchaseCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0);
-        $availableStock = (float) ($product->stock?->quantity ?? 0);
+        $availableStock   = (float) ($product->stock?->quantity ?? 0);
 
         return [
-            'id' => $product->id,
-            'name' => $product->name,
-            'sku' => $product->sku,
-            'unit' => $product->unit,
-            'selling_price' => (float) ($product->selling_price ?? 0),
+            'id'                 => $product->id,
+            'name'               => $product->name,
+            'sku'                => $product->sku,
+            'unit'               => $product->unit,
+            'selling_price'      => (float) ($product->selling_price ?? 0),
             'last_purchase_cost' => $lastPurchaseCost,
-            // Backward-compatible alias for existing UI bindings.
-            'last_cost' => $lastPurchaseCost,
-            'available_stock' => $availableStock,
-            'pos_available' => $product->posAvailableStock(),
-            'business_id' => $product->business_id,
+            'last_cost'          => $lastPurchaseCost,
+            'available_stock'    => $availableStock,
+            'business_id'        => $product->business_id,
+            'category_id'        => $product->category_id,
+            'category_name'      => $product->category?->name,
+            'brand_id'           => $product->brand_id,
+            'brand_name'         => $product->brandRelation?->name,
         ];
     });
 

@@ -63,7 +63,7 @@ class ProductSearchController extends Controller
         }
 
         $batches = StockBatch::active()
-            ->with(['product.category', 'product.brandRelation'])
+            ->with(['product.category', 'product.brandRelation', 'product.ecommerceProduct'])
             ->whereHas('product', function ($query) use ($q, $businessId) {
                 $query->where('name', 'LIKE', '%' . $q . '%');
                 if ($businessId) {
@@ -82,7 +82,29 @@ class ProductSearchController extends Controller
             ->limit(20)
             ->get();
 
-        $results = $batches->map(function (StockBatch $batch) {
+        // Subtract each product's ecommerce reservation from the oldest batches first
+        // so operators see POS-available qty, not raw batch qty.
+        $batchesByProduct = $batches->groupBy('product_id');
+        $adjusted = collect();
+
+        foreach ($batchesByProduct as $productBatches) {
+            $ecommerceReserved = (float) ($productBatches->first()?->product?->ecommerceProduct?->ecommerce_stock ?? 0);
+            $toSubtract = $ecommerceReserved;
+
+            foreach ($productBatches as $batch) {
+                $rawQty   = (float) $batch->qty_remaining;
+                $subtract = min($rawQty, $toSubtract);
+                $posQty   = $rawQty - $subtract;
+                $toSubtract -= $subtract;
+
+                if ($posQty > 0) {
+                    $batch->pos_qty_remaining = $posQty;
+                    $adjusted->push($batch);
+                }
+            }
+        }
+
+        $results = $adjusted->map(function (StockBatch $batch) {
             $product = $batch->product;
 
             return [
@@ -93,7 +115,7 @@ class ProductSearchController extends Controller
                 'unit'          => $product?->unit ?? 'pcs',
                 'selling_price' => (float) ($product?->selling_price ?? 0),
                 'unit_cost'     => (float) $batch->unit_cost,
-                'qty_remaining' => (float) $batch->qty_remaining,
+                'qty_remaining' => $batch->pos_qty_remaining,
                 'expiry_date'   => $batch->expiry_date?->format('Y-m-d'),
                 'business_id'   => $product?->business_id,
                 'category'      => $product?->category?->name ?? 'N/A',
@@ -101,6 +123,6 @@ class ProductSearchController extends Controller
             ];
         });
 
-        return response()->json($results);
+        return response()->json($results->values());
     }
 }

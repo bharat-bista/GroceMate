@@ -73,7 +73,7 @@ class CheckoutController extends Controller
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round(collect($items)->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
         $computedTotal = round($subtotal + $deliveryCharge, 2);
-        $totalAmount = number_format($computedTotal, 2, '.', '');
+        $totalAmount = (string) intval(round($computedTotal));
         $transactionUuid = 'ECOM-' . time() . '-' . Str::random(6);
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');

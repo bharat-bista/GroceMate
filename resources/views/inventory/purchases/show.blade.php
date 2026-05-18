@@ -144,7 +144,7 @@
                                 <td class="px-4 py-3 text-slate-500">{{ $item->company_name ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->batch_no ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->unit ?? $item->product->unit ?? 'N/A' }}</td>
-                                <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
+                                <td class="px-4 py-3">{{ number_format($item->qty, 0) }}</td>
                                 <td class="px-4 py-3">Rs {{ number_format((float) $item->unit_cost, 0) }}</td>
                                 <td class="px-4 py-3">{{ $item->expiry_date?->format('M d, Y') ?? 'N/A' }}</td>
                                 <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $item->line_total, 0) }}</td>

@@ -93,15 +93,15 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-slate-900">Total: {{ number_format($quantity, 3) }}</span>
-                                    <span class="text-xs text-slate-500">Ecommerce used: {{ number_format($ecommerceStock, 3) }}</span>
-                                    <span class="text-xs text-emerald-700">Available: {{ number_format($availableStock, 3) }}</span>
+                                    <span class="text-sm font-semibold text-slate-900">Total: {{ number_format($quantity, 0) }}</span>
+                                    <span class="text-xs text-slate-500">Ecommerce used: {{ number_format($ecommerceStock, 0) }}</span>
+                                    <span class="text-xs text-emerald-700">Available: {{ number_format($availableStock, 0) }}</span>
                                     <span class="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-medium
                                         {{ $isCritical ? 'bg-red-100 text-red-700' : ($isLow ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
                                         {{ $isCritical ? 'Critical' : ($isLow ? 'Low' : 'Healthy') }}
                                     </span>
                                     <span class="text-xs text-slate-500">
-                                        {{ $reorderLevel > 0 ? 'Reorder: ' . number_format($reorderLevel, 3) : 'No reorder level set' }}
+                                        {{ $reorderLevel > 0 ? 'Reorder: ' . number_format($reorderLevel, 0) : 'No reorder level set' }}
                                     </span>
                                 </div>
                             </td>

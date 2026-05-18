@@ -15,8 +15,8 @@ class Stock extends Model {
     'reorder_level'
 ];
   protected $casts = [
-    'quantity' => 'decimal:3',
-    'reorder_level' => 'decimal:3',
+    'quantity' => 'integer',
+    'reorder_level' => 'integer',
   ];
 
   public function scopeLowStock(Builder $query): Builder

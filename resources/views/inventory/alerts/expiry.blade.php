@@ -61,7 +61,7 @@
             <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->purchaseItem->company_name ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->product->business->business_name ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->purchaseItem->purchase?->purchase_date?->format('Y-m-d') ?? '—' }}</td>
-            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 3) }}</td>
+            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 0) }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty
@@ -95,7 +95,7 @@
             <td class="px-5 py-4">{{ $it->product->brandRelation->name ?? $it->purchaseItem->company_name ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->product->business->business_name ?? '—' }}</td>
             <td class="px-5 py-4">{{ $it->purchaseItem->purchase?->purchase_date?->format('Y-m-d') ?? '—' }}</td>
-            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 3) }}</td>
+            <td class="px-5 py-4">{{ number_format((float) $it->qty_remaining, 0) }}</td>
             <td class="px-5 py-4">{{ $it->expiry_date?->format('Y-m-d') }}</td>
           </tr>
         @empty

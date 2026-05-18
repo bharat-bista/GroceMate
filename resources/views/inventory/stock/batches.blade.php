@@ -71,8 +71,8 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-5 py-4 font-semibold">{{ $batch->batch_no }}</td>
                         <td class="px-5 py-4">{{ $batch->purchased_on?->format('Y-m-d') ?? '—' }}</td>
-                        <td class="px-5 py-4">{{ number_format((float) $batch->qty_received, 3) }}</td>
-                        <td class="px-5 py-4">{{ number_format((float) $batch->qty_remaining, 3) }}</td>
+                        <td class="px-5 py-4">{{ number_format((float) $batch->qty_received, 0) }}</td>
+                        <td class="px-5 py-4">{{ number_format((float) $batch->qty_remaining, 0) }}</td>
                         <td class="px-5 py-4">Rs {{ number_format((float) $batch->unit_cost, 0) }}</td>
                         <td class="px-5 py-4">{{ $batch->expiry_date?->format('Y-m-d') ?? '—' }}</td>
                         <td class="px-5 py-4">

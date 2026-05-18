@@ -382,27 +382,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Thumbnail preview ───────────────────────────────────────────────────
-    thumbnailsInput.addEventListener('change', function () {
+    // ── Thumbnail preview with per-image remove ─────────────────────────────
+    let selectedFiles = [];
+
+    function syncFileInput() {
+        const dt = new DataTransfer();
+        selectedFiles.forEach(f => dt.items.add(f));
+        thumbnailsInput.files = dt.files;
+    }
+
+    function renderPreviews() {
         thumbnailPreviewGrid.innerHTML = '';
-        const files = Array.from(this.files);
-        if (!files.length) {
+        if (!selectedFiles.length) {
             thumbnailPreviewGrid.classList.add('hidden');
             return;
         }
         thumbnailPreviewGrid.classList.remove('hidden');
-        files.forEach(function (file, idx) {
+        selectedFiles.forEach(function (file, idx) {
             const reader = new FileReader();
             reader.onload = function (e) {
                 const wrap = document.createElement('div');
                 wrap.className = 'relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100';
                 wrap.style.aspectRatio = '1';
-                wrap.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" alt="${file.name}" />`
-                    + (idx === 0 ? '<div class="absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5">Main</div>' : '');
+                wrap.innerHTML =
+                    `<img src="${e.target.result}" class="w-full h-full object-cover" alt="${file.name}" />`
+                    + (idx === 0 ? '<div class="absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5">Main</div>' : '')
+                    + `<button type="button" data-idx="${idx}"
+                               class="remove-thumb absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center leading-none shadow hover:bg-red-700 focus:outline-none"
+                               title="Remove">&times;</button>`;
+                wrap.querySelector('.remove-thumb').addEventListener('click', function () {
+                    selectedFiles.splice(parseInt(this.dataset.idx), 1);
+                    syncFileInput();
+                    renderPreviews();
+                });
                 thumbnailPreviewGrid.appendChild(wrap);
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    thumbnailsInput.addEventListener('change', function () {
+        selectedFiles = Array.from(this.files);
+        renderPreviews();
     });
 
     // ── Form submit guard ───────────────────────────────────────────────────

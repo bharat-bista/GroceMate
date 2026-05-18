@@ -72,7 +72,9 @@ class ProductSearchController extends Controller
             })
             ->when($excludeEcommerce, function ($query) {
                 $query->whereHas('product', function ($q2) {
-                    $q2->doesntHave('ecommerceProduct');
+                    $q2->whereDoesntHave('ecommerceProduct', function ($q3) {
+                        $q3->where('ecommerce_stock', '>', 0);
+                    });
                 });
             })
             ->orderBy('purchased_on')

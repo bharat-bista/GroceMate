@@ -539,16 +539,23 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice)
     {
-        DB::transaction(function () use ($invoice) {
-            // Restore stock quantities
+        $fifoService = $this->fifoService ?? app(FifoStockService::class);
+
+        DB::transaction(function () use ($invoice, $fifoService) {
+            $invoice->loadMissing('items');
+
+            // Restore stock via the same FIFO reverse path used by cancel(),
+            // so both qty_remaining and status on stock_batches stay correct.
             foreach ($invoice->items as $item) {
-                $stock = Stock::where('product_id', $item->product_id)->first();
-                if ($stock) {
-                    $stock->increment('quantity', $item->qty);
+                $batchesUsed = [];
+                if (!empty($item->batches_consumed)) {
+                    $decoded = json_decode($item->batches_consumed, true);
+                    $batchesUsed = is_array($decoded) ? $decoded : [];
                 }
+
+                $fifoService->reverse($item->product_id, (float) $item->qty, $batchesUsed);
             }
-            
-            // Delete the invoice (this will also delete related items due to foreign key constraints)
+
             $invoice->delete();
 
             $customer = Customer::find($invoice->customer_id);
@@ -556,7 +563,7 @@ class InvoiceController extends Controller
                 $customer->syncTotalDue();
             }
         });
-        
+
         return redirect()->route('pos.invoices.index')
             ->with('success', 'Invoice deleted successfully.');
     }

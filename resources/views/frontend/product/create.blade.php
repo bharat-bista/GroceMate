@@ -34,24 +34,22 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="text-sm font-medium text-slate-700">Select Product *</label>
-                    <select name="product_id" id="product-select" required
-                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                        <option value="">Select a product</option>
-                        @foreach($products as $product)
-                            <option value="{{ $product->id }}"
-                                    data-business-id="{{ $product->business_id }}"
-                                    data-category="{{ $product->category->name ?? 'N/A' }}"
-                                    data-brand="{{ $product->brandRelation->name ?? 'N/A' }}"
-                                    data-purchase-price="{{ $product->latestPurchaseItem->unit_cost ?? 0 }}"
-                                    data-total-stock="{{ $product->available_stock ?? 0 }}"
-                                    @disabled($product->ecommerceProduct)
-                                    @selected(old('product_id') == $product->id)>
-                                {{ $product->name }} ({{ $product->category->name ?? 'N/A' }} - {{ $product->brandRelation->name ?? 'N/A' }}){{ $product->ecommerceProduct ? ' - Already added to ecommerce' : '' }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-slate-500 mt-1">Type to find product. Already-added ecommerce products are shown as disabled.</p>
+                    <label class="text-sm font-medium text-slate-700">Select Product Batch *</label>
+                    <div class="relative">
+                        <input type="text" id="batch-search-input"
+                               autocomplete="off" placeholder="Type product name to search batches…"
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400" />
+                        <div id="batch-dropdown"
+                             class="hidden absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
+                        </div>
+                    </div>
+                    <input type="hidden" name="product_id" id="product-id-input">
+                    <input type="hidden" id="batch-id-input">
+                    <div id="selected-batch-info"
+                         class="hidden mt-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+                        <span id="batch-info-text"></span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Type at least 2 characters. Each result is a separate inventory batch. Products already in ecommerce are excluded.</p>
                 </div>
 
                 <div>
@@ -231,141 +229,151 @@
 </div>
 
 @push('scripts')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <style>
-    .ts-dropdown .ts-dropdown-content {
-        max-height: 220px;
-        overflow-y: auto;
-    }
-
-    #description-editor .ql-editor {
-        min-height: 220px;
-    }
+    #description-editor .ql-editor { min-height: 220px; }
+    .batch-result-item:last-child { border-bottom: none; }
 </style>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const businessFilter = document.getElementById('business-filter');
-        const productSelect = document.getElementById('product-select');
-        const selectedCategoryInput = document.getElementById('selected-category');
-        const selectedCompanyInput = document.getElementById('selected-company');
-        const mrpInput = document.getElementById('mrp-input');
-        const discountInput = document.getElementById('discount-input');
-        const displayPriceInput = document.getElementById('display-price');
-        const profitDisplay = document.getElementById('profit-display');
-        const purchasePriceDisplay = document.getElementById('purchase-price-display');
-        const inventoryStockDisplay = document.getElementById('inventory-stock-display');
-        const stockLeftDisplay = document.getElementById('stock-left-display');
-        const ecommerceStockInput = document.querySelector('input[name="ecommerce_stock"]');
-        const descriptionInput = document.getElementById('description-input');
-        const form = productSelect.closest('form');
-        let productControl = null;
-        let descriptionEditor = null;
+document.addEventListener('DOMContentLoaded', function () {
+    const businessFilter      = document.getElementById('business-filter');
+    const batchSearchInput    = document.getElementById('batch-search-input');
+    const batchDropdown       = document.getElementById('batch-dropdown');
+    const productIdInput      = document.getElementById('product-id-input');
+    const batchIdInput        = document.getElementById('batch-id-input');
+    const selectedBatchInfo   = document.getElementById('selected-batch-info');
+    const batchInfoText       = document.getElementById('batch-info-text');
+    const selectedCategoryInput  = document.getElementById('selected-category');
+    const selectedCompanyInput   = document.getElementById('selected-company');
+    const mrpInput            = document.getElementById('mrp-input');
+    const discountInput       = document.getElementById('discount-input');
+    const displayPriceInput   = document.getElementById('display-price');
+    const profitDisplay       = document.getElementById('profit-display');
+    const purchasePriceDisplay   = document.getElementById('purchase-price-display');
+    const inventoryStockDisplay  = document.getElementById('inventory-stock-display');
+    const stockLeftDisplay    = document.getElementById('stock-left-display');
+    const ecommerceStockInput = document.querySelector('input[name="ecommerce_stock"]');
+    const descriptionInput    = document.getElementById('description-input');
+    const form                = document.querySelector('form');
 
-        let purchasePrice = 0;
-        let inventoryStock = 0;
+    let purchasePrice  = 0;
+    let inventoryStock = 0;
+    let debounceTimer  = null;
 
-        function updateSelectedProductMeta() {
-            const selected = productSelect.options[productSelect.selectedIndex];
-            if (!selected || !selected.value) {
-                selectedCategoryInput.value = '';
-                selectedCompanyInput.value = '';
-                purchasePrice = 0;
-                inventoryStock = 0;
-                purchasePriceDisplay.value = '0.00';
-                calculatePrices();
-                return;
-            }
+    // ── Price / stock calculations ──────────────────────────────────────────
+    function calculatePrices() {
+        const mrp          = parseFloat(mrpInput.value) || 0;
+        const discount     = parseFloat(discountInput.value) || 0;
+        const displayPrice = mrp - (mrp * discount / 100);
+        const profit       = displayPrice - purchasePrice;
+        const ecomStock    = parseFloat(ecommerceStockInput?.value) || 0;
 
-            selectedCategoryInput.value = selected.dataset.category || 'N/A';
-            selectedCompanyInput.value = selected.dataset.brand || 'N/A';
-            purchasePrice = parseFloat(selected.dataset.purchasePrice) || 0;
-            inventoryStock = parseFloat(selected.dataset.totalStock) || 0;
-            purchasePriceDisplay.value = purchasePrice.toFixed(2);
-            calculatePrices();
-        }
+        displayPriceInput.value = displayPrice.toFixed(2);
+        profitDisplay.value     = profit.toFixed(2);
+        if (inventoryStockDisplay) inventoryStockDisplay.value = inventoryStock.toFixed(3);
+        if (stockLeftDisplay)     stockLeftDisplay.value = Math.max(inventoryStock - ecomStock, 0).toFixed(3);
+    }
 
-        function applyBusinessFilter() {
-            const selectedBusinessId = businessFilter.value;
-            const url = new URL(window.location.href);
-
-            if (selectedBusinessId) {
-                url.searchParams.set('business_id', selectedBusinessId);
-            } else {
-                url.searchParams.delete('business_id');
-            }
-
-            window.location.href = url.toString();
-        }
-
-        function calculatePrices() {
-            const mrp = parseFloat(mrpInput.value) || 0;
-            const discount = parseFloat(discountInput.value) || 0;
-            const displayPrice = mrp - (mrp * discount / 100);
-            const profit = displayPrice - purchasePrice;
-            const ecommerceStock = parseFloat(ecommerceStockInput?.value) || 0;
-            const stockLeft = inventoryStock - ecommerceStock;
-
-            displayPriceInput.value = displayPrice.toFixed(2);
-            profitDisplay.value = profit.toFixed(2);
-            if (inventoryStockDisplay) {
-                inventoryStockDisplay.value = inventoryStock.toFixed(3);
-            }
-            if (stockLeftDisplay) {
-                stockLeftDisplay.value = Math.max(stockLeft, 0).toFixed(3);
-            }
-        }
-
-        productSelect.addEventListener('change', updateSelectedProductMeta);
-        businessFilter.addEventListener('change', applyBusinessFilter);
-
-        mrpInput.addEventListener('input', calculatePrices);
-        discountInput.addEventListener('input', calculatePrices);
-        if (ecommerceStockInput) {
-            ecommerceStockInput.addEventListener('input', calculatePrices);
-        }
-
-        if (window.TomSelect) {
-            productControl = new TomSelect(productSelect, {
-                maxOptions: null,
-                create: false,
-                allowEmptyOption: true,
-                placeholder: 'Select or type product name',
-                onChange: function() {
-                    updateSelectedProductMeta();
-                },
+    // ── Batch search ────────────────────────────────────────────────────────
+    function fetchBatches(q) {
+        const biz = encodeURIComponent(businessFilter.value);
+        fetch(`/pos/batches/search?q=${encodeURIComponent(q)}&business_id=${biz}&exclude_ecommerce=1`)
+            .then(r => r.json())
+            .then(renderDropdown)
+            .catch(() => {
+                batchDropdown.innerHTML = '<div class="px-3 py-2 text-sm text-slate-500">Search failed.</div>';
+                batchDropdown.classList.remove('hidden');
             });
-        }
+    }
 
-        if (window.Quill && descriptionInput) {
-            descriptionEditor = new Quill('#description-editor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        [{ header: [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline'],
-                        [{ list: 'ordered' }, { list: 'bullet' }],
-                        ['link'],
-                        ['clean']
-                    ]
-                }
+    function renderDropdown(batches) {
+        if (!batches.length) {
+            batchDropdown.innerHTML = '<div class="px-3 py-2 text-sm text-slate-500">No batches found.</div>';
+        } else {
+            batchDropdown.innerHTML = batches.map(b => {
+                const expiry = b.expiry_date ? ` · Exp: ${b.expiry_date}` : '';
+                const safe   = JSON.stringify(b).replace(/'/g, '&#39;');
+                return `<div class="batch-result-item px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-slate-100"
+                             data-batch='${safe}'>
+                    <div class="font-medium text-sm text-slate-800">${b.product_name}</div>
+                    <div class="text-xs text-slate-500">${b.batch_no} · Qty: ${parseFloat(b.qty_remaining).toFixed(3)}${expiry} · Cost: Rs ${b.unit_cost}</div>
+                </div>`;
+            }).join('');
+        }
+        batchDropdown.classList.remove('hidden');
+        batchDropdown.querySelectorAll('.batch-result-item').forEach(el => {
+            el.addEventListener('click', function () {
+                selectBatch(JSON.parse(this.dataset.batch));
             });
+        });
+    }
 
-            if (descriptionInput.value) {
-                descriptionEditor.root.innerHTML = descriptionInput.value;
-            }
+    function selectBatch(b) {
+        productIdInput.value = b.product_id;
+        batchIdInput.value   = b.batch_id;
+        batchSearchInput.value = b.product_name;
+        batchDropdown.classList.add('hidden');
 
-            if (form) {
-                form.addEventListener('submit', function () {
-                    descriptionInput.value = descriptionEditor.root.innerHTML;
-                });
-            }
-        }
+        const expiry = b.expiry_date ? ` · Expiry: ${b.expiry_date}` : '';
+        batchInfoText.textContent = `Batch: ${b.batch_no}${expiry} · Available: ${parseFloat(b.qty_remaining).toFixed(3)}`;
+        selectedBatchInfo.classList.remove('hidden');
 
-        updateSelectedProductMeta();
+        selectedCategoryInput.value = b.category || 'N/A';
+        selectedCompanyInput.value  = b.brand    || 'N/A';
+
+        purchasePrice  = parseFloat(b.unit_cost)     || 0;
+        inventoryStock = parseFloat(b.qty_remaining) || 0;
+        purchasePriceDisplay.value = purchasePrice.toFixed(2);
+
+        if (ecommerceStockInput) ecommerceStockInput.max = inventoryStock;
+
+        calculatePrices();
+    }
+
+    batchSearchInput.addEventListener('input', function () {
+        const q = this.value.trim();
+        clearTimeout(debounceTimer);
+        if (q.length < 2) { batchDropdown.classList.add('hidden'); return; }
+        debounceTimer = setTimeout(() => fetchBatches(q), 250);
     });
+
+    batchSearchInput.addEventListener('focus', function () {
+        if (this.value.trim().length >= 2) fetchBatches(this.value.trim());
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!batchSearchInput.contains(e.target) && !batchDropdown.contains(e.target)) {
+            batchDropdown.classList.add('hidden');
+        }
+    });
+
+    // ── Pricing inputs ──────────────────────────────────────────────────────
+    mrpInput.addEventListener('input', calculatePrices);
+    discountInput.addEventListener('input', calculatePrices);
+    if (ecommerceStockInput) ecommerceStockInput.addEventListener('input', calculatePrices);
+
+    // ── Form submit guard ───────────────────────────────────────────────────
+    form.addEventListener('submit', function (e) {
+        if (!productIdInput.value) {
+            e.preventDefault();
+            GroceMate.notify.error('Please select a product batch before saving.');
+        }
+    }, true);
+
+    // ── Quill description editor ────────────────────────────────────────────
+    let descEditor = null;
+    if (window.Quill && descriptionInput) {
+        descEditor = new Quill('#description-editor', {
+            theme: 'snow',
+            modules: { toolbar: [[{ header: [1, 2, 3, false] }], ['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['link'], ['clean']] }
+        });
+        if (descriptionInput.value) descEditor.root.innerHTML = descriptionInput.value;
+        form.addEventListener('submit', function () { descriptionInput.value = descEditor.root.innerHTML; });
+    }
+
+    calculatePrices();
+});
 </script>
 @endpush
 @endsection

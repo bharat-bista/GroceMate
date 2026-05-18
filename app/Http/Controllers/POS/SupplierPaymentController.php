@@ -471,7 +471,7 @@ class SupplierPaymentController extends Controller
             'date'        => 'required|date',
         ]);
 
-        $totalAmount     = number_format($request->amount, 2, '.', '');
+        $totalAmount     = (string) intval(round($request->amount));
         $transactionUuid = 'SUPPAY-' . $request->supplier_id . '-' . time();
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');

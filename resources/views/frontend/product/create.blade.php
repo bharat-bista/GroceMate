@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return `<div class="batch-result-item px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-slate-100"
                              data-batch='${safe}'>
                     <div class="font-medium text-sm text-slate-800">${b.product_name}</div>
-                    <div class="text-xs text-slate-500">${b.batch_no} · Qty: ${parseFloat(b.qty_remaining).toFixed(3)}${expiry} · Cost: Rs ${b.unit_cost}</div>
+                    <div class="text-xs text-slate-500">${b.batch_no} · Qty: ${parseInt(b.qty_remaining, 10)}${expiry} · Cost: Rs ${b.unit_cost}</div>
                 </div>`;
             }).join('');
         }
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
         batchDropdown.classList.add('hidden');
 
         const expiry = b.expiry_date ? ` · Expiry: ${b.expiry_date}` : '';
-        batchInfoText.textContent = `Batch: ${b.batch_no}${expiry} · Available: ${parseFloat(b.qty_remaining).toFixed(3)}`;
+        batchInfoText.textContent = `Batch: ${b.batch_no}${expiry} · Available: ${parseInt(b.qty_remaining, 10)}`;
         selectedBatchInfo.classList.remove('hidden');
 
         selectedCategoryInput.value = b.category || 'N/A';

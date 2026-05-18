@@ -74,7 +74,7 @@
         <h3>Redirecting to eSewa...</h3>
         <p>Please wait, do not close this window.</p>
         @if(isset($totalAmount))
-        <div class="amount">Rs. {{ number_format($totalAmount, 2) }}</div>
+        <div class="amount">Rs. {{ number_format($totalAmount, 0) }}</div>
         @endif
         <p style="margin-top: 12px; font-size: 0.9rem;">You will be redirected to secure payment gateway</p>
     </div>

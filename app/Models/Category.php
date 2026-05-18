@@ -32,9 +32,12 @@ class Category extends Model
         return $this->ecommerceProducts()->exists();
     }
 
-    // Get count of e-commerce products
-    public function getEcommerceProductsCountAttribute()
+    // Get count of e-commerce products; uses eager-loaded value from withCount() when available.
+    public function getEcommerceProductsCountAttribute(): int
     {
+        if (isset($this->attributes['ecommerce_products_count'])) {
+            return (int) $this->attributes['ecommerce_products_count'];
+        }
         return $this->ecommerceProducts()->count();
     }
 }

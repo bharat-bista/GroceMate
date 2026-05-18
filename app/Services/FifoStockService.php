@@ -167,6 +167,54 @@ class FifoStockService
     }
 
     /**
+     * Return the POS-available quantity for a single batch, after FIFO-distributing
+     * the product's ecommerce reservation across older batches first.
+     */
+    public function batchPosAvailable(int $batchId): float
+    {
+        $batch = $this->stockBatch->newQuery()
+            ->where('id', $batchId)
+            ->where('status', 'active')
+            ->first(['id', 'product_id', 'qty_remaining']);
+
+        if (!$batch) {
+            return 0.0;
+        }
+
+        $productId = $batch->product_id;
+
+        $ecommerceReserved = (float) ($this->ecommerceProduct->newQuery()
+            ->where('product_id', $productId)
+            ->value('ecommerce_stock') ?? 0);
+
+        if ($ecommerceReserved <= 0.0) {
+            return (float) $batch->qty_remaining;
+        }
+
+        // Walk active batches in FIFO order, subtracting ecommerce reservation from each.
+        $batches = $this->stockBatch->newQuery()
+            ->where('product_id', $productId)
+            ->where('status', 'active')
+            ->orderBy('purchased_on')
+            ->orderBy('id')
+            ->get(['id', 'qty_remaining']);
+
+        $toSubtract = $ecommerceReserved;
+        foreach ($batches as $b) {
+            $rawQty  = (float) $b->qty_remaining;
+            $subtract = min($rawQty, $toSubtract);
+            $posQty  = $rawQty - $subtract;
+            $toSubtract -= $subtract;
+
+            if ($b->id === $batchId) {
+                return max(0.0, $posQty);
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
      * Consume stock from one specific batch (user-selected, bypasses FIFO order).
      * Returns the same shape as consume() so the reverse() path works unchanged.
      *

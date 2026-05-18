@@ -108,11 +108,12 @@ class InvoiceController extends Controller
             $label = $row['product_name'];
 
             if (!empty($row['batch_id'])) {
-                // Batch-specific: check the chosen batch has enough remaining stock.
+                // Batch-specific: check the chosen batch has enough POS-available stock
+                // (raw qty minus ecommerce reservation distributed FIFO from oldest batches).
                 $batch = StockBatch::find((int) $row['batch_id']);
-                if (!$batch || $batch->status !== 'active' || (float) $batch->qty_remaining < $qty) {
-                    $available = $batch ? (float) $batch->qty_remaining : 0;
-                    $errors["items.{$index}.qty"] = "{$label} — batch only has {$available} available, you need {$qty}";
+                $posAvailable = $batch ? $fifoService->batchPosAvailable((int) $row['batch_id']) : 0.0;
+                if (!$batch || $batch->status !== 'active' || $posAvailable < $qty) {
+                    $errors["items.{$index}.qty"] = "{$label} — batch only has {$posAvailable} available for POS, you need {$qty}";
                 }
             } else {
                 $check = $fifoService->canConsume((int) ($row['product_id'] ?? 0), $qty, 'pos');

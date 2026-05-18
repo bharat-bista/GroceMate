@@ -227,7 +227,7 @@ html, body {
             return;
         }
 
-        alert(title);
+        Swal.fire({ icon: icon || 'info', title: title, showConfirmButton: false, timer: 2000, confirmButtonColor: '#2e7d32' });
     }
 
     function updateBadges() {

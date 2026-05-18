@@ -476,10 +476,18 @@ function showOrderConfirmation(details) {
         });
     }
 
-    alert(
-        `Order confirmed!\nOrder #: ${details.orderNumber}\nPayment: ${paymentLabel}\nDelivery: ${deliveryLabel}\nDelivery Charge: ${deliveryChargeLabel}\nTotal: ${totalLabel}`
-    );
-    window.location.href = orderUrl;
+    Swal.fire({
+        icon: 'success',
+        title: 'Order Confirmed!',
+        html: summaryHtml,
+        confirmButtonText: 'View Order',
+        confirmButtonColor: '#2e7d32',
+        showCancelButton: true,
+        cancelButtonText: 'Continue Shopping',
+        reverseButtons: true,
+    }).then((result) => {
+        window.location.href = result.isConfirmed ? orderUrl : continueShoppingUrl;
+    });
 }
 
 if (orderConfirmation && orderConfirmation.order_id) {

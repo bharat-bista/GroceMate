@@ -188,7 +188,6 @@ Route::middleware(['auth', 'admin_or_staff'])
         
         // Purchase resource routes (must come AFTER custom routes)
         Route::resource('purchases', PurchaseController::class);
-        Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
         
         Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');

@@ -186,6 +186,7 @@ class IncomeController extends Controller
                     $invoice = \App\Models\POS\Invoice::where('invoice_no', $invoiceNo)->first();
                     if ($invoice) {
                         $invoice->updateStatus();
+                        $invoice->save();
                     }
                 }
             }

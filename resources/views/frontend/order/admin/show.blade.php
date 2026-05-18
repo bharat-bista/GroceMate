@@ -6,6 +6,17 @@
 
 @section('content')
 <div class="space-y-6">
+    @if(session('success'))
+        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="flex items-center gap-4">
         <a href="{{ route('inventory.orders.index') }}" class="flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <i class="fas fa-arrow-left"></i> Back to Orders
@@ -129,6 +140,58 @@
 
         <!-- Sidebar -->
         <div class="space-y-6">
+            <!-- Cancellation Request Card -->
+            @if($order->cancellation_request_status === 'pending')
+                <div class="bg-white shadow-xl rounded-3xl border border-amber-200 overflow-hidden">
+                    <div class="p-6 border-b border-amber-200 bg-amber-50">
+                        <h3 class="text-lg font-semibold text-amber-900"><i class="fas fa-ban mr-2"></i>Cancellation Request</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        @if($order->cancellation_requested_at)
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Requested At</label>
+                                <span class="text-sm text-slate-700">{{ $order->cancellation_requested_at->format('M d, Y h:i A') }}</span>
+                            </div>
+                        @endif
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Customer Reason</label>
+                            <p class="text-sm text-slate-700 bg-slate-50 rounded-lg p-3 border border-slate-200">{{ $order->cancellation_request_reason }}</p>
+                        </div>
+                        <form method="POST" action="{{ route('inventory.orders.cancel-request.approve', $order) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium mb-2"
+                                    onclick="return confirm('Approve cancellation? This will cancel the order and restore stock.')">
+                                <i class="fas fa-check mr-2"></i> Approve Cancellation
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('inventory.orders.cancel-request.reject', $order) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 text-sm font-medium">
+                                <i class="fas fa-times mr-2"></i> Reject Request
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @elseif($order->cancellation_request_status === 'approved')
+                <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                    <div class="p-6">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                            <i class="fas fa-ban mr-2"></i> Cancellation Approved
+                        </span>
+                    </div>
+                </div>
+            @elseif($order->cancellation_request_status === 'rejected')
+                <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
+                    <div class="p-6">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                            <i class="fas fa-times mr-2"></i> Cancellation Rejected
+                        </span>
+                    </div>
+                </div>
+            @endif
+
             <!-- Customer Info -->
             <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
                 <div class="p-6 border-b border-slate-200">

@@ -46,6 +46,7 @@ class OrderController extends Controller
                 'delivery_charge',
                 'total_amount',
                 'created_at',
+                'cancellation_request_status',
             ])
             ->withCount('items')
             ->orderBy('created_at', 'desc')
@@ -849,6 +850,92 @@ class OrderController extends Controller
         }
 
         abort(404);
+    }
+
+    /**
+     * Customer: Request order cancellation within 30 minutes
+     */
+    public function requestCancellation(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        if (!$order->canRequestCancellation()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is no longer eligible for cancellation. The 30-minute window may have passed or the order has already been cancelled/delivered.',
+            ]);
+        }
+
+        $order->update([
+            'cancellation_request_status' => 'pending',
+            'cancellation_request_reason' => $validated['reason'],
+            'cancellation_requested_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation request submitted.',
+        ]);
+    }
+
+    /**
+     * Admin: Approve cancellation request
+     */
+    public function approveCancellationRequest(Request $request, Order $order)
+    {
+        if ($order->cancellation_request_status !== 'pending') {
+            return back()->with('error', 'No pending cancellation request for this order.');
+        }
+
+        $isFirstCancelTransition = $order->delivery_status !== 'cancelled';
+        $shouldRestoreStock = $isFirstCancelTransition;
+        $shouldCreateRefund = $isFirstCancelTransition && $order->isPaid();
+
+        DB::transaction(function () use ($order, $shouldRestoreStock, $shouldCreateRefund) {
+            $order->update(['cancellation_request_status' => 'approved']);
+
+            if ($shouldRestoreStock) {
+                $order->loadMissing('items.ecommerceProduct');
+                $this->restoreEcommerceStock($order->items);
+            }
+
+            $order->update(['delivery_status' => 'cancelled']);
+
+            if ($shouldCreateRefund) {
+                $this->createRefundForOrder($order);
+            }
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
+
+        if ($order->customer_email) {
+            try {
+                Mail::to($order->customer_email)->send(new OrderConfirmationMail($order, 'order_cancelled'));
+            } catch (\Exception $e) {
+                // Email sending failed, continue anyway
+            }
+        }
+
+        return back()->with('success', 'Cancellation request approved and order cancelled.');
+    }
+
+    /**
+     * Admin: Reject cancellation request
+     */
+    public function rejectCancellationRequest(Request $request, Order $order)
+    {
+        if ($order->cancellation_request_status !== 'pending') {
+            return back()->with('error', 'No pending cancellation request for this order.');
+        }
+
+        $order->update([
+            'cancellation_request_status' => 'rejected',
+            'cancellation_requested_at' => null,
+        ]);
+
+        return back()->with('success', 'Cancellation request rejected.');
     }
 
     private function applyPaymentFilter($query, string $paymentFilter): void

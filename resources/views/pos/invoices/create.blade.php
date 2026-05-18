@@ -713,9 +713,17 @@ document.addEventListener('DOMContentLoaded', function() {
     tbody.appendChild(createRow());
     updateAllTotals();
 
+    const gate = GroceMate.formGate.init({
+        watch:    ['select[name="business_id"]', 'select[name="customer_id"]', 'input[name="invoice_no"]'],
+        gate:     '#itemsBody',
+        rowClass: '.purchase-row',
+        addBtn:   '#addRow',
+    });
+
     document.getElementById('addRow').addEventListener('click', function() {
         tbody.appendChild(createRow());
         updateAllTotals();
+        gate.check();
         const newRowId = rowCounter - 1;
         document.querySelector(`#row-${newRowId} .product-name-input`).focus();
     });

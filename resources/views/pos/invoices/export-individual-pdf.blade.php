@@ -51,12 +51,11 @@ th:nth-child(6) { width: 15%; } /* Amount */
 <body>
 
 @php
-$subTotal = $invoice->items->sum('line_total') ??
-    $invoice->items->sum(fn($i)=>$i->qty * ($i->price ?? $i->unit_cost));
-
-$taxable = $invoice->taxable_amount ?? $subTotal;
-$vat = $invoice->vat_amount ?? ($taxable * 0.13);
-$grand = $invoice->grand_total ?? ($taxable + $vat);
+$subTotal   = (float) $invoice->items->sum('line_total');
+$discount   = (int) ($invoice->discount ?? 0);
+$grand      = (float) $invoice->total_cost;  // authoritative: base + tax − discount
+$taxable    = $invoice->taxable_amount ?? $subTotal;
+$vat        = $invoice->vat_amount ?? ($taxable * 0.13);
 $totalUnits = $invoice->items->sum('qty');
 
 function numberToWords($num){
@@ -189,6 +188,13 @@ $words .= " Only";
 <td class="right" style="border-top: none; border-bottom: none;">{{ number_format($vat, 0) }}</td>
 </tr>
 
+@if($discount > 0)
+<tr>
+<td colspan="4" style="border-top: none; border-bottom: none;"></td>
+<td class="right" style="border-top: none; border-bottom: none;">Discount</td>
+<td class="right" style="border-top: none; border-bottom: none;">- {{ number_format($discount, 0) }}</td>
+</tr>
+@endif
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;"><strong>Grand Total</strong></td>

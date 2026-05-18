@@ -85,7 +85,8 @@ class InvoiceController extends Controller
             'invoice_date' => ['required', 'date'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
-            'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'discount_pct'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'send_email' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id'   => ['nullable', 'exists:products,id'],
@@ -134,6 +135,7 @@ class InvoiceController extends Controller
                 'invoice_date' => $data['invoice_date'],
                 'invoice_no' => InvoiceNumberService::generateInvoiceNumber(),
                 'total_cost' => 0,
+                'discount'   => 0,
                 'payment_method' => $data['payment_method'],
             ]);
 
@@ -211,9 +213,11 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Update invoice total with final tax
-            $invoiceTotal = $purchaseBaseTotal + $finalTaxAmount;
-            $invoice->update(['total_cost' => $invoiceTotal]);
+            // Apply percentage discount on (base + tax), then store both
+            $discountPct    = (float) ($data['discount_pct'] ?? 0);
+            $discountAmount = (int) round(($purchaseBaseTotal + $finalTaxAmount) * $discountPct / 100);
+            $invoiceTotal   = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
+            $invoice->update(['total_cost' => $invoiceTotal, 'discount' => $discountAmount]);
             
             $customer = Customer::find($data['customer_id']);
             if ($customer) {

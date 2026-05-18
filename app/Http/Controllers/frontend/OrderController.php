@@ -345,7 +345,7 @@ class OrderController extends Controller
 
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
             $product = $products->get((string) $productId);
-            $updatedStock = max(0, round((float) $product->ecommerce_stock - (float) $requiredQty, 3));
+            $updatedStock = max(0, (int) round((float) $product->ecommerce_stock - (float) $requiredQty));
 
             $product->ecommerce_stock = $updatedStock;
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
@@ -582,7 +582,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            $updatedStock = max(0, round((float) $product->ecommerce_stock + (float) $restoreQty, 3));
+            $updatedStock = max(0, (int) round((float) $product->ecommerce_stock + (float) $restoreQty));
             $product->ecommerce_stock = $updatedStock;
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
             $product->save();
@@ -629,7 +629,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Admin: Update payment status
+     * Admin: Update payment status (COD only — eSewa is auto-verified, bank uses verifyPaymentSlip).
      */
     public function updatePaymentStatus(Request $request, Order $order)
     {
@@ -639,6 +639,16 @@ class OrderController extends Controller
 
         if ($order->delivery_status === 'cancelled') {
             return back()->with('error', 'Cancelled orders are locked and cannot be updated.');
+        }
+
+        // eSewa payment is always auto-verified — no manual override.
+        if ($order->payment_method === 'esewa') {
+            return back()->with('error', 'eSewa payment is managed automatically and cannot be changed manually.');
+        }
+
+        // Bank (Connect IPS) payments must be confirmed via the payment slip verification form.
+        if ($order->payment_method === 'connectips') {
+            return back()->with('error', 'Bank transfer payment must be verified through the payment slip verification form.');
         }
 
         if ($order->isPaymentLocked()) {
@@ -657,10 +667,6 @@ class OrderController extends Controller
             ]);
 
             $finalPaymentStatus = (string) $request->payment_status;
-        }
-
-        if ($order->payment_method === 'esewa') {
-            $finalPaymentStatus = 'verified';
         }
 
         DB::transaction(function () use ($order, $finalPaymentStatus) {

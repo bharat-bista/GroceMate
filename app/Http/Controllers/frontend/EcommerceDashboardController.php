@@ -121,19 +121,10 @@ class EcommerceDashboardController extends Controller
 
     private function grossPaidOrdersQuery(): Builder
     {
+        // Excludes cancelled orders — so no separate refund deduction is needed in revenue helpers.
         return Order::query()
             ->where('payment_status', 'verified')
             ->where('delivery_status', '!=', 'cancelled');
-    }
-
-    private function completedRefundsQuery(): Builder
-    {
-        return OrderRefund::query()
-            ->whereHas('order', function (Builder $query) {
-                $query->where('delivery_status', '!=', 'cancelled');
-            })
-            ->where('refund_status', 'completed')
-            ->whereNotNull('refunded_at');
     }
 
     /**
@@ -326,23 +317,14 @@ class EcommerceDashboardController extends Controller
         $fromDate = $from instanceof Carbon ? $from->copy()->startOfDay() : Carbon::parse($from)->startOfDay();
         $toDate = $to instanceof Carbon ? $to->copy()->endOfDay() : Carbon::parse($to)->endOfDay();
 
-        $gross = (clone $this->grossPaidOrdersQuery())
+        return (float) (clone $this->grossPaidOrdersQuery())
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->sum('total_amount');
-
-        $refunds = (clone $this->completedRefundsQuery())
-            ->whereBetween('refunded_at', [$fromDate, $toDate])
-            ->sum('refund_amount');
-
-        return max(0, (float) $gross - (float) $refunds);
     }
 
     private function netRevenueAllTime(): float
     {
-        $gross = (clone $this->grossPaidOrdersQuery())->sum('total_amount');
-        $refunds = (clone $this->completedRefundsQuery())->sum('refund_amount');
-
-        return max(0, (float) $gross - (float) $refunds);
+        return (float) (clone $this->grossPaidOrdersQuery())->sum('total_amount');
     }
 
     private function getRefundSummary(): array

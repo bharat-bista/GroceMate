@@ -63,18 +63,19 @@
         </div>
 
         <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg relative">
-            <table class="w-full text-sm" id="itemsTable" style="min-width:1080px">
+            <table class="w-full text-sm" id="itemsTable" style="min-width:1250px">
                 <thead class="text-slate-700 bg-slate-100">
                     <tr>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:150px">Product</th>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:130px">Category</th>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:130px">Company</th>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:80px">Unit</th>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:70px">Qty</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:200px">Product</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:120px">Category</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:120px">Company</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:75px">Unit</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:85px">Qty</th>
                         <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Unit Cost</th>
                         <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Base Cost</th>
-                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:100px">Subtotal</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Subtotal</th>
                         <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:130px">Expiry Date</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Discount %</th>
                         <th class="text-center px-4 py-3 font-medium whitespace-nowrap" style="min-width:70px">Action</th>
                     </tr>
                 </thead>
@@ -85,7 +86,7 @@
                     <tr>
                         <td colspan="7" class="px-4 py-4 text-right font-semibold text-slate-700">Total Base Cost:</td>
                         <td class="px-4 py-4 font-semibold text-slate-900 text-right" id="totalBaseCost">0.00</td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                     <tr>
                         <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">
@@ -114,10 +115,10 @@
                             0.00
                         </td>
 
-                        <td></td>
+                        <td colspan="3"></td>
                     </tr>
                     <tr>
-                        <td colspan="7" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                        <td colspan="9" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-1">
                                 <input type="number" id="discountInput" name="discount_pct"
@@ -128,12 +129,12 @@
                             </div>
                             <div class="text-xs text-blue-600 text-right mt-0.5" id="discountRupees"></div>
                         </td>
-                        <td colspan="2"></td>
+                        <td></td>
                     </tr>
                     <tr class="bg-slate-100">
                         <td colspan="7" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
                         <td class="px-4 py-4 font-bold text-lg text-green-700 text-right" id="grandTotal">0.00</td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -918,7 +919,7 @@ function createRow() {
     const unitOptions = units.map(u => `<option value="${u}">${u}</option>`).join('');
 
     row.innerHTML = `
-        <td class="px-4 py-3" style="min-width:150px">
+        <td class="px-4 py-3" style="min-width:200px">
             <div class="relative">
                 <input type="text"
                        class="product-name-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5"
@@ -928,7 +929,7 @@ function createRow() {
                 <input type="hidden" name="items[${rowId}][product_name]" class="product-name-hidden" />
             </div>
         </td>
-        <td class="px-4 py-3" style="min-width:130px">
+        <td class="px-4 py-3" style="min-width:120px">
             <div class="category-cell">
                 <div class="relative">
                     <input type="text"
@@ -941,7 +942,7 @@ function createRow() {
             </div>
             <div class="category-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
         </td>
-        <td class="px-4 py-3" style="min-width:130px">
+        <td class="px-4 py-3" style="min-width:120px">
             <div class="brand-cell">
                 <div class="relative">
                     <input type="text"
@@ -954,14 +955,14 @@ function createRow() {
             </div>
             <div class="brand-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
         </td>
-        <td class="px-4 py-3" style="min-width:80px">
+        <td class="px-4 py-3" style="min-width:75px">
             <select name="items[${rowId}][product_unit]"
                     class="unit-select w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
                 ${unitOptions}
             </select>
             <div class="unit-display text-slate-700 font-medium text-sm px-2 py-1.5 hidden"></div>
         </td>
-        <td class="px-4 py-3" style="min-width:70px">
+        <td class="px-4 py-3" style="min-width:85px">
             <input name="items[${rowId}][qty]"
                    type="number"
                    step="0.001"
@@ -985,7 +986,7 @@ function createRow() {
                 <input type="hidden" name="items[${rowId}][base_cost]" class="base-cost-input" value="0">
             </div>
         </td>
-        <td class="px-4 py-3" style="min-width:100px">
+        <td class="px-4 py-3" style="min-width:110px">
             <div class="text-green-700 font-bold text-sm">
                 <span class="subtotal">0</span>
                 <input type="hidden" name="items[${rowId}][line_total]" class="subtotal-input" value="0">
@@ -995,6 +996,9 @@ function createRow() {
             <input name="items[${rowId}][expiry_date]"
                    type="date"
                    class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
+        </td>
+        <td class="px-4 py-3 text-center" style="min-width:110px">
+            <span class="text-sm text-slate-400">—</span>
         </td>
         <td class="px-4 py-3 text-center" style="min-width:70px">
             <button type="button"

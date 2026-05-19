@@ -142,59 +142,91 @@ class PurchaseController extends Controller
 
                 // Check if product exists, if not create it
                 if (!empty($row['product_id'])) {
-                    // Existing product - get category and brand from product
                     $productId = $row['product_id'];
                     $existingProduct = Product::with(['category', 'brandRelation'])->find($productId);
                     if ($existingProduct) {
-                        $productSnapshotName = $existingProduct->name; // canonical name for snapshot
+                        $productSnapshotName = $existingProduct->name;
                         $brandId = $this->resolveBrandId($row);
 
                         if ($brandId && (int) $existingProduct->brand_id !== (int) $brandId) {
-                            $this->assertNoBusinessProductConflict(
-                                $normalizedProductName,
-                                $brandId,
-                                (int) $data['business_id'],
-                                $existingProduct->id
-                            );
-                        }
+                            // Same name + different company = separate product.
+                            // Never overwrite an existing product's brand.
+                            // Look for a sibling product (same name + new brand, same business).
+                            $sibling = Product::with(['category', 'brandRelation'])
+                                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedProductName)])
+                                ->where('brand_id', $brandId)
+                                ->where('business_id', $data['business_id'])
+                                ->first();
 
-                        $categoryName = $existingProduct->category->name ?? null;
-                        $companyName = $existingProduct->brandRelation->name ?? null;
-                        
-                        // Check if user wants to update brand for existing product
-                        $updateBrand = false;
-                        if ($brandId) {
-                            $brand = Brand::find($brandId);
-                            if ($brand) {
-                                $existingProduct->brand_id = $brand->id;
-                                $companyName = $brand->name;
-                                $updateBrand = true;
+                            if ($sibling) {
+                                $productId        = $sibling->id;
+                                $productSnapshotName = $sibling->name;
+                                $categoryName     = $sibling->category->name ?? null;
+                                $companyName      = $sibling->brandRelation->name ?? null;
+                            } else {
+                                // New name+brand combination — assert cross-business safety, then create.
+                                $this->assertNoBusinessProductConflict(
+                                    $normalizedProductName,
+                                    $brandId,
+                                    (int) $data['business_id']
+                                );
+
+                                // Inherit category from the original product unless the row overrides it.
+                                $categoryId   = $existingProduct->category_id;
+                                $categoryName = $existingProduct->category->name ?? null;
+                                if (!empty($row['category_id'])) {
+                                    $cat = Category::find($row['category_id']);
+                                    if ($cat) { $categoryId = $cat->id; $categoryName = $cat->name; }
+                                } elseif (!empty($row['category_name'])) {
+                                    $cat = Category::firstOrCreate(['name' => trim($row['category_name'])]);
+                                    $categoryId = $cat->id; $categoryName = $cat->name;
+                                }
+
+                                $brand       = Brand::find($brandId);
+                                $companyName = $brand?->name;
+
+                                $newProduct = Product::create([
+                                    'business_id'   => $data['business_id'],
+                                    'name'          => $normalizedProductName,
+                                    'unit'          => $row['product_unit'],
+                                    'category_id'   => $categoryId ?? 1,
+                                    'brand_id'      => $brandId,
+                                    'selling_price' => $unitCost * 1.2,
+                                    'is_active'     => true,
+                                ]);
+
+                                Stock::firstOrCreate(
+                                    ['product_id' => $newProduct->id],
+                                    ['quantity' => 0, 'reorder_level' => 0]
+                                );
+
+                                $productId           = $newProduct->id;
+                                $productSnapshotName = $normalizedProductName;
                             }
-                        }
-                        
-                        // Check if user wants to update category for existing product
-                        $updateCategory = false;
-                        if (!empty($row['category_id'])) {
-                            $category = Category::find($row['category_id']);
-                            if ($category) {
+                        } else {
+                            // Brand unchanged (or no brand on row) — use existing product as-is.
+                            // Never update brand here; only fill in category if the product has none.
+                            $categoryName = $existingProduct->category->name ?? null;
+                            $companyName  = $existingProduct->brandRelation->name ?? null;
+
+                            $updateCategory = false;
+                            if (!empty($row['category_id'])) {
+                                $category = Category::find($row['category_id']);
+                                if ($category) {
+                                    $existingProduct->category_id = $category->id;
+                                    $categoryName = $category->name;
+                                    $updateCategory = true;
+                                }
+                            } elseif (!empty($row['category_name']) && empty($existingProduct->category_id)) {
+                                $category = Category::firstOrCreate(['name' => trim($row['category_name'])]);
                                 $existingProduct->category_id = $category->id;
                                 $categoryName = $category->name;
                                 $updateCategory = true;
                             }
-                        } elseif (!empty($row['category_name']) && empty($existingProduct->category_id)) {
-                            // Create new category from name if product has no category
-                            $category = Category::firstOrCreate(
-                                ['name' => trim($row['category_name'])],
-                                ['name' => trim($row['category_name'])]
-                            );
-                            $existingProduct->category_id = $category->id;
-                            $categoryName = $category->name;
-                            $updateCategory = true;
-                        }
-                        
-                        // Save product if brand or category was updated
-                        if ($updateBrand || $updateCategory) {
-                            $existingProduct->save();
+
+                            if ($updateCategory) {
+                                $existingProduct->save();
+                            }
                         }
                     }
                 } else {

@@ -57,7 +57,10 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Price</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">
+                            Purchase Price
+                            <div class="text-xs font-normal normal-case text-slate-400 mt-0.5">latest batch cost</div>
+                        </th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">E-commerce</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
@@ -89,7 +92,12 @@
                                 <div class="text-sm text-slate-900">{{ $product->category->name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $product->selling_price, 0) }}</div>
+                                @php $latestCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0); @endphp
+                                @if($latestCost > 0)
+                                    <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($latestCost, 0) }}</div>
+                                @else
+                                    <div class="text-sm text-slate-400">—</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">

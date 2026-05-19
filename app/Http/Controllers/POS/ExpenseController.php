@@ -77,7 +77,7 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'reference_no' => 'nullable|string|max:100',
-            'business_id' => 'nullable|exists:businesses,id',
+            'business_id' => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount' => 'required|integer|min:1',
             'payment_method' => 'required|in:cash,bank,Esewa,Khalti',
@@ -112,7 +112,7 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'reference_no' => 'nullable|string|max:100',
-            'business_id' => 'nullable|exists:businesses,id',
+            'business_id' => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount' => 'required|integer|min:1',
             'payment_method' => 'required|in:cash,bank,Esewa,Khalti',

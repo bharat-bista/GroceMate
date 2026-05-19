@@ -170,6 +170,7 @@ class CustomerController extends Controller
         }
 
         $sales = \App\Models\POS\Invoice::where('customer_id', $customer->id)
+            ->where('payment_method', 'credit')
             ->where(function ($q) {
                 $q->whereNull('cancellation_status')
                   ->orWhere('cancellation_status', '!=', 'cancelled');
@@ -180,14 +181,12 @@ class CustomerController extends Controller
                     ? $sale->invoice_date->copy()->setTimeFrom($sale->created_at)
                     : $sale->created_at->copy();
 
-                $methodLabel = ucfirst($sale->payment_method ?? 'cash');
-
                 return [
                     'id' => $sale->id,
                     'date' => $saleDateTime->format('Y-m-d'),
                     'datetime' => $saleDateTime->format('Y-m-d H:i:s'),
                     'reference' => $sale->invoice_no,
-                    'description' => $methodLabel . ' Sale - Invoice #' . $sale->invoice_no,
+                    'description' => 'Credit Sale - Invoice #' . $sale->invoice_no,
                     'debit' => 0,
                     'credit' => $sale->total_cost,
                     'type' => 'sale',

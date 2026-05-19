@@ -1086,11 +1086,16 @@ document.addEventListener('DOMContentLoaded', function() {
         applyFinalTax(totalBase);
     });
 
-    // Discount change event
+    // Discount change event — debounced 300 ms so applyFinalTax only runs
+    // after the user finishes typing, preventing FP drift on partial values.
+    let _discountTimer;
     document.getElementById('discountInput').addEventListener('input', function() {
-        const totalBaseText = document.getElementById('totalBaseCost').textContent;
-        const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
-        applyFinalTax(totalBase);
+        clearTimeout(_discountTimer);
+        _discountTimer = setTimeout(() => {
+            const totalBaseText = document.getElementById('totalBaseCost').textContent;
+            const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
+            applyFinalTax(totalBase);
+        }, 300);
     });
 
     // Escape closes dropdown

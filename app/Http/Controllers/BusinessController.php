@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Business;
 use App\Models\Purchase;
 use App\Models\SupplierPayment;
+use App\Models\POS\Expense;
 use App\Models\POS\Income;
 use App\Models\POS\Invoice;
 use App\Services\EcommerceIncomeSyncService;
@@ -248,11 +249,13 @@ class BusinessController extends Controller
         $salesQuery = $business->invoices()->with(['customer', 'creator'])->where('cancellation_status', 'active');
         $incomesQuery = $business->incomes()->with(['customer', 'creator'])->where('amount_received', '>', 0);
         $supplierPaymentsQuery = $business->supplierPayments()->with('supplier');
+        $expensesQuery = $business->expenses();
 
         $this->applyDateRange($purchasesQuery, 'purchase_date', $from, $to);
         $this->applyDateRange($salesQuery, 'invoice_date', $from, $to);
         $this->applyDateRange($incomesQuery, 'transaction_date', $from, $to);
         $this->applyDateRange($supplierPaymentsQuery, 'date', $from, $to);
+        $this->applyDateRange($expensesQuery, 'transaction_date', $from, $to);
 
         $purchases = $purchasesQuery->orderByDesc('purchase_date')->orderByDesc('id')->get();
         $sales = $salesQuery->orderByDesc('invoice_date')->orderByDesc('id')->get();
@@ -266,9 +269,12 @@ class BusinessController extends Controller
         $saleIncomeTotal = (float) $incomes->where('income_type', 'Sale')->sum('amount_received');
         $dueCollectionTotal = (float) $incomes->where('income_type', 'Due Collection')->sum('amount_received');
         $supplierPaymentTotal = (float) $supplierPayments->sum('amount');
+        $expenseTotal = (float) $expensesQuery->sum('amount');
         $netCashFlow = $incomeTotal - $supplierPaymentTotal;
+        // Gross Profit = Sales Revenue − Cost of Goods (purchases)
         $grossProfitLoss = $salesTotal - $purchaseTotal;
-        $netProfitLoss = $grossProfitLoss + $otherIncomeTotal;
+        // Net Profit = Gross Profit + Other Income − Operating Expenses
+        $netProfitLoss = $grossProfitLoss + $otherIncomeTotal - $expenseTotal;
         $profitMargin = $salesTotal > 0 ? (($netProfitLoss / $salesTotal) * 100) : null;
 
         $activityFeed = $this->buildActivityFeed($purchases, $sales, $incomes, $supplierPayments);
@@ -285,6 +291,7 @@ class BusinessController extends Controller
             'saleIncomeTotal' => $saleIncomeTotal,
             'dueCollectionTotal' => $dueCollectionTotal,
             'supplierPaymentTotal' => $supplierPaymentTotal,
+            'expenseTotal' => $expenseTotal,
             'netCashFlow' => $netCashFlow,
             'grossProfitLoss' => $grossProfitLoss,
             'netProfitLoss' => $netProfitLoss,

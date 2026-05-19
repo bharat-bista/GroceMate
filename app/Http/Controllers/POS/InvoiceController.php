@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\InvoiceMail;
 use App\Models\POS\Customer;
 use App\Models\Product;
+use App\Models\POS\Income;
 use App\Models\POS\Invoice;
 use App\Models\POS\InvoiceItem;
 use App\Models\Stock;
@@ -219,7 +220,24 @@ class InvoiceController extends Controller
             $discountAmount = (int) round(($purchaseBaseTotal + $finalTaxAmount) * $discountPct / 100);
             $invoiceTotal   = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
             $invoice->update(['total_cost' => $invoiceTotal, 'discount' => $discountAmount]);
-            
+
+            // Cash/bank sales are collected immediately — record income so the
+            // business account balance is updated via the Income model's created event.
+            // Credit sales only add to customer due; no money received yet.
+            if (in_array($data['payment_method'], ['cash', 'bank']) && $invoiceTotal > 0) {
+                Income::create([
+                    'reference_no'     => $invoice->invoice_no,
+                    'customer_id'      => $data['customer_id'],
+                    'business_id'      => $data['business_id'],
+                    'created_by'       => auth()->id(),
+                    'transaction_date' => $data['invoice_date'],
+                    'amount_received'  => $invoiceTotal,
+                    'payment_method'   => $data['payment_method'],
+                    'income_type'      => 'Sale',
+                    'description'      => 'POS Sale — Invoice ' . $invoice->invoice_no,
+                ]);
+            }
+
             $customer = Customer::find($data['customer_id']);
             if ($customer) {
                 $customer->syncTotalDue();

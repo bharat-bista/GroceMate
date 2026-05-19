@@ -80,7 +80,7 @@
                 <!-- Opening Due -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Opening Due Amount (if any)</label>
-                    <input type="number" step="1" name="opening_due"
+                    <input type="number" step="any" name="opening_due"
                            data-money inputmode="numeric" max="9999999"
                            value="{{ old('opening_due',0) }}"
                            placeholder="0"

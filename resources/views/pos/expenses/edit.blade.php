@@ -40,7 +40,7 @@
 
         <div>
             <label class="text-sm text-slate-600">Amount *</label>
-            <input type="number" step="1" min="1" name="amount"
+            <input type="number" step="any" min="1" name="amount"
                    data-money inputmode="numeric" max="9999999"
                    value="{{ old('amount', $expense->amount) }}"
                    placeholder="0"

@@ -51,7 +51,7 @@
 
         <div>
             <label class="text-sm text-slate-600">Amount Received *</label>
-            <input type="number" step="1" name="amount_received"
+            <input type="number" step="any" name="amount_received"
                    data-money inputmode="numeric" max="9999999"
                    value="{{ old('amount_received') }}"
                    placeholder="0"

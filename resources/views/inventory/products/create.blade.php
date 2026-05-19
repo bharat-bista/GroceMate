@@ -64,7 +64,7 @@
 
     <div>
       <label class="text-sm text-slate-600">Selling Price</label>
-      <input name="selling_price" type="number" step="1" data-money inputmode="numeric" max="9999999" value="{{ old('selling_price',0) }}"
+      <input name="selling_price" type="number" step="any" data-money inputmode="numeric" max="9999999" value="{{ old('selling_price',0) }}"
              class="mt-1 w-full rounded-xl border-slate-200 focus:ring-slate-200" />
     </div>
 

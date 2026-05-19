@@ -41,22 +41,28 @@ GroceMate.money = {
                 if (e.key === '.' || e.key === ',') e.preventDefault();
             });
 
-            // Strip decimals + enforce cap on every input event.
-            // This catches floating-point artefacts the browser injects for
-            // very large numbers even when step="1" (IEEE 754 precision issue).
+            // Enforce whole-rupee integer on every input event.
+            // Uses parseFloat first to handle browser-injected scientific
+            // notation (e.g. 1e5), then Math.trunc to strip any fractional part
+            // without any floating-point rounding math.
             el.addEventListener('input', () => {
-                let v = el.value;
-                if (v.includes('.')) v = v.split('.')[0]; // strip FP decimal
-                v = v.replace(/[^0-9]/g, '');             // strip non-digits
-                const n = parseInt(v, 10);
-                if (!isNaN(n) && n > cap) v = String(cap);
+                if (el.value === '') return;
+                const parsed = parseFloat(el.value);
+                if (!isFinite(parsed)) { el.value = '0'; return; }
+                let n = Math.trunc(parsed);
+                if (n < 0) n = 0;
+                if (n > cap) n = cap;
+                const v = String(n);
                 if (el.value !== v) el.value = v;
             });
 
-            // Round on blur to catch paste / autofill
+            // Integer-safe clamp on blur — catches paste / autofill.
+            // Uses the same trunc path, no Math.round floating-point math.
             el.addEventListener('blur', () => {
                 if (el.value !== '') {
-                    let n = Math.round(parseFloat(el.value) || 0);
+                    const parsed = parseFloat(el.value);
+                    let n = isFinite(parsed) ? Math.trunc(parsed) : 0;
+                    if (n < 0) n = 0;
                     if (n > cap) n = cap;
                     el.value = n;
                 }

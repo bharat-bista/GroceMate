@@ -540,7 +540,7 @@ function createRow() {
         <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
                    type="number"
-                   step="1" min="0" max="9999999"
+                   step="any" min="0" max="9999999"
                    inputmode="numeric" data-money
                    value="0"
                    required

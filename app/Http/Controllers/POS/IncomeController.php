@@ -126,7 +126,7 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no'     => 'nullable|string|max:100',
             'customer_id'      => 'nullable|exists:customers,id',
-            'business_id'      => 'nullable|exists:businesses,id',
+            'business_id'      => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount_received'  => 'required|integer|min:0|max:9999999',
             'payment_method'   => 'required|in:cash,bank,Esewa,Khalti',
@@ -218,7 +218,7 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no'     => 'nullable|string|max:100',
             'customer_id'      => 'nullable|exists:customers,id',
-            'business_id'      => 'nullable|exists:businesses,id',
+            'business_id'      => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
             'amount_received'  => 'required|integer|min:0|max:9999999',
             'payment_method'   => 'required|in:cash,bank,Esewa,Khalti',

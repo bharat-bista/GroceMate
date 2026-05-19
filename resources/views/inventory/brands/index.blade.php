@@ -54,6 +54,7 @@
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand Name</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Order</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Discount</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Usage</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -70,6 +71,17 @@
               <td class="px-6 py-4 font-medium text-slate-900">{{ $brand->name }}</td>
               <td class="px-6 py-4 text-slate-600">{{ $brand->order }}</td>
               <td class="px-6 py-4 text-slate-600">{{ $brand->company_discount }}%</td>
+              <td class="px-6 py-4">
+                @if($brand->products_count > 0)
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                    In use ({{ $brand->products_count }})
+                  </span>
+                @else
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                    Unused
+                  </span>
+                @endif
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex space-x-3">
                   <a class="text-emerald-600 hover:text-emerald-900 font-medium" href="{{ route('inventory.brands.edit',$brand) }}">Edit</a>
@@ -83,7 +95,7 @@
             </tr>
           @empty
             <tr>
-              <td class="px-6 py-12 text-center text-slate-500" colspan="5">No brands found.</td>
+              <td class="px-6 py-12 text-center text-slate-500" colspan="6">No brands found.</td>
             </tr>
           @endforelse
         </tbody>

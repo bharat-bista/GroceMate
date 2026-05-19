@@ -130,6 +130,19 @@
                                        class="text-green-600 hover:text-green-900 font-medium">
                                         Edit
                                     </a>
+                                    @if($quantity == 0)
+                                        <form method="POST"
+                                              action="{{ route('inventory.products.destroy', $product) }}"
+                                              onsubmit="return confirm('Delete {{ addslashes($product->name) }}? This cannot be undone.');"
+                                              class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-red-600 hover:text-red-900 font-medium">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

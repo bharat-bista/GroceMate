@@ -172,6 +172,9 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::post('/products/{product}/toggle-listed', [ProductController::class, 'toggleListed'])
             ->name('products.toggle-listed');
 
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])
+            ->name('products.destroy');
+
         Route::get('/stock/{product}/batches', [ProductController::class, 'batches'])
             ->name('stock.batches');
         

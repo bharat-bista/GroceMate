@@ -189,6 +189,24 @@ class ProductController extends Controller
     return back()->with('success', 'E-commerce listing updated.');
   }
 
+  public function destroy(Product $product)
+  {
+    $qty = (float) ($product->stock->quantity ?? 0);
+    if ($qty > 0) {
+      return back()->with('error', 'Cannot delete: product still has stock. Deplete all stock first.');
+    }
+
+    DB::transaction(function () use ($product) {
+      StockBatch::where('product_id', $product->id)->delete();
+      Stock::where('product_id', $product->id)->delete();
+      $product->ecommerceProduct?->delete();
+      $product->delete();
+    });
+
+    return redirect()->route('inventory.products.index')
+      ->with('success', "Product \"{$product->name}\" deleted.");
+  }
+
   private function normalizeProductName(string $name): string
   {
     return trim(preg_replace('/\s+/', ' ', $name));

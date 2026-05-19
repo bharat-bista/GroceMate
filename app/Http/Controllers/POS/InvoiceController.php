@@ -227,7 +227,7 @@ class InvoiceController extends Controller
             if (in_array($data['payment_method'], ['cash', 'bank']) && $invoiceTotal > 0) {
                 Income::create([
                     'reference_no'     => $invoice->invoice_no,
-                    'customer_id'      => $data['customer_id'],
+                    'customer_id'      => null, // business-level income; null prevents customerDueExpression() over-subtraction
                     'business_id'      => $data['business_id'],
                     'created_by'       => auth()->id(),
                     'transaction_date' => $data['invoice_date'],

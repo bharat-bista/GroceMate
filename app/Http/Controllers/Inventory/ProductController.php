@@ -22,7 +22,7 @@ class ProductController extends Controller
     $businessId = $request->input('business_id');
 
     $products = Product::query()
-      ->with(['category','stock','brandRelation','business','ecommerceProduct'])
+      ->with(['category','stock','brandRelation','business','ecommerceProduct','latestPurchaseItem'])
       ->when($q, fn($qq) => $qq->where('name','like',"%$q%"))
       ->when($businessId, fn($qq) => $qq->where('business_id', $businessId))
       ->orderBy('name')
@@ -141,7 +141,6 @@ class ProductController extends Controller
       'unit' => ['required','in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
       'selling_price' => ['required','integer','min:0','max:9999999'],
       'is_active' => ['nullable','boolean'],
-      'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
     ]);
 
@@ -171,7 +170,6 @@ class ProductController extends Controller
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
         'is_active' => (bool)($data['is_active'] ?? false),
-        'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);
 
       $product->stock()->updateOrCreate(

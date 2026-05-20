@@ -6,17 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-    @if(session('success'))
-        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="flex items-center gap-4">
         <a href="{{ route('inventory.orders.index') }}" class="flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <i class="fas fa-arrow-left"></i> Back to Orders

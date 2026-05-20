@@ -868,49 +868,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showOrderConfirmation(details) {
     const orderUrl = orderShowUrlTemplate.replace(':id', details.orderId);
-    const deliveryLabel = getDeliveryLabel(details.deliveryType);
-    const paymentLabel = getPaymentMethodLabel(details.paymentMethod);
-    const deliveryChargeLabel = formatCurrency(details.deliveryCharge);
-    const totalLabel = formatCurrency(details.totalAmount);
-
-    const summaryHtml = `
-      <div style="text-align: left; font-size: 0.95rem; line-height: 1.55;">
-        <div><strong>Order #:</strong> ${escapeHtml(details.orderNumber)}</div>
-        <div><strong>Payment:</strong> ${escapeHtml(paymentLabel)}</div>
-        <div><strong>Delivery:</strong> ${escapeHtml(deliveryLabel)}</div>
-        <div><strong>Delivery Charge:</strong> ${escapeHtml(deliveryChargeLabel)}</div>
-        <div><strong>Total:</strong> ${escapeHtml(totalLabel)}</div>
-      </div>
-    `;
-
-    if (window.Swal && typeof window.Swal.fire === 'function') {
-      return window.Swal.fire({
-        icon: 'success',
-        title: 'Order confirmed!',
-        html: summaryHtml,
-        showCancelButton: true,
-        confirmButtonText: 'View Order',
-        cancelButtonText: 'Continue Shopping',
-        reverseButtons: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.href = orderUrl;
-          return;
-        }
-
-        window.location.href = continueShoppingUrl;
-      });
-    }
 
     Swal.fire({
       icon: 'success',
-      title: 'Order Confirmed!',
-      html: summaryHtml,
-      confirmButtonText: 'View Order',
-      confirmButtonColor: '#2e7d32',
+      title: '<span style="color:#16a34a;font-size:1.25rem;font-weight:700;">Order Placed Successfully!</span>',
+      html: `
+        <div style="text-align:center;margin-bottom:14px;">
+          <span style="display:inline-block;background:#f0fdf4;color:#16a34a;font-weight:700;font-size:1rem;padding:5px 18px;border-radius:999px;border:1.5px solid #bbf7d0;letter-spacing:0.02em;">
+            Order #${escapeHtml(details.orderNumber)}
+          </span>
+        </div>
+        <div style="text-align:left;font-size:0.88rem;color:#374151;line-height:1.8;background:#f8fafc;border-radius:10px;padding:11px 14px;border:1px solid #e2e8f0;">
+          <div><span style="color:#6b7280;">Payment:</span>&nbsp;<strong>${escapeHtml(getPaymentMethodLabel(details.paymentMethod))}</strong></div>
+          <div><span style="color:#6b7280;">Delivery:</span>&nbsp;<strong>${escapeHtml(getDeliveryLabel(details.deliveryType))}</strong></div>
+          <div><span style="color:#6b7280;">Delivery Charge:</span>&nbsp;<strong>${formatCurrency(details.deliveryCharge)}</strong></div>
+          <div><span style="color:#6b7280;">Total:</span>&nbsp;<strong style="color:#16a34a;">${formatCurrency(details.totalAmount)}</strong></div>
+        </div>
+      `,
       showCancelButton: true,
+      confirmButtonText: '📦 View My Orders',
       cancelButtonText: 'Continue Shopping',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#1e293b',
       reverseButtons: true,
+      allowOutsideClick: false,
     }).then((result) => {
       window.location.href = result.isConfirmed ? orderUrl : continueShoppingUrl;
     });
@@ -1397,14 +1378,25 @@ document.addEventListener('DOMContentLoaded', function() {
             totalAmount: totalValue,
             paymentMethod: paymentMethod,
           });
+        } else if (data.admin_staff_error) {
+          Swal.fire({
+            icon: 'warning',
+            title: '<span style="color:#1e293b;font-size:1.1rem;font-weight:700;">Admin &amp; Staff Cannot Order</span>',
+            text: 'Please use a customer account to place orders on the storefront.',
+            confirmButtonText: 'Got it',
+            confirmButtonColor: '#16a34a',
+            allowOutsideClick: false,
+          });
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.innerHTML = 'Place Order';
         } else {
-          Swal.fire({ icon: 'error', title: 'Order Failed', text: resolveOrderErrorMessage(data, 'Something went wrong'), confirmButtonColor: '#2e7d32' });
+          Swal.fire({ icon: 'error', title: 'Order Failed', text: resolveOrderErrorMessage(data, 'Something went wrong'), confirmButtonColor: '#16a34a' });
           placeOrderBtn.disabled = false;
           placeOrderBtn.innerHTML = 'Place Order';
         }
       })
       .catch(function(error) {
-        Swal.fire({ icon: 'error', title: 'Order Failed', text: error.message || 'Error placing order. Please try again.', confirmButtonColor: '#2e7d32' });
+        Swal.fire({ icon: 'error', title: 'Order Failed', text: error.message || 'Error placing order. Please try again.', confirmButtonColor: '#16a34a' });
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
       });

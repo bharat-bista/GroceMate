@@ -279,11 +279,31 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-2">Payment Status</label>
                         @if($order->isLocked() || $order->delivery_status === 'cancelled')
-                            <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed" disabled>
-                                <option value="paid"   {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
-                                <option value="unpaid" selected>Unpaid</option>
-                            </select>
-                            <p class="text-xs text-slate-500 mt-1">Order is locked and cannot be changed</p>
+                            @if($order->payment_method === 'esewa')
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                                    <i class="fas fa-check-circle mr-1.5"></i> Auto-Verified (eSewa)
+                                </span>
+                            @elseif($order->payment_method === 'connectips')
+                                @if($order->payment_status === 'verified')
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                                        <i class="fas fa-check-circle mr-1.5"></i> Payment Verified
+                                    </span>
+                                @elseif($order->payment_status === 'failed')
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-1.5"></i> Payment Rejected
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                                        <i class="fas fa-lock mr-1.5"></i> Unverified (Locked)
+                                    </span>
+                                @endif
+                            @else
+                                <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-slate-100 text-slate-600 cursor-not-allowed" disabled>
+                                    <option value="paid"   {{ $order->payment_status === 'verified' ? 'selected' : '' }}>Paid</option>
+                                    <option value="unpaid" {{ $order->payment_status !== 'verified' ? 'selected' : '' }}>Unpaid</option>
+                                </select>
+                                <p class="text-xs text-slate-500 mt-1">Order is locked and cannot be changed</p>
+                            @endif
                         @elseif($order->payment_method === 'esewa')
                             <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
                                 <i class="fas fa-check-circle mr-1.5"></i> Auto-Verified (eSewa)

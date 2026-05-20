@@ -34,16 +34,18 @@ class ForgetPasswordController extends Controller
 
         $otpHash = Hash::make($rawOtp);
 
-        // store OTP in DB (invalidate previous OTPs)
-        DB::table('otp_resets')->where('user_id', $user->id)->delete();
+        // Bug 3 fix: only delete password_reset OTPs, not registration OTPs
+        // Bug 4 fix: store with purpose so it never cross-contaminates other OTP types
+        DB::table('otp_resets')->where('user_id', $user->id)->where('purpose', 'password_reset')->delete();
         DB::table('otp_resets')->insert([
             'user_id'    => $user->id,
             'otp_hash'   => $otpHash,
             'expires_at' => Carbon::now()->addMinutes(10),
             'attempts'   => 0,
             'used'       => false,
+            'purpose'    => 'password_reset',
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
 
         // send OTP email (could be queued)
@@ -80,7 +82,8 @@ return redirect()->route('password.otpForm')
         if (!$user) {
             return redirect()->route('password.request')->withErrors(['email' => 'Invalid session.']);
         }
-        $otpRecord = DB::table('otp_resets')->where('user_id', $user->id)->where('used', false)->orderBy('created_at', 'desc')->first();
+        // Bug 4 fix: filter by purpose so a registration OTP can never be used for password reset
+        $otpRecord = DB::table('otp_resets')->where('user_id', $user->id)->where('purpose', 'password_reset')->where('used', false)->orderBy('created_at', 'desc')->first();
         if (!$otpRecord) {
             return redirect()->route('password.request')->withErrors(['otp' => 'No OTP request found.']);
         }

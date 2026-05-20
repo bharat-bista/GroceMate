@@ -77,7 +77,11 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         if (auth()->check() && auth()->user()->canAccessInventoryPanel()) {
-            return back()->with('error', 'Admin and staff accounts cannot place orders. Please use a customer account.');
+            return response()->json([
+                'success'          => false,
+                'admin_staff_error' => true,
+                'message'          => 'Admin and staff accounts cannot place orders. Please use a customer account.',
+            ]);
         }
 
         $request->merge([

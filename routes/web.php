@@ -7,7 +7,6 @@ use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\ContactController;
-use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\frontend\OrderController;
 use App\Http\Controllers\frontend\EcommerceDashboardController;
@@ -57,7 +56,7 @@ Route::get('/', [AccountController::class, 'login'])->name('root');
 // Login routes
 Route::get('/login', [AccountController::class, 'login'])->name('page-login');
 Route::get('/auth/login', [AccountController::class, 'login'])->name('login');
-Route::post('/login', [AccountController::class, 'store'])->name('login.post');
+Route::post('/login', [AccountController::class, 'store'])->name('login.post')->middleware('throttle:5,1'); // Bug 8 fix: brute-force protection
 
 // Logout route
 Route::post('/logout', [AccountController::class, 'logout'])->name('logout')->middleware('auth');
@@ -123,7 +122,7 @@ Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'd
     ->whereNumber('ecommerceProduct')
     ->name('description');
 
-Route::get('/verify-otp', [OTPController::class, 'index'])->name('Otp.Form');
+// Bug 2 fix: removed dead OTPController GET /verify-otp route (was permanently shadowed by the route below)
 
 Route::get('/forgot-password', [ForgetPasswordController::class, 'showEmailForm'])->name('password.request');
 Route::post('/forgot-password', [ForgetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
@@ -139,6 +138,7 @@ Route::post('/register', [AccountController::class, 'registerPost'])->name('regi
 
 Route::get('/register/verify-otp/{user}', [AccountController::class, 'showRegisterOtpForm'])->name('register.otpForm');
 Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyRegisterOtp'])->name('register.verifyOtp');
+Route::post('/register/resend-otp/{user}', [AccountController::class, 'resendRegisterOtp'])->name('register.resendOtp'); // Bug 6 fix
 
 Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');

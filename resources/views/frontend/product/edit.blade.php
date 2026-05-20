@@ -276,7 +276,12 @@
         }
 
         mrpInput.addEventListener('input', calculatePrices);
-        discountInput.addEventListener('input', calculatePrices);
+        // Debounce discount recalculation so FP drift on partial values (e.g. 31→30.98) is avoided.
+        let _discountTimer;
+        discountInput.addEventListener('input', () => {
+            clearTimeout(_discountTimer);
+            _discountTimer = setTimeout(calculatePrices, 300);
+        });
         if (ecommerceStockInput) {
             ecommerceStockInput.addEventListener('input', calculatePrices);
         }

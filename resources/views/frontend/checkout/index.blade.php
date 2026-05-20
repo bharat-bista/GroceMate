@@ -1276,6 +1276,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newWindow) {
           newWindow.document.write(html);
           newWindow.document.close();
+          // Poll until the eSewa window closes, then re-enable the button.
+          var _esewaPoller = setInterval(function () {
+            if (newWindow.closed) {
+              clearInterval(_esewaPoller);
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.innerHTML = 'Place Order';
+            }
+          }, 600);
         } else {
           // Popup blocked: continue in same tab
           document.open();

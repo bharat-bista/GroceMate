@@ -98,7 +98,7 @@
                                  class="max-w-xs rounded-lg border border-slate-200 mb-4">
                         @endif
 
-                        @if($order->payment_status === 'pending')
+                        @if($order->payment_status === 'pending' && $order->delivery_status !== 'cancelled')
                             <div class="flex gap-3">
                                 <form method="POST" action="{{ route('inventory.orders.verify-slip', $order) }}">
                                     @csrf
@@ -119,6 +119,10 @@
                                     </button>
                                 </form>
                             </div>
+                        @elseif($order->delivery_status === 'cancelled' && $order->payment_status === 'pending')
+                            <p class="text-sm text-slate-500 mt-1">
+                                <i class="fas fa-lock mr-1"></i> Order is cancelled — payment verification is locked.
+                            </p>
                         @else
                             <div class="mt-2">
                                 @if($order->payment_status === 'verified')

@@ -491,6 +491,17 @@ function showOrderConfirmation(details) {
 }
 
 if (orderConfirmation && orderConfirmation.order_id) {
+    // Clear localStorage cart so the original checkout tab shows an empty cart.
+    try {
+        localStorage.removeItem('gm_cart_items');
+        localStorage.removeItem('gm_checkout_selected_items');
+        localStorage.removeItem('gm_buy_now_item');
+        localStorage.removeItem('gm_checkout_draft');
+        if (window.GroceMateCart && typeof window.GroceMateCart.updateBadges === 'function') {
+            window.GroceMateCart.updateBadges();
+        }
+    } catch (_) {}
+
     showOrderConfirmation({
         orderId: orderConfirmation.order_id,
         orderNumber: orderConfirmation.order_number,

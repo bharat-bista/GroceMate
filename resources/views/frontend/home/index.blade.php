@@ -6,6 +6,28 @@
 {{-- ============================================= --}}
 
 <style>
+:root {
+    --gm-primary: #2E7D32;
+    --gm-primary-dark: #1B5E20;
+    --gm-primary-light: #4CAF50;
+    --gm-accent: #FF6B35;
+    --gm-accent-dark: #E55A2B;
+    --gm-white: #FFFFFF;
+    --gm-light: #F8FBF8;
+    --gm-gray: #6B7280;
+    --gm-gray-light: #E5E7EB;
+    --gm-dark: #1F2937;
+    --gm-star: #FACA51;
+    --gm-shadow: 0 6px 24px rgba(27, 94, 32, 0.08);
+    --gm-shadow-lg: 0 12px 40px rgba(27, 94, 32, 0.16);
+    --gm-shadow-hover: 0 12px 30px rgba(27, 94, 32, 0.12);
+    --gm-radius: 16px;
+    --gm-radius-sm: 10px;
+    --gm-border-soft: rgba(46, 125, 50, 0.18);
+    --gm-surface: linear-gradient(135deg, #ffffff 0%, #f8fdf9 100%);
+    --gm-transition: all 0.3s ease;
+}
+
 /* ==========================================
    HERO SLIDER - MODERN DESIGN
    ========================================== */

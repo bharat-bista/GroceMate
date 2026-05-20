@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
@@ -118,10 +119,19 @@ class OrderController extends Controller
         }
 
         $deliveryCharges = DeliveryFeeSetting::chargeMap();
-        
+
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round($items->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
         $total = round($subtotal + $deliveryCharge, 2);
+
+        // Derive business_id from the first cart item's ecommerce product → product → business.
+        // Falls back to the lowest business ID if the product chain is broken.
+        $firstItemId = $items->first()['id'] ?? null;
+        $businessId = EcommerceProduct::with('product')
+            ->find($firstItemId)
+            ?->product
+            ?->business_id
+            ?? Business::min('id');
 
         $paymentStatus = 'pending';
         $transactionId = null;
@@ -134,11 +144,12 @@ class OrderController extends Controller
             $paymentSlipPath = $this->storePaymentSlip($request->payment_slip);
         }
 
-        $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items) {
+        $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items, $businessId) {
             $batchesByProduct = $this->deductEcommerceStock($items);
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
+                'business_id' => $businessId,
                 'customer_name' => $request->full_name,
                 'customer_phone' => $request->phone,
                 'customer_email' => $request->email ?? null,

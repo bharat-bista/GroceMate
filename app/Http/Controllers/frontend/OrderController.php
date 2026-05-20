@@ -75,6 +75,10 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->check() && auth()->user()->canAccessInventoryPanel()) {
+            return back()->with('error', 'Admin and staff accounts cannot place orders. Please use a customer account.');
+        }
+
         $request->merge([
             'items' => $this->normalizeItemsPayload($request->input('items')),
         ]);

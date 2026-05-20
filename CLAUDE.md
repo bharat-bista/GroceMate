@@ -198,6 +198,54 @@ Defined in `resources/views/frontend/layouts/main.blade.php`. Manages localStora
 ### Frontend CSS variables
 Each frontend page defines `:root { --gm-primary: #2E7D32; --gm-primary-dark: #1B5E20; --gm-primary-light: #4CAF50; --gm-accent: #FF6B35; --gm-white: #FFFFFF; --gm-light: #F8FBF8; --gm-gray: #6B7280; --gm-gray-light: #E5E7EB; --gm-dark: #1F2937; --gm-shadow: ...; --gm-shadow-lg: ...; --gm-radius: 16px; --gm-radius-sm: 10px; --gm-transition: all 0.3s ease; }` in its own `<style>` block. This is NOT in a shared file — each page must include the `:root` block if it uses these variables.
 
+## Authentication System
+
+All auth logic lives in `AccountController` (login, register, Google OAuth, profile/password) and `Auth/ForgetPasswordController` (password reset). There is no separate `LoginController` — everything is custom.
+
+### Login (`POST /login`)
+- Rate-limited: `throttle:5,1` middleware (5 attempts per minute per IP).
+- On email-not-found or wrong password: single generic message `"Invalid email or password."` — prevents account enumeration.
+- On unverified account (`status='N'`): specific message directing user to check email for OTP.
+- `session()->regenerate()` is called after every `Auth::login()` to prevent session fixation.
+- Uses `$request->boolean('remember')` for the Remember Me checkbox.
+- Post-login redirect: admin/staff → `inventory.dashboard`; customers → `home`.
+
+### Registration (`POST /register` → OTP → activate)
+1. `registerPost()` first checks if an existing `status='N'` user already exists for the submitted email. If found, it resends the OTP to them instead of failing on the unique constraint — this prevents users from being permanently locked out when their first OTP email never arrived.
+2. A new user is created with `status='N'`, `role_id=2`. Password is auto-hashed via the `hashed` model cast.
+3. OTP is generated with `random_int()` (cryptographically secure), stored hashed (`Hash::make()`), with `purpose='register'`, 10-minute expiry, 5-attempt limit.
+4. User is redirected to `/register/verify-otp/{user}` — the OTP form shows the user's email in context and has a **Resend OTP** button (`POST /register/resend-otp/{user}` → `resendRegisterOtp()`).
+5. On correct OTP: `status` set to `'Y'`, `Auth::login()` called, `session()->regenerate()`, redirect to home.
+
+The private helper `dispatchRegistrationOtp(User, string)` encapsulates OTP generation, storage, and email sending — used by both `registerPost()` and `resendRegisterOtp()`.
+
+### Google OAuth (`/auth/google` → `/auth/google/callback`)
+- Uses Socialite in `stateless()` mode with `prompt: select_account`.
+- Three cases handled: new user (created with `status='Y'`, `role_id=2`, random password), existing user without google_id (google_id backfilled), existing verified user (straight login).
+- Existing `status='N'` Google-email accounts are blocked with an error.
+- `session()->regenerate()` called after login.
+
+### Password Reset (`/forgot-password` → OTP → reset)
+Implemented in `ForgetPasswordController` using raw `DB::table('otp_resets')` (not the Eloquent model). Key behaviours:
+- OTP delete scoped to `where('purpose', 'password_reset')` only — never touches registration OTPs.
+- OTP stored with `purpose='password_reset'`; `verifyOtp()` lookup also filters by this purpose.
+- Email stored in `session('password_reset_email')`; user ID stored in `session('password_reset_user_id')` after OTP verified; both cleared on reset completion.
+- `resetPassword()` deletes ALL `otp_resets` rows for the user after success (safe at this point — registration is complete).
+
+### OTP table (`otp_resets`)
+Three distinct `purpose` values — never cross-contaminate:
+
+| purpose | Created by | Consumed by |
+|---------|-----------|-------------|
+| `register` | `AccountController::registerPost()` | `AccountController::verifyRegisterOtp()` |
+| `password_reset` | `ForgetPasswordController::sendOtp()` | `ForgetPasswordController::verifyOtp()` |
+| `managed_account_register` | `AdminAccountController::sendOtp()` | `AdminAccountController::verifyOtp()` |
+
+### `updatePassword()` guard
+Google users are created with a random 32-char password (stored hashed, never null). The guard therefore checks `$user->google_id`, not `!$user->password` — the latter would never trigger for Google users.
+
+---
+
 ## Role-Based Architecture
 
 | role_id | Role | Access |

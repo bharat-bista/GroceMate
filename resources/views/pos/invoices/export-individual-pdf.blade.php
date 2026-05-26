@@ -54,9 +54,15 @@ th:nth-child(6) { width: 15%; } /* Amount */
 $subTotal   = (float) $invoice->items->sum('line_total');
 $discount   = (int) ($invoice->discount ?? 0);
 $grand      = (float) $invoice->total_cost;  // authoritative: base + tax − discount
-$taxable    = $invoice->taxable_amount ?? $subTotal;
-$vat        = $invoice->vat_amount ?? ($taxable * 0.13);
+$tax        = max(0, (int) round($grand - $subTotal + $discount));
 $totalUnits = $invoice->items->sum('qty');
+
+$mittiDate = '';
+try {
+    $mittiDate = \Anuzpandey\LaravelNepaliDate\LaravelNepaliDate::from(
+        $invoice->invoice_date->format('Y-m-d')
+    )->toNepaliDate('Y-m-d');
+} catch (\Exception $e) {}
 
 function numberToWords($num){
     $ones = ['', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
@@ -121,7 +127,7 @@ $words .= " Only";
 
 <td colspan="3" style="border-left: none;">
     <strong>Invoice No :</strong> {{ $invoice->invoice_no }}<br>
-    <strong>Mitti Date :</strong> {{ $invoice->mitti_date }}<br>
+    <strong>Mitti Date :</strong> {{ $mittiDate }}<br>
     <strong>Roman Date :</strong> {{ optional($invoice->created_at)->format('d/m/Y') }}
 </td>
 </tr>
@@ -176,17 +182,19 @@ $words .= " Only";
 <td class="right"><strong>{{ number_format($subTotal, 0) }}</strong></td>
 </tr>
 
+@if($tax > 0)
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;">Taxable Amount</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($taxable, 0) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($subTotal, 0) }}</td>
 </tr>
 
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;">VAT 13%</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($vat, 0) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($tax, 0) }}</td>
 </tr>
+@endif
 
 @if($discount > 0)
 <tr>

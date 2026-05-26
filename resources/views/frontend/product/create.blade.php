@@ -272,8 +272,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function calculatePrices() {
         const mrp          = parseFloat(mrpInput.value) || 0;
         const discount     = parseFloat(discountInput.value) || 0;
-        const displayPrice = mrp - (mrp * discount / 100);
-        const profit       = displayPrice - purchasePrice;
+        const displayPrice = parseFloat((mrp - (mrp * discount / 100)).toFixed(2));
+        const profit       = parseFloat((displayPrice - purchasePrice).toFixed(2));
         const ecomStock    = parseFloat(ecommerceStockInput?.value) || 0;
 
         displayPriceInput.value = displayPrice.toFixed(2);

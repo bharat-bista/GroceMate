@@ -13,8 +13,6 @@ class Slider extends Model
         'image',
         'primary_button_text',
         'primary_button_link',
-        'secondary_button_text',
-        'secondary_button_link',
         'slider_type',
         'promo_slot',
         'sort_order',

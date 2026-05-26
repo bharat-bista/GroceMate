@@ -247,7 +247,7 @@ class BusinessController extends Controller
     {
         $purchasesQuery = $business->purchases()->with(['supplier', 'creator']);
         $salesQuery = $business->invoices()->with(['customer', 'creator'])->where('cancellation_status', 'active');
-        $incomesQuery = $business->incomes()->with(['customer', 'creator'])->where('amount_received', '>', 0);
+        $incomesQuery = $business->incomes()->with(['customer', 'creator'])->where('amount_received', '>', 0)->where('income_type', '!=', 'Capital Injection');
         $supplierPaymentsQuery = $business->supplierPayments()->with('supplier');
         $expensesQuery = $business->expenses();
 
@@ -399,7 +399,7 @@ class BusinessController extends Controller
             $date = Carbon::today()->subDays($i);
             $purchaseAmount = (float) $business->purchases()->whereDate('purchase_date', $date)->sum('total_cost');
             $salesAmount = (float) $business->invoices()->where('cancellation_status', 'active')->whereDate('invoice_date', $date)->sum('total_cost');
-            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereDate('transaction_date', $date)->sum('amount_received');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->where('income_type', '!=', 'Capital Injection')->whereDate('transaction_date', $date)->sum('amount_received');
             $paymentAmount = (float) $business->supplierPayments()->whereDate('date', $date)->sum('amount');
             $otherIncomeAmount = (float) $business->incomes()
                 ->where('amount_received', '>', 0)
@@ -436,7 +436,7 @@ class BusinessController extends Controller
             $end = Carbon::now()->subWeeks($i)->endOfWeek();
             $purchaseAmount = (float) $business->purchases()->whereBetween('purchase_date', [$start, $end])->sum('total_cost');
             $salesAmount = (float) $business->invoices()->where('cancellation_status', 'active')->whereBetween('invoice_date', [$start, $end])->sum('total_cost');
-            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereBetween('transaction_date', [$start, $end])->sum('amount_received');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->where('income_type', '!=', 'Capital Injection')->whereBetween('transaction_date', [$start, $end])->sum('amount_received');
             $paymentAmount = (float) $business->supplierPayments()->whereBetween('date', [$start, $end])->sum('amount');
             $otherIncomeAmount = (float) $business->incomes()
                 ->where('amount_received', '>', 0)
@@ -481,6 +481,7 @@ class BusinessController extends Controller
                 ->sum('total_cost');
             $incomeAmount = (float) $business->incomes()
                 ->where('amount_received', '>', 0)
+                ->where('income_type', '!=', 'Capital Injection')
                 ->whereYear('transaction_date', $month->year)
                 ->whereMonth('transaction_date', $month->month)
                 ->sum('amount_received');
@@ -523,7 +524,7 @@ class BusinessController extends Controller
             $year = Carbon::now()->subYears($i)->year;
             $purchaseAmount = (float) $business->purchases()->whereYear('purchase_date', $year)->sum('total_cost');
             $salesAmount = (float) $business->invoices()->where('cancellation_status', 'active')->whereYear('invoice_date', $year)->sum('total_cost');
-            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->whereYear('transaction_date', $year)->sum('amount_received');
+            $incomeAmount = (float) $business->incomes()->where('amount_received', '>', 0)->where('income_type', '!=', 'Capital Injection')->whereYear('transaction_date', $year)->sum('amount_received');
             $paymentAmount = (float) $business->supplierPayments()->whereYear('date', $year)->sum('amount');
             $otherIncomeAmount = (float) $business->incomes()
                 ->where('amount_received', '>', 0)

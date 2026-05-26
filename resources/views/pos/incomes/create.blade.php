@@ -12,7 +12,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label class="text-sm text-slate-600">Reference No *</label>
-            <input type="text" name="reference_no"
+            <input type="text" name="reference_no" id="reference_no"
                    value="{{ old('reference_no') }}"
                    placeholder="INV-0001 or INC-0001"
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
@@ -27,9 +27,9 @@
                    required />
         </div>
 
-        <div>
+        <div id="customer-field">
             <label class="text-sm text-slate-600">Customer *</label>
-            <select name="customer_id" required 
+            <select name="customer_id" id="customer_id"
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
                 <option value="">Select Customer</option>
                 @foreach($customers as $c)
@@ -76,13 +76,14 @@
 
         <div>
             <label class="text-sm text-slate-600">Income Type *</label>
-            <select name="income_type"
+            <select name="income_type" id="income_type"
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
-                    required>
+                    required onchange="handleIncomeTypeChange(this.value)">
                 <option value="">Select Type</option>
-                <option value="Sale">Sale</option>
-                <option value="Due Collection">Due Collection</option>
-                <option value="Other">Other</option>
+                <option value="Sale" @selected(old('income_type')=='Sale')>Sale</option>
+                <option value="Due Collection" @selected(old('income_type')=='Due Collection')>Due Collection</option>
+                <option value="Other" @selected(old('income_type')=='Other')>Other</option>
+                <option value="Capital Injection" @selected(old('income_type')=='Capital Injection')>Balance</option>
             </select>
         </div>
 
@@ -106,4 +107,34 @@
     </div>
 
 </form>
+@push('scripts')
+<script>
+function handleIncomeTypeChange(type) {
+    var customerField = document.getElementById('customer-field');
+    var customerSelect = document.getElementById('customer_id');
+    var refInput = document.getElementById('reference_no');
+
+    if (type === 'Capital Injection') {
+        customerField.style.display = 'none';
+        customerSelect.removeAttribute('required');
+        customerSelect.value = '';
+        refInput.value = 'Balance Added';
+        refInput.readOnly = true;
+        refInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+    } else {
+        customerField.style.display = '';
+        refInput.readOnly = false;
+        refInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+        if (refInput.value === 'Balance Added') refInput.value = '';
+    }
+}
+
+// Restore state on page load (e.g. after validation error)
+document.addEventListener('DOMContentLoaded', function () {
+    var type = document.getElementById('income_type').value;
+    if (type) handleIncomeTypeChange(type);
+});
+</script>
+@endpush
+
 @endsection

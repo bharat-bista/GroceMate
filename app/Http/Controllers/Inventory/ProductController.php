@@ -232,7 +232,7 @@ class ProductController extends Controller
 
     return null;
   }
-
+// checking the same brand and same name already exist or not in any bussiness account
   private function assertNoCrossBusinessConflict(
     string $normalizedName,
     ?int $brandId,

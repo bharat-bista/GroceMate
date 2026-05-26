@@ -323,11 +323,11 @@ class SupplierPaymentController extends Controller
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount'      => 'required|numeric|min:1',
+            'amount'      => 'required|integer|min:1',
             'date'        => 'required|date',
         ]);
 
-        $amountPaisa = (int) ($request->amount * 100);
+        $amountPaisa = ((int) $request->amount) * 100;
 
         try {
             $response = Http::withOptions(['verify' => false, 'timeout' => 30])
@@ -467,11 +467,11 @@ class SupplierPaymentController extends Controller
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount'      => 'required|numeric|min:1',
+            'amount'      => 'required|integer|min:1',
             'date'        => 'required|date',
         ]);
 
-        $totalAmount     = (string) intval(round($request->amount));
+        $totalAmount     = (string) ((int) $request->amount);
         $transactionUuid = 'SUPPAY-' . $request->supplier_id . '-' . time();
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');

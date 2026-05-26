@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Slider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class SliderController extends Controller
@@ -35,7 +37,8 @@ class SliderController extends Controller
 
     public function create()
     {
-        return view('frontend.slider.create');
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+        return view('frontend.slider.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -47,8 +50,6 @@ class SliderController extends Controller
             'image' => ['nullable', 'image', 'max:4096'],
             'primary_button_text' => ['nullable', 'string', 'max:100'],
             'primary_button_link' => ['nullable', 'string', 'max:255'],
-            'secondary_button_text' => ['nullable', 'string', 'max:100'],
-            'secondary_button_link' => ['nullable', 'string', 'max:255'],
             'slider_type' => ['required', 'in:hero,promo'],
             'promo_slot' => ['nullable', 'integer', 'between:1,4', 'required_if:slider_type,promo'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -87,6 +88,7 @@ class SliderController extends Controller
 
         $data['is_active'] = $request->boolean('is_active');
         Slider::create($data);
+        $this->clearSliderCache();
 
         return redirect()
             ->route('inventory.sliders.index')
@@ -100,7 +102,8 @@ class SliderController extends Controller
 
     public function edit(Slider $slider)
     {
-        return view('frontend.slider.edit', compact('slider'));
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+        return view('frontend.slider.edit', compact('slider', 'categories'));
     }
 
     public function update(Request $request, Slider $slider)
@@ -112,8 +115,6 @@ class SliderController extends Controller
             'image' => ['nullable', 'image', 'max:4096'],
             'primary_button_text' => ['nullable', 'string', 'max:100'],
             'primary_button_link' => ['nullable', 'string', 'max:255'],
-            'secondary_button_text' => ['nullable', 'string', 'max:100'],
-            'secondary_button_link' => ['nullable', 'string', 'max:255'],
             'slider_type' => ['required', 'in:hero,promo'],
             'promo_slot' => ['nullable', 'integer', 'between:1,4', 'required_if:slider_type,promo'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -160,6 +161,7 @@ class SliderController extends Controller
 
         $data['is_active'] = $request->boolean('is_active');
         $slider->update($data);
+        $this->clearSliderCache();
 
         return redirect()
             ->route('inventory.sliders.index')
@@ -173,9 +175,16 @@ class SliderController extends Controller
         }
 
         $slider->delete();
+        $this->clearSliderCache();
 
         return redirect()
             ->route('inventory.sliders.index')
             ->with('success', 'Slider deleted successfully.');
+    }
+
+    private function clearSliderCache(): void
+    {
+        Cache::forget('storefront.home.hero_slides');
+        Cache::forget('storefront.home.promo_slides');
     }
 }

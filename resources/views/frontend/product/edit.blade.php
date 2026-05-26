@@ -176,22 +176,30 @@
             <div class="space-y-6">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     @if($ecommerceProduct->thumbnail)
-                        <div>
+                        <div class="relative border border-slate-200 bg-slate-100 rounded-xl" style="aspect-ratio:1">
                             <img src="{{ Storage::url($ecommerceProduct->thumbnail) }}"
                                  alt="Current thumbnail"
-                                 class="w-full h-28 rounded-xl object-cover border-2 border-slate-200 shadow-sm">
-                            <p class="text-xs text-slate-500 mt-2 text-center">Main image</p>
+                                 class="absolute inset-0 w-full h-full object-cover rounded-xl">
+                            <div class="absolute bottom-0 inset-x-0 bg-blue-600 bg-opacity-90 text-white text-center text-xs py-0.5 rounded-b-xl z-10">Main</div>
+                            <button type="button"
+                                    title="Remove"
+                                    onclick="confirmDeleteImage('{{ route('inventory.ecommerce-products.delete-thumbnail', $ecommerceProduct) }}')"
+                                    class="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow hover:bg-red-700 focus:outline-none">×</button>
                         </div>
                     @endif
 
                     @forelse($ecommerceProduct->images as $image)
-                        <div>
+                        <div class="relative border border-slate-200 bg-slate-100 rounded-xl" style="aspect-ratio:1">
                             <img src="{{ Storage::url($image->image_path) }}"
                                  alt="Product thumbnail"
-                                 class="w-full h-28 rounded-xl object-cover border-2 border-slate-200 shadow-sm">
-                            <p class="text-xs text-slate-500 mt-2 text-center">
-                                {{ $image->is_primary ? 'Primary thumbnail' : 'Additional image' }}
-                            </p>
+                                 class="absolute inset-0 w-full h-full object-cover rounded-xl">
+                            @if($image->is_primary)
+                                <div class="absolute bottom-0 inset-x-0 bg-slate-600 bg-opacity-90 text-white text-center text-xs py-0.5 rounded-b-xl z-10">Primary</div>
+                            @endif
+                            <button type="button"
+                                    title="Remove"
+                                    onclick="confirmDeleteImage('{{ route('inventory.ecommerce-products.delete-image', [$ecommerceProduct, $image]) }}')"
+                                    class="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow hover:bg-red-700 focus:outline-none">×</button>
                         </div>
                     @empty
                         @if(!$ecommerceProduct->thumbnail)
@@ -235,6 +243,7 @@
 </div>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <style>
@@ -243,6 +252,35 @@
     }
 </style>
 <script>
+    function confirmDeleteImage(url) {
+        Swal.fire({
+            title: 'Remove Image?',
+            text: 'This image will be permanently deleted and cannot be recovered.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, remove it',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            customClass: {
+                popup: 'rounded-2xl shadow-xl',
+                title: 'text-slate-900 font-semibold',
+                confirmButton: 'rounded-xl px-5 py-2.5 text-sm font-medium',
+                cancelButton: 'rounded-xl px-5 py-2.5 text-sm font-medium',
+            },
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+            }).then(() => window.location.reload());
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const mrpInput = document.getElementById('mrp-input');
         const discountInput = document.getElementById('discount-input');
@@ -263,8 +301,8 @@
         function calculatePrices() {
             const mrp = parseFloat(mrpInput.value) || 0;
             const discount = parseFloat(discountInput.value) || 0;
-            const displayPrice = mrp - (mrp * discount / 100);
-            const profit = displayPrice - purchasePrice;
+            const displayPrice = parseFloat((mrp - (mrp * discount / 100)).toFixed(2));
+            const profit = parseFloat((displayPrice - purchasePrice).toFixed(2));
             const ecommerceStock = parseFloat(ecommerceStockInput?.value) || currentEcommerceStock;
             const stockLeft = inventoryStock - ecommerceStock;
 

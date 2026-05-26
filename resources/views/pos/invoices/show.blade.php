@@ -144,7 +144,7 @@
                         @php
                             $subtotal = $invoice->items->sum('line_total');
                             $discount = (int) ($invoice->discount ?? 0);
-                            $tax      = $invoice->total_cost - $subtotal + $discount;
+                            $tax      = max(0, (int) round($invoice->total_cost - $subtotal + $discount));
                         @endphp
                         <tr>
                             <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>

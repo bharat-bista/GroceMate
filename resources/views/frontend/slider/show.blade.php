@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-	@if(session('success'))
-		<div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-			{{ session('success') }}
-		</div>
-	@endif
-
 	<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 		<div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 			<div>
@@ -57,11 +51,12 @@
 				</div>
 				<div>
 					<p class="text-xs text-slate-500 uppercase tracking-wide">Primary Button</p>
-					<p class="text-sm text-slate-700 mt-1">{{ $slider->primary_button_text ?: '-' }} ({{ $slider->primary_button_link ?: '#' }})</p>
-				</div>
-				<div>
-					<p class="text-xs text-slate-500 uppercase tracking-wide">Secondary Button</p>
-					<p class="text-sm text-slate-700 mt-1">{{ $slider->secondary_button_text ?: '-' }} ({{ $slider->secondary_button_link ?: '#' }})</p>
+					<p class="text-sm text-slate-700 mt-1">
+						{{ $slider->primary_button_text ?: '-' }}
+						@if($slider->primary_button_link)
+							— <a href="{{ $slider->primary_button_link }}" class="text-blue-600 underline text-xs break-all" target="_blank">{{ $slider->primary_button_link }}</a>
+						@endif
+					</p>
 				</div>
 				<div>
 					<p class="text-xs text-slate-500 uppercase tracking-wide">Sort Order</p>

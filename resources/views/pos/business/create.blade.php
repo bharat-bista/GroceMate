@@ -25,15 +25,22 @@
                 <!-- Profile Image Upload -->
                 <div class="flex flex-col items-center space-y-4">
                     <div class="w-32 h-32 rounded-full border-4 border-indigo-200 overflow-hidden shadow-md">
-                        <img id="preview" src="{{ asset('assets/img/slide/slide3.png') }}"  class="w-full h-full object-cover" />
+                        <img id="preview" src="" alt="" class="w-full h-full object-cover hidden" />
+                        <div id="preview-placeholder" class="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h2l2-3h8l2 3h2a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/>
+                                <circle cx="12" cy="13" r="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="text-xs text-slate-400 mt-1">No image</span>
+                        </div>
                     </div>
-                    <input type="file" name="profile_image" accept="image/*" 
+                    <input type="file" name="profile_image" accept="image/*"
                            class="text-sm file:mr-4 file:py-2 file:px-4
                                   file:rounded-full file:border-0
                                   file:text-sm file:font-semibold
                                   file:bg-indigo-50 file:text-indigo-700
                                   hover:file:bg-indigo-100"
-                           onchange="document.getElementById('preview').src = window.URL.createObjectURL(this.files[0])">
+                           onchange="previewBizImage(this)">
                 </div>
 
                 <!-- Owner Info -->
@@ -110,4 +117,18 @@
         </form>
     </div>
 </div>
+@push('scripts')
+<script>
+function previewBizImage(input) {
+    if (input.files && input.files[0]) {
+        var img = document.getElementById('preview');
+        var placeholder = document.getElementById('preview-placeholder');
+        img.src = URL.createObjectURL(input.files[0]);
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    }
+}
+</script>
+@endpush
+
 @endsection

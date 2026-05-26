@@ -76,15 +76,6 @@
        aria-label="Chat on WhatsApp">
         <i class="fab fa-whatsapp"></i>
     </a>
-
-    <!-- Viber -->
-    <a href="viber://chat?number=9849679085"
-       class="contact-btn viber"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Chat on Viber">
-        <i class="fab fa-viber"></i>
-    </a>
 </div>
 
 <style>
@@ -120,10 +111,6 @@
     background: #25D366;
 }
 
-/* Viber Purple */
-.contact-btn.viber {
-    background: #7360F2;
-}
 
 /* Hover effect */
 .contact-btn:hover {

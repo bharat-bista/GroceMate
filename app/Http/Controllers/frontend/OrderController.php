@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
@@ -46,6 +47,7 @@ class OrderController extends Controller
                 'delivery_charge',
                 'total_amount',
                 'created_at',
+                'cancellation_request_status',
             ])
             ->withCount('items')
             ->orderBy('created_at', 'desc')
@@ -74,6 +76,14 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->check() && auth()->user()->canAccessInventoryPanel()) {
+            return response()->json([
+                'success'          => false,
+                'admin_staff_error' => true,
+                'message'          => 'Admin and staff accounts cannot place orders. Please use a customer account.',
+            ]);
+        }
+
         $request->merge([
             'items' => $this->normalizeItemsPayload($request->input('items')),
         ]);
@@ -113,10 +123,19 @@ class OrderController extends Controller
         }
 
         $deliveryCharges = DeliveryFeeSetting::chargeMap();
-        
+
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round($items->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
         $total = round($subtotal + $deliveryCharge, 2);
+
+        // Derive business_id from the first cart item's ecommerce product → product → business.
+        // Falls back to the lowest business ID if the product chain is broken.
+        $firstItemId = $items->first()['id'] ?? null;
+        $businessId = EcommerceProduct::with('product')
+            ->find($firstItemId)
+            ?->product
+            ?->business_id
+            ?? Business::min('id');
 
         $paymentStatus = 'pending';
         $transactionId = null;
@@ -129,11 +148,12 @@ class OrderController extends Controller
             $paymentSlipPath = $this->storePaymentSlip($request->payment_slip);
         }
 
-        $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items) {
+        $order = DB::transaction(function () use ($request, $subtotal, $deliveryCharge, $total, $paymentStatus, $paymentSlipPath, $transactionId, $items, $businessId) {
             $batchesByProduct = $this->deductEcommerceStock($items);
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
+                'business_id' => $businessId,
                 'customer_name' => $request->full_name,
                 'customer_phone' => $request->phone,
                 'customer_email' => $request->email ?? null,
@@ -345,7 +365,7 @@ class OrderController extends Controller
 
         foreach ($requiredQtyByProduct as $productId => $requiredQty) {
             $product = $products->get((string) $productId);
-            $updatedStock = max(0, round((float) $product->ecommerce_stock - (float) $requiredQty, 3));
+            $updatedStock = max(0, (int) round((float) $product->ecommerce_stock - (float) $requiredQty));
 
             $product->ecommerce_stock = $updatedStock;
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
@@ -582,7 +602,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            $updatedStock = max(0, round((float) $product->ecommerce_stock + (float) $restoreQty, 3));
+            $updatedStock = max(0, (int) round((float) $product->ecommerce_stock + (float) $restoreQty));
             $product->ecommerce_stock = $updatedStock;
             $product->status = $updatedStock > 0 ? 'in_stock' : 'out_of_stock';
             $product->save();
@@ -629,7 +649,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Admin: Update payment status
+     * Admin: Update payment status (COD only — eSewa is auto-verified, bank uses verifyPaymentSlip).
      */
     public function updatePaymentStatus(Request $request, Order $order)
     {
@@ -639,6 +659,16 @@ class OrderController extends Controller
 
         if ($order->delivery_status === 'cancelled') {
             return back()->with('error', 'Cancelled orders are locked and cannot be updated.');
+        }
+
+        // eSewa payment is always auto-verified — no manual override.
+        if ($order->payment_method === 'esewa') {
+            return back()->with('error', 'eSewa payment is managed automatically and cannot be changed manually.');
+        }
+
+        // Bank (Connect IPS) payments must be confirmed via the payment slip verification form.
+        if ($order->payment_method === 'connectips') {
+            return back()->with('error', 'Bank transfer payment must be verified through the payment slip verification form.');
         }
 
         if ($order->isPaymentLocked()) {
@@ -657,10 +687,6 @@ class OrderController extends Controller
             ]);
 
             $finalPaymentStatus = (string) $request->payment_status;
-        }
-
-        if ($order->payment_method === 'esewa') {
-            $finalPaymentStatus = 'verified';
         }
 
         DB::transaction(function () use ($order, $finalPaymentStatus) {
@@ -843,6 +869,92 @@ class OrderController extends Controller
         }
 
         abort(404);
+    }
+
+    /**
+     * Customer: Request order cancellation within 30 minutes
+     */
+    public function requestCancellation(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        if (!$order->canRequestCancellation()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is no longer eligible for cancellation. The 30-minute window may have passed or the order has already been cancelled/delivered.',
+            ]);
+        }
+
+        $order->update([
+            'cancellation_request_status' => 'pending',
+            'cancellation_request_reason' => $validated['reason'],
+            'cancellation_requested_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation request submitted.',
+        ]);
+    }
+
+    /**
+     * Admin: Approve cancellation request
+     */
+    public function approveCancellationRequest(Request $request, Order $order)
+    {
+        if ($order->cancellation_request_status !== 'pending') {
+            return back()->with('error', 'No pending cancellation request for this order.');
+        }
+
+        $isFirstCancelTransition = $order->delivery_status !== 'cancelled';
+        $shouldRestoreStock = $isFirstCancelTransition;
+        $shouldCreateRefund = $isFirstCancelTransition && $order->isPaid();
+
+        DB::transaction(function () use ($order, $shouldRestoreStock, $shouldCreateRefund) {
+            $order->update(['cancellation_request_status' => 'approved']);
+
+            if ($shouldRestoreStock) {
+                $order->loadMissing('items.ecommerceProduct');
+                $this->restoreEcommerceStock($order->items);
+            }
+
+            $order->update(['delivery_status' => 'cancelled']);
+
+            if ($shouldCreateRefund) {
+                $this->createRefundForOrder($order);
+            }
+
+            $this->ecommerceIncomeSyncService->syncOrder($order);
+        });
+
+        if ($order->customer_email) {
+            try {
+                Mail::to($order->customer_email)->send(new OrderConfirmationMail($order, 'order_cancelled'));
+            } catch (\Exception $e) {
+                // Email sending failed, continue anyway
+            }
+        }
+
+        return back()->with('success', 'Cancellation request approved and order cancelled.');
+    }
+
+    /**
+     * Admin: Reject cancellation request
+     */
+    public function rejectCancellationRequest(Request $request, Order $order)
+    {
+        if ($order->cancellation_request_status !== 'pending') {
+            return back()->with('error', 'No pending cancellation request for this order.');
+        }
+
+        $order->update([
+            'cancellation_request_status' => 'rejected',
+            'cancellation_requested_at' => null,
+        ]);
+
+        return back()->with('success', 'Cancellation request rejected.');
     }
 
     private function applyPaymentFilter($query, string $paymentFilter): void

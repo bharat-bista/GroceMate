@@ -45,6 +45,11 @@
         </div>
     </div>
 
+    @include('inventory.partials.payment-method', [
+        'paymentDefault' => 'cash',
+        'paymentLabel'   => 'How this purchase is being settled. Cash/Bank deducts from business balance; Credit adds to supplier due.',
+    ])
+
     <div class="border-t border-slate-200 pt-5">
         <div class="flex items-center justify-between mb-4">
             <div class="font-semibold text-lg">Purchase Items</div>
@@ -58,19 +63,19 @@
         </div>
 
         <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg relative">
-            <table class="w-full text-sm" id="itemsTable">
+            <table class="w-full text-sm" id="itemsTable" style="min-width:1200px">
                 <thead class="text-slate-700 bg-slate-100">
                     <tr>
-                        <th class="text-left px-4 py-3 font-medium">Product</th>
-                        <th class="text-left px-4 py-3 font-medium">Category</th>
-                        <th class="text-left px-4 py-3 font-medium">Company</th>
-                        <th class="text-left px-4 py-3 font-medium">Unit</th>
-                        <th class="text-left px-4 py-3 font-medium">Qty</th>
-                        <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
-                        <th class="text-left px-4 py-3 font-medium">Base Cost</th>
-                        <th class="text-left px-4 py-3 font-medium">Subtotal</th>
-                        <th class="text-left px-4 py-3 font-medium">Expiry Date</th>
-                        <th class="text-center px-4 py-3 font-medium">Action</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:200px">Product</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:120px">Category</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:120px">Company</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:75px">Unit</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:85px">Qty</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Unit Cost</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Base Cost</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:110px">Subtotal</th>
+                        <th class="text-left px-4 py-3 font-medium whitespace-nowrap" style="min-width:130px">Expiry Date</th>
+                        <th class="text-center px-4 py-3 font-medium whitespace-nowrap" style="min-width:70px">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200" id="itemsBody">
@@ -109,7 +114,26 @@
                             0.00
                         </td>
 
-                        <td></td>
+                        <td colspan="2"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+
+                        <!-- Discount % input — mirrors Tax selector position -->
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="discountInput" name="discount_pct"
+                                       step="0.01" min="0" max="100"
+                                       value="0"
+                                       class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                                <span class="text-sm text-slate-500 shrink-0">%</span>
+                            </div>
+                        </td>
+
+                        <!-- Discount rupee amount — mirrors Tax amount position -->
+                        <td class="px-4 py-3 font-semibold text-blue-600 text-right" id="discountRupees"></td>
+
+                        <td colspan="2"></td>
                     </tr>
                     <tr class="bg-slate-100">
                         <td colspan="7" class="px-4 py-4 text-right font-bold text-lg text-slate-900">GRAND TOTAL:</td>
@@ -143,7 +167,7 @@
 // ---------- Helpers ----------
 function formatCurrency(amount) {
     const n = Number(amount);
-    return (isNaN(n) ? 0 : n).toFixed(2);
+    return (isNaN(n) ? 0 : Math.round(n)).toString();
 }
 
 // Available units
@@ -180,54 +204,35 @@ let activeAutocomplete = null;
 let searchTimeout = null;
 async function searchProductsApi(query) {
     try {
-        console.log('🔍 Searching:', query);
         const businessId = document.querySelector('select[name="business_id"]')?.value || '';
-        
-        // Get CSRF token
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        const response = await fetch(`/inventory/purchases/search-products?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`, {
-            method: 'GET',
-            headers: { 
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            credentials: 'same-origin'
-        });
-        
-        console.log('📡 Status:', response.status);
-        console.log('📡 Headers:', response.headers);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ API Error:', response.status, errorText);
-            throw new Error('API Error');
-        }
-        
+
+        const response = await fetch(
+            `/inventory/purchases/search-products?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': token,
+                },
+                credentials: 'same-origin',
+            }
+        );
+
+        if (!response.ok) throw new Error('API ' + response.status);
+
         const data = await response.json();
-        console.log('✅ Results:', data);
-        
-        // Ensure data is an array
-        if (!Array.isArray(data)) {
-            console.error('❌ Invalid response format:', data);
-            throw new Error('Invalid response');
-        }
-        
+        if (!Array.isArray(data)) throw new Error('Invalid response');
+
         return data;
     } catch (e) {
-        console.error('🚨 API Failed, using fallback search:', e);
-        
-        // Fallback: search in the injected products array
+        // Fallback: search the page-injected product list
         const qLower = query.toLowerCase();
         const selectedBusinessId = document.querySelector('select[name="business_id"]')?.value || '';
-        const fallbackResults = products.filter(p => 
-            p.name.toLowerCase().includes(qLower) && (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId))
-        ).slice(0, 10);
-        
-        console.log('🔄 Fallback results:', fallbackResults);
-        return fallbackResults;
+        return products
+            .filter(p => p.name.toLowerCase().includes(qLower) &&
+                         (!selectedBusinessId || String(p.business_id || '') === String(selectedBusinessId)))
+            .slice(0, 10);
     }
 }
 
@@ -247,8 +252,8 @@ function calculateRowTotal(rowId) {
     row.querySelector('.subtotal').textContent = formatCurrency(subtotal);
 
     // Hidden inputs
-    row.querySelector('.base-cost-input').value = baseCost.toFixed(2);
-    row.querySelector('.subtotal-input').value = subtotal.toFixed(2);
+    row.querySelector('.base-cost-input').value = Math.round(baseCost);
+    row.querySelector('.subtotal-input').value = Math.round(subtotal);
 
     return { baseCost, subtotal };
 }
@@ -292,8 +297,15 @@ function applyFinalTax(totalBase) {
         }
     }
     
-    const grandTotal = totalBase + taxAmount;
-    
+    const discountPct = parseFloat(document.getElementById('discountInput')?.value) || 0;
+    const discountAmount = Math.round((totalBase + taxAmount) * discountPct / 100);
+    const grandTotal = Math.max(0, totalBase + taxAmount - discountAmount);
+
+    const discountRupees = document.getElementById('discountRupees');
+    if (discountRupees) {
+        discountRupees.textContent = discountPct > 0 ? `− Rs ${formatCurrency(discountAmount)}` : '';
+    }
+
     totalTaxElement.textContent = formatCurrency(taxAmount);
     grandTotalElement.textContent = formatCurrency(grandTotal);
 }
@@ -327,6 +339,11 @@ function updateProductFromInput(rowId, payload) {
 
     productInput.value = name;
     productIdInput.value = id || '';
+    // Keep the hidden product_name in sync — setting productInput.value
+    // programmatically does not fire 'input', so handleProductSearch won't
+    // update it; we must mirror it here.
+    const productNameHidden = row.querySelector('.product-name-hidden');
+    if (productNameHidden) productNameHidden.value = name;
     unitSelect.value = unit;
     unitDisplay.textContent = unit;
 
@@ -545,7 +562,6 @@ async function handleProductSearch(rowId, inputElement) {
     clearTimeout(searchTimeout);
 
     const query = inputElement.value.trim();
-    console.log('🎯 Search triggered for:', query, 'in row:', rowId);
 
     // always update hidden product_name (because server needs it)
     const row = document.getElementById(`row-${rowId}`);
@@ -554,16 +570,12 @@ async function handleProductSearch(rowId, inputElement) {
     }
 
     if (query.length < 2) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     searchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching after delay for:', query);
         const results = await searchProductsApi(query);
-        console.log('📦 Got results:', results.length, 'items');
-        // show dropdown ALWAYS (includes Create New + results)
         createAutocompleteDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -584,12 +596,8 @@ async function searchCategoriesApi(query) {
             credentials: 'same-origin'
         });
         
-        console.log('🔍 Category search API response:', response.status);
-        
         if (!response.ok) throw new Error('API Error');
-        const data = await response.json();
-        console.log('📦 Category search results:', data);
-        return data;
+        return await response.json();
     } catch (e) {
         console.error('Category search failed:', e);
         return [];
@@ -602,8 +610,6 @@ function createCategoryDropdown(rowId, inputElement, results) {
     const query = inputElement.value.trim();
     if (!query) return;
 
-    console.log('🎯 Creating category dropdown for query:', JSON.stringify(query), 'with results:', results);
-
     const wrapper = inputElement.closest('.relative');
     if (!wrapper) return;
 
@@ -615,16 +621,9 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
     const qLower = query.toLowerCase();
     const hasExact = results.some(c => (c.name || '').toLowerCase() === qLower);
-    
-    console.log('🔍 Exact match check:');
-    console.log('  Query:', JSON.stringify(query));
-    console.log('  Query lowercase:', JSON.stringify(qLower));
-    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
-    console.log('  Has exact match:', hasExact);
 
     // Show existing categories
     if (results.length > 0) {
-        console.log('📋 Showing', results.length, 'categories');
         results.forEach((cat) => {
             const item = document.createElement('button');
             item.type = 'button';
@@ -650,13 +649,10 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
             list.appendChild(item);
         });
-    } else {
-        console.log('📭 No categories found');
     }
 
     // Create new option (always show if query has length, but don't show if exact match)
     if (!hasExact && query.length > 0) {
-        console.log('➕ Showing create new category option');
         if (results.length > 0) {
             const sep = document.createElement('div');
             sep.className = 'h-px bg-slate-200';
@@ -682,8 +678,6 @@ function createCategoryDropdown(rowId, inputElement, results) {
         });
 
         list.appendChild(createBtn);
-    } else {
-        console.log('🚫 Not showing create option (has exact match or empty query)');
     }
 
     dropdown.appendChild(list);
@@ -704,33 +698,29 @@ function createCategoryDropdown(rowId, inputElement, results) {
 
 async function createNewCategory(rowId, name) {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    
     try {
         const response = await fetch('/inventory/purchases/store-category', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
+                'X-CSRF-TOKEN': token,
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name }),
         });
-        
         const data = await response.json();
-        
-        if (data.success) {
-            const row = document.getElementById(`row-${rowId}`);
-            if (row) {
-                row.querySelector('.category-name-input').value = data.category.name;
-                row.querySelector('.category-id-input').value = data.category.id;
-            }
-        } else {
-            alert(data.message || 'Failed to create category');
+        if (!response.ok) {
+            GroceMate.notify.error(data.errors?.name?.[0] || data.message || 'Failed to create category.');
+            return;
+        }
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) {
+            row.querySelector('.category-name-input').value = data.category.name;
+            row.querySelector('.category-id-input').value = data.category.id;
         }
     } catch (e) {
-        console.error('Error creating category:', e);
-        alert('Failed to create category. Please try again.');
+        GroceMate.notify.error('Failed to create category. Please try again.');
     }
 }
 
@@ -739,24 +729,19 @@ async function handleCategorySearch(rowId, inputElement) {
 
     const query = inputElement.value.trim();
     const row = document.getElementById(`row-${rowId}`);
-    
-    console.log('🔍 Category search triggered for:', query, 'in row:', rowId);
-    
+
     // Clear category_id if user is typing (changed from selected)
     if (row) {
         row.querySelector('.category-id-input').value = '';
     }
 
     if (query.length < 1) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     categorySearchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching categories after delay for:', query);
         const results = await searchCategoriesApi(query);
-        console.log('📦 Got category results:', results.length, 'items');
         createCategoryDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -791,8 +776,6 @@ function createBrandDropdown(rowId, inputElement, results) {
     const query = inputElement.value.trim();
     if (!query) return;
 
-    console.log('🎯 Creating brand dropdown for query:', JSON.stringify(query), 'with results:', results);
-
     const wrapper = inputElement.closest('.relative');
     if (!wrapper) return;
 
@@ -804,16 +787,9 @@ function createBrandDropdown(rowId, inputElement, results) {
 
     const qLower = query.toLowerCase();
     const hasExact = results.some(b => (b.name || '').toLowerCase() === qLower);
-    
-    console.log('🔍 Brand exact match check:');
-    console.log('  Query:', JSON.stringify(query));
-    console.log('  Query lowercase:', JSON.stringify(qLower));
-    console.log('  Results:', results.map(r => ({ name: r.name, lowercase: (r.name || '').toLowerCase() })));
-    console.log('  Has exact match:', hasExact);
 
     // Show existing brands
     if (results.length > 0) {
-        console.log('📋 Showing', results.length, 'brands');
         results.forEach((brand) => {
             const item = document.createElement('button');
             item.type = 'button';
@@ -839,13 +815,10 @@ function createBrandDropdown(rowId, inputElement, results) {
 
             list.appendChild(item);
         });
-    } else {
-        console.log('📭 No brands found');
     }
 
     // Create new option (if no exact match)
     if (!hasExact && query.length > 0) {
-        console.log('➕ Showing create new brand option');
         if (results.length > 0) {
             const sep = document.createElement('div');
             sep.className = 'h-px bg-slate-200';
@@ -871,8 +844,6 @@ function createBrandDropdown(rowId, inputElement, results) {
         });
 
         list.appendChild(createBtn);
-    } else {
-        console.log('🚫 Not showing create option (has exact match or empty query)');
     }
 
     dropdown.appendChild(list);
@@ -893,33 +864,29 @@ function createBrandDropdown(rowId, inputElement, results) {
 
 async function createNewBrand(rowId, name) {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    
     try {
         const response = await fetch('/inventory/purchases/store-brand', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
+                'X-CSRF-TOKEN': token,
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name }),
         });
-        
         const data = await response.json();
-        
-        if (data.success) {
-            const row = document.getElementById(`row-${rowId}`);
-            if (row) {
-                row.querySelector('.brand-name-input').value = data.brand.name;
-                row.querySelector('.brand-id-input').value = data.brand.id;
-            }
-        } else {
-            alert(data.message || 'Failed to create company');
+        if (!response.ok) {
+            GroceMate.notify.error(data.errors?.name?.[0] || data.message || 'Failed to create company.');
+            return;
+        }
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) {
+            row.querySelector('.brand-name-input').value = data.brand.name;
+            row.querySelector('.brand-id-input').value = data.brand.id;
         }
     } catch (e) {
-        console.error('Error creating company:', e);
-        alert('Failed to create company. Please try again.');
+        GroceMate.notify.error('Failed to create company. Please try again.');
     }
 }
 
@@ -956,7 +923,7 @@ function createRow() {
     const unitOptions = units.map(u => `<option value="${u}">${u}</option>`).join('');
 
     row.innerHTML = `
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:200px">
             <div class="relative">
                 <input type="text"
                        class="product-name-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5"
@@ -966,7 +933,7 @@ function createRow() {
                 <input type="hidden" name="items[${rowId}][product_name]" class="product-name-hidden" />
             </div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:120px">
             <div class="category-cell">
                 <div class="relative">
                     <input type="text"
@@ -979,7 +946,7 @@ function createRow() {
             </div>
             <div class="category-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:120px">
             <div class="brand-cell">
                 <div class="relative">
                     <input type="text"
@@ -992,14 +959,14 @@ function createRow() {
             </div>
             <div class="brand-display text-slate-400 text-sm px-2 py-1.5 hidden">-</div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:75px">
             <select name="items[${rowId}][product_unit]"
                     class="unit-select w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
                 ${unitOptions}
             </select>
             <div class="unit-display text-slate-700 font-medium text-sm px-2 py-1.5 hidden"></div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:85px">
             <input name="items[${rowId}][qty]"
                    type="number"
                    step="0.001"
@@ -1008,34 +975,33 @@ function createRow() {
                    required
                    class="qty-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
         </td>
-        <td class="px-4 py-3 min-w-[100px]">
+        <td class="px-4 py-3" style="min-width:110px">
             <input name="items[${rowId}][unit_cost]"
-       type="number"
-       step="0.01"
-       min="0"
-       value="0"
-       required
-       class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
-
+                   type="number"
+                   step="any" min="0" max="9999999"
+                   inputmode="numeric" data-money
+                   value="0"
+                   required
+                   class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:110px">
             <div class="text-slate-900 font-medium text-sm">
-                <span class="base-cost">0.00</span>
+                <span class="base-cost">0</span>
                 <input type="hidden" name="items[${rowId}][base_cost]" class="base-cost-input" value="0">
             </div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:110px">
             <div class="text-green-700 font-bold text-sm">
-                <span class="subtotal">0.00</span>
+                <span class="subtotal">0</span>
                 <input type="hidden" name="items[${rowId}][line_total]" class="subtotal-input" value="0">
             </div>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3" style="min-width:130px">
             <input name="items[${rowId}][expiry_date]"
                    type="date"
                    class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
         </td>
-        <td class="px-4 py-3 text-center">
+        <td class="px-4 py-3 text-center" style="min-width:70px">
             <button type="button"
                     class="remove-btn px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium border border-red-200">
                 ✕
@@ -1079,13 +1045,16 @@ function createRow() {
     // remove row
     row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
 
+    // apply money sanitizer to dynamically created cost input
+    if (window.GroceMate) GroceMate.money.init(row);
+
     return row;
 }
 
 function removeRow(rowId) {
     const rows = document.querySelectorAll('.purchase-row');
     if (rows.length <= 1) {
-        alert('At least one item is required.');
+        GroceMate.notify.error('At least one item is required.');
         return;
     }
     const row = document.getElementById(`row-${rowId}`);
@@ -1100,9 +1069,17 @@ document.addEventListener('DOMContentLoaded', function() {
     tbody.appendChild(createRow());
     updateAllTotals();
 
+    const gate = GroceMate.formGate.init({
+        watch:    ['select[name="business_id"]', 'select[name="supplier_id"]', 'input[name="invoice_no"]'],
+        gate:     '#itemsBody',
+        rowClass: '.purchase-row',
+        addBtn:   '#addRow',
+    });
+
     document.getElementById('addRow').addEventListener('click', function() {
         tbody.appendChild(createRow());
         updateAllTotals();
+        gate.check();
         const newRowId = rowCounter - 1;
         document.querySelector(`#row-${newRowId} .product-name-input`).focus();
     });
@@ -1112,6 +1089,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalBaseText = document.getElementById('totalBaseCost').textContent;
         const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
         applyFinalTax(totalBase);
+    });
+
+    // Discount change event — debounced 300 ms so applyFinalTax only runs
+    // after the user finishes typing, preventing FP drift on partial values.
+    let _discountTimer;
+    document.getElementById('discountInput').addEventListener('input', function() {
+        clearTimeout(_discountTimer);
+        _discountTimer = setTimeout(() => {
+            const totalBaseText = document.getElementById('totalBaseCost').textContent;
+            const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
+            applyFinalTax(totalBase);
+        }, 300);
     });
 
     // Escape closes dropdown
@@ -1126,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const supplier = document.querySelector('select[name="supplier_id"]').value;
         if (!supplier) {
             e.preventDefault();
-            alert('Please select a supplier');
+            GroceMate.notify.error('Please select a supplier.');
             return;
         }
 
@@ -1138,17 +1127,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!productName) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Please enter a product name`);
+                GroceMate.notify.error(`Row ${i + 1}: Please enter a product name.`);
                 return;
             }
             if (!(qty > 0)) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Quantity must be greater than 0`);
+                GroceMate.notify.error(`Row ${i + 1}: Quantity must be greater than 0.`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {
                 e.preventDefault();
-                alert(`Row ${i + 1}: Unit cost cannot be negative`);
+                GroceMate.notify.error(`Row ${i + 1}: Unit cost cannot be negative.`);
                 return;
             }
         }

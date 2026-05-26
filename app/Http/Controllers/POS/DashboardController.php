@@ -21,29 +21,42 @@ class DashboardController extends Controller
         $thisMonthStart = now()->startOfMonth()->format('Y-m-d');
         $thisMonthEnd = now()->endOfMonth()->format('Y-m-d');
 
-        // Today's Sales
-        $todaySales = Invoice::whereDate('created_at', $today)->sum('total_cost');
-        
-        // This Month Sales
-        $thisMonthSales = Invoice::whereBetween('created_at', [$thisMonthStart, $thisMonthEnd])->sum('total_cost');
-        
+        // Today's Sales — use invoice_date (business date) not created_at (insert timestamp);
+        // exclude cancelled invoices so voided sales don't inflate the figure.
+        $todaySales = Invoice::whereDate('invoice_date', $today)
+            ->where('cancellation_status', 'active')
+            ->sum('total_cost');
+
+        // This Month Sales — invoice_date is a date column so whereBetween works without
+        // end-of-day truncation that occurred with created_at (datetime).
+        $thisMonthSales = Invoice::whereBetween('invoice_date', [$thisMonthStart, $thisMonthEnd])
+            ->where('cancellation_status', 'active')
+            ->sum('total_cost');
+
         // Total Orders Today
-        $todayOrders = Invoice::whereDate('created_at', $today)->count();
-        
+        $todayOrders = Invoice::whereDate('invoice_date', $today)
+            ->where('cancellation_status', 'active')
+            ->count();
+
         // Total Customers
         $totalCustomers = Customer::count();
-        
+
         // Total Due (from customers)
         $totalDue = Customer::sum('total_due');
-        
-        // Total Income Received
-        $totalIncome = Income::sum('amount_received');
-        
+
+        // Total Income Received — positive entries only; supplier payments create negative
+        // income entries which must be excluded so they don't silently reduce this total.
+        $totalIncome = Income::where('amount_received', '>', 0)->sum('amount_received');
+
         // Income Received Today
-        $todayIncome = Income::whereDate('transaction_date', $today)->sum('amount_received');
-        
+        $todayIncome = Income::where('amount_received', '>', 0)
+            ->whereDate('transaction_date', $today)
+            ->sum('amount_received');
+
         // Income Received This Month
-        $thisMonthIncome = Income::whereBetween('transaction_date', [$thisMonthStart, $thisMonthEnd])->sum('amount_received');
+        $thisMonthIncome = Income::where('amount_received', '>', 0)
+            ->whereBetween('transaction_date', [$thisMonthStart, $thisMonthEnd])
+            ->sum('amount_received');
 
         // Chart Data (All time periods)
         $chartData = $this->getChartData();
@@ -94,12 +107,14 @@ class DashboardController extends Controller
             $days[] = $date->format('M d');
             
             // Get sales data for this day
-            $salesTotal = Invoice::whereDate('created_at', $date)
+            $salesTotal = Invoice::whereDate('invoice_date', $date)
+                ->where('cancellation_status', 'active')
                 ->sum('total_cost');
             $salesData[] = $salesTotal;
-            
-            // Get income data for this day
-            $incomeTotal = Income::whereDate('transaction_date', $date)
+
+            // Get income data for this day (positive entries only)
+            $incomeTotal = Income::where('amount_received', '>', 0)
+                ->whereDate('transaction_date', $date)
                 ->sum('amount_received');
             $incomeData[] = $incomeTotal;
         }
@@ -128,12 +143,14 @@ class DashboardController extends Controller
             $weeks[] = "Week " . $weekStart->format('m/d') . "-" . $weekEnd->format('m/d');
             
             // Get sales data for this week
-            $salesTotal = Invoice::whereBetween('created_at', [$weekStart, $weekEnd])
+            $salesTotal = Invoice::whereBetween('invoice_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+                ->where('cancellation_status', 'active')
                 ->sum('total_cost');
             $salesData[] = $salesTotal;
-            
-            // Get income data for this week
-            $incomeTotal = Income::whereBetween('transaction_date', [$weekStart, $weekEnd])
+
+            // Get income data for this week (positive entries only)
+            $incomeTotal = Income::where('amount_received', '>', 0)
+                ->whereBetween('transaction_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
                 ->sum('amount_received');
             $incomeData[] = $incomeTotal;
         }
@@ -163,12 +180,14 @@ class DashboardController extends Controller
             $months[] = $month->format('M Y');
             
             // Get sales data for this month
-            $salesTotal = Invoice::whereBetween('created_at', [$monthStart, $monthEnd])
+            $salesTotal = Invoice::whereBetween('invoice_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                ->where('cancellation_status', 'active')
                 ->sum('total_cost');
             $salesData[] = $salesTotal;
-            
-            // Get income data for this month
-            $incomeTotal = Income::whereBetween('transaction_date', [$monthStart, $monthEnd])
+
+            // Get income data for this month (positive entries only)
+            $incomeTotal = Income::where('amount_received', '>', 0)
+                ->whereBetween('transaction_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
                 ->sum('amount_received');
             $incomeData[] = $incomeTotal;
         }
@@ -198,12 +217,14 @@ class DashboardController extends Controller
             $years[] = $year->format('Y');
             
             // Get sales data for this year
-            $salesTotal = Invoice::whereBetween('created_at', [$yearStart, $yearEnd])
+            $salesTotal = Invoice::whereBetween('invoice_date', [$yearStart->toDateString(), $yearEnd->toDateString()])
+                ->where('cancellation_status', 'active')
                 ->sum('total_cost');
             $salesData[] = $salesTotal;
-            
-            // Get income data for this year
-            $incomeTotal = Income::whereBetween('transaction_date', [$yearStart, $yearEnd])
+
+            // Get income data for this year (positive entries only)
+            $incomeTotal = Income::where('amount_received', '>', 0)
+                ->whereBetween('transaction_date', [$yearStart->toDateString(), $yearEnd->toDateString()])
                 ->sum('amount_received');
             $incomeData[] = $incomeTotal;
         }
@@ -247,11 +268,11 @@ class DashboardController extends Controller
             ->map(function ($payment) {
                 return [
                     'id' => $payment->id,
-                    'date' => $payment->payment_date,
+                    'date' => $payment->date,
                     'description' => 'Payment to ' . ($payment->supplier->name ?? 'Unknown'),
-                    'amount' => $payment->paid_amount,
+                    'amount' => $payment->amount,
                     'type' => 'payment',
-                    'reference' => $payment->reference_no ?? 'PAY-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT),
+                    'reference' => $payment->payment_reference ?? 'PAY-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT),
                     'created_at' => $payment->created_at
                 ];
             });

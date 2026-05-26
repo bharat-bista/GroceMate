@@ -28,21 +28,23 @@
         </div>
 
         <div>
-            <label class="text-sm text-slate-600">Business (optional)</label>
-            <select name="business_id"
+            <label class="text-sm text-slate-600">Business Account <span class="text-red-500">*</span></label>
+            <select name="business_id" required
                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-                <option value="">Select Business</option>
+                <option value="">Select Business Account</option>
                 @foreach($businesses as $business)
                     <option value="{{ $business->id }}" @selected(old('business_id', $expense->business_id) == $business->id)>{{ $business->business_name }}</option>
                 @endforeach
             </select>
+            @error('business_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
 
         <div>
             <label class="text-sm text-slate-600">Amount *</label>
-            <input type="number" step="0.01" min="0.01" name="amount"
+            <input type="number" step="any" min="1" name="amount"
+                   data-money inputmode="numeric" max="9999999"
                    value="{{ old('amount', $expense->amount) }}"
-                   placeholder="0.00"
+                   placeholder="0"
                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400"
                    required />
         </div>

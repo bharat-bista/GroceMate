@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Invoice Details')
 @section('heading', 'Invoice Details')
@@ -6,14 +6,8 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
-    @if(session('success'))
-        <div id="success-message" class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
-        
+
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-green-500 to-green-700 p-6 text-white">
             <div class="flex items-center">
@@ -141,25 +135,36 @@
                                 <td class="px-4 py-3">{{ $item->product_name }}</td>
                                 <td class="px-4 py-3">{{ $item->unit }}</td>
                                 <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
-                                <td class="px-4 py-3">Rs {{ number_format($item->unit_cost, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($item->line_total, 2) }}</td>
+                                <td class="px-4 py-3">Rs {{ number_format($item->unit_cost, 0) }}</td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($item->line_total, 0) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-300">
+                        @php
+                            $subtotal = $invoice->items->sum('line_total');
+                            $discount = (int) ($invoice->discount ?? 0);
+                            $tax      = max(0, (int) round($invoice->total_cost - $subtotal + $discount));
+                        @endphp
                         <tr>
                             <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
-                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($invoice->items->sum('line_total'), 2) }}</td>
+                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format($subtotal, 0) }}</td>
                         </tr>
-                        @if($invoice->total_cost > $invoice->items->sum('line_total'))
+                        @if($tax > 0)
                             <tr>
                                 <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
-                                <td class="px-4 py-3 font-semibold text-red-600">Rs {{ number_format($invoice->total_cost - $invoice->items->sum('line_total'), 2) }}</td>
+                                <td class="px-4 py-3 font-semibold text-red-600">Rs {{ number_format($tax, 0) }}</td>
+                            </tr>
+                        @endif
+                        @if($discount > 0)
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                                <td class="px-4 py-3 font-semibold text-blue-600">&minus; Rs {{ number_format($discount, 0) }}</td>
                             </tr>
                         @endif
                         <tr class="bg-slate-100">
                             <td colspan="4" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
-                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format($invoice->total_cost, 2) }}</td>
+                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format($invoice->total_cost, 0) }}</td>
                         </tr>
                     </tfoot>
                 </table>

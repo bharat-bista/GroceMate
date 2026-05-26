@@ -81,14 +81,14 @@ class SupplierController extends Controller
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
             'business_account' => ['required','exists:businesses,id'],
-            'opening_due' => ['nullable','numeric','min:0'],
+            'opening_due' => ['nullable','integer','min:0','max:9999999'],
             'address' => ['nullable','string','max:2000'],
         ]);
 
         // Set default values if not provided
         $data['supplier_type'] = $data['supplier_type'] ?? 'retail';
-        $data['opening_due'] = $data['opening_due'] ?? 0;
-        $data['total_due'] = $data['opening_due']; // Set total_due to opening_due initially
+        $data['opening_due'] = (int) round($data['opening_due'] ?? 0);
+        $data['total_due'] = $data['opening_due'];
 
         Supplier::create($data);
 
@@ -113,13 +113,12 @@ class SupplierController extends Controller
             'pan_number' => ['nullable','string','max:50'],
             'supplier_type' => ['required','in:retail,wholesale,regular'],
             'business_account' => ['required','exists:businesses,id'],
-            'opening_due' => ['nullable','numeric','min:0'],
+            'opening_due' => ['nullable','integer','min:0','max:9999999'],
             'address' => ['nullable','string','max:2000'],
         ]);
 
-        // Set default values if not provided
         $data['supplier_type'] = $data['supplier_type'] ?? 'retail';
-        $data['opening_due'] = $data['opening_due'] ?? 0;
+        $data['opening_due'] = (int) round($data['opening_due'] ?? 0);
 
         $supplier->update($data);
         $supplier->syncTotalDue();

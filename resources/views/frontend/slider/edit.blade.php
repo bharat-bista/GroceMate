@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto space-y-6">
-	@if(session('success'))
-		<div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-			{{ session('success') }}
-		</div>
-	@endif
-
 	<form method="POST" action="{{ route('inventory.sliders.update', $slider) }}" enctype="multipart/form-data"
 		  class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
 		@csrf
@@ -54,16 +48,21 @@
 				<input name="primary_button_text" value="{{ old('primary_button_text', $slider->primary_button_text) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
 			</div>
 			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Primary Button Link</label>
-				<input name="primary_button_link" value="{{ old('primary_button_link', $slider->primary_button_link) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Secondary Button Text</label>
-				<input name="secondary_button_text" value="{{ old('secondary_button_text', $slider->secondary_button_text) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Secondary Button Link</label>
-				<input name="secondary_button_link" value="{{ old('secondary_button_link', $slider->secondary_button_link) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
+				<label class="block text-sm font-medium text-slate-700 mb-2">Primary Button — Link to Category</label>
+				@php
+					$currentLink = old('primary_button_link', $slider->primary_button_link ?? '');
+					$currentCatId = null;
+					if ($currentLink && preg_match('/categories(?:\[\]|\[0\])?=(\d+)/', $currentLink, $m)) {
+						$currentCatId = (int) $m[1];
+					}
+				@endphp
+				<select name="primary_button_link" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all duration-200 hover:border-slate-400">
+					<option value="">— No category link —</option>
+					@foreach($categories as $cat)
+						@php $url = url('/advanced') . '?categories[]=' . $cat->id; @endphp
+						<option value="{{ $url }}" @selected($currentCatId === $cat->id)>{{ $cat->name }}</option>
+					@endforeach
+				</select>
 			</div>
 			<div id="sort_order_wrap">
 				<label class="block text-sm font-medium text-slate-700 mb-2">Sort Order</label>

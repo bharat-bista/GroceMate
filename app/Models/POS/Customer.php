@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     protected $fillable = [
+        'business_id',
         'name',
         'phone',
         'email',
@@ -21,8 +22,8 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'opening_due' => 'decimal:2',
-        'total_due' => 'decimal:2',
+        'opening_due' => 'integer',
+        'total_due' => 'integer',
     ];
 
     public function invoices(): HasMany
@@ -39,9 +40,13 @@ class Customer extends Model
     {
         $openingDue = (float) ($this->opening_due ?? 0);
 
-        $creditInvoiceTotal = $this->relationLoaded('invoices')
-            ? (float) $this->invoices->where('payment_method', 'credit')->sum('total_cost')
-            : (float) $this->invoices()->where('payment_method', 'credit')->sum('total_cost');
+        $creditInvoiceTotal = (float) $this->invoices()
+            ->where('payment_method', 'credit')
+            ->where(function ($q) {
+                $q->whereNull('cancellation_status')
+                  ->orWhere('cancellation_status', '!=', 'cancelled');
+            })
+            ->sum('total_cost');
 
         $paymentTotal = $this->relationLoaded('incomes')
             ? (float) $this->incomes->where('amount_received', '>', 0)->sum('amount_received')

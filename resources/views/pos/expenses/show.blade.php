@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Expense Details')
 @section('heading','Expense Details')
@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-    @if(session('success'))
-        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -20,7 +14,7 @@
             </div>
             <div class="text-right">
                 <p class="text-sm text-slate-500">Amount</p>
-                <p class="text-2xl font-bold text-red-600">- Rs {{ number_format($expense->amount, 2) }}</p>
+                <p class="text-2xl font-bold text-red-600">- Rs {{ number_format($expense->amount, 0) }}</p>
             </div>
         </div>
 

@@ -6,6 +6,28 @@
 {{-- ============================================= --}}
 
 <style>
+:root {
+    --gm-primary: #2E7D32;
+    --gm-primary-dark: #1B5E20;
+    --gm-primary-light: #4CAF50;
+    --gm-accent: #FF6B35;
+    --gm-accent-dark: #E55A2B;
+    --gm-white: #FFFFFF;
+    --gm-light: #F8FBF8;
+    --gm-gray: #6B7280;
+    --gm-gray-light: #E5E7EB;
+    --gm-dark: #1F2937;
+    --gm-star: #FACA51;
+    --gm-shadow: 0 6px 24px rgba(27, 94, 32, 0.08);
+    --gm-shadow-lg: 0 12px 40px rgba(27, 94, 32, 0.16);
+    --gm-shadow-hover: 0 12px 30px rgba(27, 94, 32, 0.12);
+    --gm-radius: 16px;
+    --gm-radius-sm: 10px;
+    --gm-border-soft: rgba(46, 125, 50, 0.18);
+    --gm-surface: linear-gradient(135deg, #ffffff 0%, #f8fdf9 100%);
+    --gm-transition: all 0.3s ease;
+}
+
 /* ==========================================
    HERO SLIDER - MODERN DESIGN
    ========================================== */
@@ -961,9 +983,6 @@
                                 @if($slide->primary_button_text)
                                     <a href="{{ $slide->primary_button_link ?: '#' }}" class="gm-btn gm-btn-primary"><i class="fas fa-shopping-cart"></i> {{ $slide->primary_button_text }}</a>
                                 @endif
-                                @if($slide->secondary_button_text)
-                                    <a href="{{ $slide->secondary_button_link ?: '#' }}" class="gm-btn gm-btn-outline"><i class="fas fa-tag"></i> {{ $slide->secondary_button_text }}</a>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -1142,9 +1161,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
                 <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
-                    @if($promoSlide->secondary_button_text)
-                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
-                    @endif
                     <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
                     @if($promoSlide->subtitle)
                         <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>
@@ -1277,9 +1293,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
                 <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
-                    @if($promoSlide->secondary_button_text)
-                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
-                    @endif
                     <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
                     @if($promoSlide->subtitle)
                         <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>

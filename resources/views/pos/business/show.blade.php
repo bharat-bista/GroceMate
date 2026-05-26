@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Business Account')
 @section('heading', 'Business Account')
@@ -80,7 +80,7 @@
                         </button>
 
                         <div id="businessExportMenu"
-                             class="hidden origin-top-right absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 p-3 space-y-3">
+                             class="hidden origin-top-right fixed w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 p-3 space-y-3">
                             <div class="flex gap-2">
                                 <button type="button" id="businessExportModeAll"
                                         class="flex-1 px-3 py-1.5 rounded-lg text-sm bg-blue-600 text-white">
@@ -128,7 +128,7 @@
         <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50">
             <div class="rounded-2xl bg-white border border-slate-200 px-4 py-3 md:col-span-1">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">Current Balance</p>
-                <p class="font-semibold text-emerald-600 text-lg">Rs {{ number_format((float) $business->balance, 2) }}</p>
+                <p class="font-semibold text-emerald-600 text-lg">Rs {{ number_format((float) $business->balance, 0) }}</p>
             </div>
             <div class="rounded-2xl bg-white border border-slate-200 px-4 py-3 md:col-span-1">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">Business Contact Summary</p>
@@ -142,48 +142,48 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Total Sales</p>
-            <p class="text-2xl font-bold text-blue-600">Rs {{ number_format($salesTotal, 2) }}</p>
+            <p class="text-2xl font-bold text-blue-600">Rs {{ number_format($salesTotal, 0) }}</p>
             <p class="text-xs text-slate-500 mt-2">{{ $salesCount }} sale record(s)</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Total Purchases</p>
-            <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($purchaseTotal, 2) }}</p>
+            <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($purchaseTotal, 0) }}</p>
             <p class="text-xs text-slate-500 mt-2">{{ $purchaseCount }} purchase record(s)</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Income Received</p>
-            <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($incomeTotal, 2) }}</p>
+            <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($incomeTotal, 0) }}</p>
             <p class="text-xs text-slate-500 mt-2">{{ $incomeCount }} income record(s), including collections and other income</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Supplier Payments</p>
-            <p class="text-2xl font-bold text-rose-600">Rs {{ number_format($supplierPaymentTotal, 2) }}</p>
+            <p class="text-2xl font-bold text-rose-600">Rs {{ number_format($supplierPaymentTotal, 0) }}</p>
             <p class="text-xs text-slate-500 mt-2">{{ $supplierPaymentCount }} payment record(s)</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Gross Profit/Loss</p>
             <p class="text-2xl font-bold {{ $grossProfitLoss >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
-                Rs {{ number_format($grossProfitLoss, 2) }}
+                Rs {{ number_format($grossProfitLoss, 0) }}
             </p>
             <p class="text-xs text-slate-500 mt-2">Sales minus purchases</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Net Profit/Loss</p>
             <p class="text-2xl font-bold {{ $netProfitLoss >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
-                Rs {{ number_format($netProfitLoss, 2) }}
+                Rs {{ number_format($netProfitLoss, 0) }}
             </p>
             <p class="text-xs text-slate-500 mt-2">Gross profit/loss plus other income</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Net Cash Flow</p>
             <p class="text-2xl font-bold {{ $netCashFlow >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
-                Rs {{ number_format($netCashFlow, 2) }}
+                Rs {{ number_format($netCashFlow, 0) }}
             </p>
             <p class="text-xs text-slate-500 mt-2">Income received minus supplier payments</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <p class="text-sm text-slate-500 mb-1">Current Account Balance</p>
-            <p class="text-2xl font-bold text-indigo-600">Rs {{ number_format((float) $business->balance, 2) }}</p>
+            <p class="text-2xl font-bold text-indigo-600">Rs {{ number_format((float) $business->balance, 0) }}</p>
             <p class="text-xs text-slate-500 mt-2">Stored live balance for this business account</p>
         </div>
     </div>
@@ -212,13 +212,13 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Gross Ecommerce Income</p>
-                <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($ecommerceGrossIncome, 2) }}</p>
+                <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($ecommerceGrossIncome, 0) }}</p>
                 <p class="text-xs text-slate-500 mt-2">Item subtotal without delivery charge</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Estimated Ecommerce Profit</p>
                 <p class="text-2xl font-bold {{ $ecommerceEstimatedProfit >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
-                    Rs {{ number_format($ecommerceEstimatedProfit, 2) }}
+                    Rs {{ number_format($ecommerceEstimatedProfit, 0) }}
                 </p>
                 <p class="text-xs text-slate-500 mt-2">Based on ecommerce item margin settings</p>
             </div>
@@ -250,9 +250,9 @@
                                     <td class="px-4 py-3 font-medium text-slate-900">{{ $ecommerceOrder->order_number }}</td>
                                     <td class="px-4 py-3 text-slate-700">{{ $ecommerceOrder->customer_name }}</td>
                                     <td class="px-4 py-3 text-right text-slate-700">{{ (int) $ecommerceOrder->total_units }}</td>
-                                    <td class="px-4 py-3 text-right font-semibold text-emerald-600">Rs {{ number_format((float) $ecommerceOrder->gross_income, 2) }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-emerald-600">Rs {{ number_format((float) $ecommerceOrder->gross_income, 0) }}</td>
                                     <td class="px-4 py-3 text-right font-semibold {{ (float) $ecommerceOrder->estimated_profit >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
-                                        Rs {{ number_format((float) $ecommerceOrder->estimated_profit, 2) }}
+                                        Rs {{ number_format((float) $ecommerceOrder->estimated_profit, 0) }}
                                     </td>
                                 </tr>
                             @endforeach
@@ -287,22 +287,22 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Sales Revenue</p>
-                <p class="text-2xl font-bold text-blue-600">Rs {{ number_format($salesTotal, 2) }}</p>
+                <p class="text-2xl font-bold text-blue-600">Rs {{ number_format($salesTotal, 0) }}</p>
                 <p class="text-xs text-slate-500 mt-2">All invoices linked to this business account</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Purchase Expense</p>
-                <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($purchaseTotal, 2) }}</p>
+                <p class="text-2xl font-bold text-amber-600">Rs {{ number_format($purchaseTotal, 0) }}</p>
                 <p class="text-xs text-slate-500 mt-2">All purchase totals for this business account</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Other Income</p>
-                <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($otherIncomeTotal, 2) }}</p>
+                <p class="text-2xl font-bold text-emerald-600">Rs {{ number_format($otherIncomeTotal, 0) }}</p>
                 <p class="text-xs text-slate-500 mt-2">Only income entries marked as Other</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">Due Collections</p>
-                <p class="text-2xl font-bold text-indigo-600">Rs {{ number_format($dueCollectionTotal, 2) }}</p>
+                <p class="text-2xl font-bold text-indigo-600">Rs {{ number_format($dueCollectionTotal, 0) }}</p>
                 <p class="text-xs text-slate-500 mt-2">Tracked for cash recovery, not added again to profit</p>
             </div>
         </div>
@@ -398,7 +398,7 @@
                                 <td class="px-4 py-3 text-slate-700">{{ $activity['party'] }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $activity['direction'] }}</td>
                                 <td class="px-4 py-3 text-right font-semibold {{ $activity['direction'] === 'Inflow' ? 'text-emerald-600' : 'text-rose-600' }}">
-                                    Rs {{ number_format($activity['amount'], 2) }}
+                                    Rs {{ number_format($activity['amount'], 0) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -427,7 +427,7 @@
                                 <p class="font-medium text-slate-900">{{ $purchase->invoice_no ?: 'PUR-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }}</p>
                                 <p class="text-xs text-slate-500">{{ $purchase->supplier->name ?? 'N/A' }} • {{ $purchase->purchase_date->format('M d, Y') }}</p>
                             </div>
-                            <p class="font-semibold text-amber-600">Rs {{ number_format((float) $purchase->total_cost, 2) }}</p>
+                            <p class="font-semibold text-amber-600">Rs {{ number_format((float) $purchase->total_cost, 0) }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -452,7 +452,7 @@
                                 <p class="font-medium text-slate-900">{{ $sale->invoice_no ?: 'INV-' . str_pad($sale->id, 4, '0', STR_PAD_LEFT) }}</p>
                                 <p class="text-xs text-slate-500">{{ $sale->customer->name ?? 'Walk-in Customer' }} • {{ $sale->invoice_date->format('M d, Y') }}</p>
                             </div>
-                            <p class="font-semibold text-blue-600">Rs {{ number_format((float) $sale->total_cost, 2) }}</p>
+                            <p class="font-semibold text-blue-600">Rs {{ number_format((float) $sale->total_cost, 0) }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -477,7 +477,7 @@
                                 <p class="font-medium text-slate-900">{{ $income->reference_no ?: 'INC-' . str_pad($income->id, 4, '0', STR_PAD_LEFT) }}</p>
                                 <p class="text-xs text-slate-500">{{ $income->customer->name ?? 'General Income' }} • {{ $income->transaction_date->format('M d, Y') }}</p>
                             </div>
-                            <p class="font-semibold text-emerald-600">Rs {{ number_format((float) $income->amount_received, 2) }}</p>
+                            <p class="font-semibold text-emerald-600">Rs {{ number_format((float) $income->amount_received, 0) }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -502,7 +502,7 @@
                                 <p class="font-medium text-slate-900">{{ $payment->payment_reference ?: 'PAY-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT) }}</p>
                                 <p class="text-xs text-slate-500">{{ $payment->supplier->name ?? 'N/A' }} • {{ $payment->date->format('M d, Y') }}</p>
                             </div>
-                            <p class="font-semibold text-rose-600">Rs {{ number_format((float) $payment->amount, 2) }}</p>
+                            <p class="font-semibold text-rose-600">Rs {{ number_format((float) $payment->amount, 0) }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -780,7 +780,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (exportDropdown && exportMenu) {
         exportDropdown.addEventListener('click', function () {
+            const isHidden = exportMenu.classList.contains('hidden');
             exportMenu.classList.toggle('hidden');
+            if (isHidden) {
+                const rect = exportDropdown.getBoundingClientRect();
+                exportMenu.style.top = (rect.bottom + 8) + 'px';
+                exportMenu.style.right = (window.innerWidth - rect.right) + 'px';
+            }
         });
     }
 

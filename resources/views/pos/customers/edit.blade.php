@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Edit Customer')
 @section('heading','Edit Customer')
@@ -81,7 +81,7 @@
     <!-- Total Due (Readonly) -->
     <div>
       <label class="text-sm text-gray-800 font-medium">Current Total Due</label>
-      <input value="Rs {{ number_format($customer->total_due,2) }}"
+      <input value="Rs {{ number_format($customer->total_due, 0) }}"
              class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-100 shadow-sm px-3 py-2"
              readonly />
     </div>

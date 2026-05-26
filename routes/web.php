@@ -7,7 +7,6 @@ use App\Http\Controllers\frontend\CheckoutController;
 use App\Http\Controllers\frontend\DescriptionController;
 use App\Http\Controllers\frontend\CartController;
 use App\Http\Controllers\frontend\ContactController;
-use App\Http\Controllers\frontend\OTPController;
 use App\Http\Controllers\frontend\SliderController;
 use App\Http\Controllers\frontend\OrderController;
 use App\Http\Controllers\frontend\EcommerceDashboardController;
@@ -47,6 +46,9 @@ Route::post('/pos/stock-check', [StockCheckController::class, 'check'])->name('p
 // POS product search endpoint (no auth required).
 Route::get('/pos/products/search', [ProductSearchController::class, 'searchProductsForPOS'])->name('pos.products.search');
 
+// POS batch search endpoint — returns individual active batches for batch-wise sale selection.
+Route::get('/pos/batches/search', [ProductSearchController::class, 'searchBatchesForPOS'])->name('pos.batches.search');
+
 
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('root');
@@ -54,10 +56,16 @@ Route::get('/', [AccountController::class, 'login'])->name('root');
 // Login routes
 Route::get('/login', [AccountController::class, 'login'])->name('page-login');
 Route::get('/auth/login', [AccountController::class, 'login'])->name('login');
-Route::post('/login', [AccountController::class, 'store'])->name('login.post');
+Route::post('/login', [AccountController::class, 'store'])->name('login.post')->middleware('throttle:5,1'); // Bug 8 fix: brute-force protection
 
 // Logout route
 Route::post('/logout', [AccountController::class, 'logout'])->name('logout')->middleware('auth');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/account/profile', [AccountController::class, 'profile'])->name('account.profile');
+    Route::post('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::post('/account/profile/password', [AccountController::class, 'updatePassword'])->name('account.profile.password');
+});
 
 // home after login
 Route::get('/home', [HomeController::class, 'home'])->middleware('auth')->name('home');
@@ -82,6 +90,7 @@ Route::post('/checkout/order', [OrderController::class, 'store'])->name('fronten
 // Frontend order routes
 Route::get('/orders', [OrderController::class, 'index'])->name('orders');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::middleware('auth')->post('/orders/{order}/cancel-request', [OrderController::class, 'requestCancellation'])->name('orders.cancel-request');
 
 // Admin order routes
 Route::middleware(['auth', 'admin_or_staff'])
@@ -94,6 +103,8 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::patch('/{order}/delivery-status', [OrderController::class, 'updateDeliveryStatus'])->name('delivery-status');
         Route::patch('/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('payment-status');
         Route::patch('/{order}/verify-slip', [OrderController::class, 'verifyPaymentSlip'])->name('verify-slip');
+        Route::patch('/{order}/cancel-request/approve', [OrderController::class, 'approveCancellationRequest'])->name('cancel-request.approve');
+        Route::patch('/{order}/cancel-request/reject', [OrderController::class, 'rejectCancellationRequest'])->name('cancel-request.reject');
         Route::get('/export/{type}', [OrderController::class, 'export'])->name('export');
     });
 
@@ -111,7 +122,7 @@ Route::get('/description/{ecommerceProduct?}', [DescriptionController::class, 'd
     ->whereNumber('ecommerceProduct')
     ->name('description');
 
-Route::get('/verify-otp', [OTPController::class, 'index'])->name('Otp.Form');
+// Bug 2 fix: removed dead OTPController GET /verify-otp route (was permanently shadowed by the route below)
 
 Route::get('/forgot-password', [ForgetPasswordController::class, 'showEmailForm'])->name('password.request');
 Route::post('/forgot-password', [ForgetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
@@ -127,6 +138,7 @@ Route::post('/register', [AccountController::class, 'registerPost'])->name('regi
 
 Route::get('/register/verify-otp/{user}', [AccountController::class, 'showRegisterOtpForm'])->name('register.otpForm');
 Route::post('/register/verify-otp/{user}', [AccountController::class, 'verifyRegisterOtp'])->name('register.verifyOtp');
+Route::post('/register/resend-otp/{user}', [AccountController::class, 'resendRegisterOtp'])->name('register.resendOtp'); // Bug 6 fix
 
 Route::get('/auth/google', [AccountController::class, 'googleRedirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [AccountController::class, 'googleCallback'])->name('google.callback');
@@ -160,6 +172,9 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::post('/products/{product}/toggle-listed', [ProductController::class, 'toggleListed'])
             ->name('products.toggle-listed');
 
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])
+            ->name('products.destroy');
+
         Route::get('/stock/{product}/batches', [ProductController::class, 'batches'])
             ->name('stock.batches');
         
@@ -181,11 +196,12 @@ Route::middleware(['auth', 'admin_or_staff'])
             ->name('purchases.store-brand');
         Route::get('/purchases/export/{type}',[PurchaseController::class, 'export'])->name('purchases.export');
         Route::get('/alerts/expiry', [PurchaseController::class,'expiryAlerts'])->name('alerts.expiry');
-        Route::post('/chatbot/message', [AdminChatbotController::class, 'message'])->name('chatbot.message');
+        Route::post('/chatbot/message', [AdminChatbotController::class, 'message'])
+            ->middleware('admin')
+            ->name('chatbot.message');
         
         // Purchase resource routes (must come AFTER custom routes)
         Route::resource('purchases', PurchaseController::class);
-        Route::resource('invoices', InvoiceController::class);
         Route::resource('suppliers', SupplierController::class)->except(['show']);
         
         Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
@@ -200,6 +216,7 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::resource('ecommerce-products', EcommerceProductController::class);
         Route::resource('sliders', SliderController::class);
         Route::delete('ecommerce-products/{ecommerce_product}/images/{image}', [EcommerceProductController::class, 'deleteImage'])->name('ecommerce-products.delete-image');
+        Route::delete('ecommerce-products/{ecommerce_product}/thumbnail', [EcommerceProductController::class, 'deleteThumbnail'])->name('ecommerce-products.delete-thumbnail');
         Route::post('ecommerce-products/{ecommerce_product}/images/{image}/primary', [EcommerceProductController::class, 'setPrimaryImage'])->name('ecommerce-products.set-primary-image');
 
         // E-commerce Brands routes
@@ -269,7 +286,7 @@ Route::middleware(['auth', 'admin'])
         // Supplier Payment export routes (bulk only)
         Route::get('/supplier-payments/export/{type}', [SupplierPaymentController::class, 'export'])->name('supplier-payments.export');
 
-        // ✅ ADD THESE HERE
+        //  ADD THESE HERE
         Route::post('/khalti/initiate', [SupplierPaymentController::class, 'initiateKhalti'])
             ->name('khalti.initiate');
 
@@ -318,9 +335,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
-    ->name('pos.khalti.callback');  // ✅ added 'pos.' prefix
+    ->name('pos.khalti.callback');  //  added 'pos.' prefix
     Route::post('/pos/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
 
-// ✅ ADD HERE — outside auth middleware
+//  ADD HERE — outside auth middleware
 Route::get('/pos/esewa/callback', [SupplierPaymentController::class, 'esewaCallback'])
     ->name('pos.esewa.callback');

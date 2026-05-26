@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <style>[x-cloak]{display:none!important;}</style>
-  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Inventory')</title>
   @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
@@ -33,8 +32,7 @@
             'inventory.suppliers.*',
             'inventory.purchases.*',
             'inventory.brands.*',
-          'inventory.alerts.*',
-          'inventory.invoices.*'
+          'inventory.alerts.*'
         );
         $isPosGroup = request()->routeIs(
             'pos.dashboard',
@@ -326,6 +324,12 @@
           </div>
         @endif
 
+        @if(session('error'))
+          <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+            {{ session('error') }}
+          </div>
+        @endif
+
         @if($errors->any())
           <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
             <div class="font-semibold mb-2">Please fix the following:</div>
@@ -339,7 +343,8 @@
       </div>
     </main>
   </div>
-   @stack('scripts')  {{-- ✅ THIS LINE --}}
+  @include('inventory.partials.admin-utils')
+  @stack('scripts')
   <script>
     document.addEventListener('click', function (event) {
       const backButton = event.target.closest('[data-back-button]');

@@ -94,11 +94,13 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'business_id' => ['required', 'exists:businesses,id'],
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'purchase_date' => ['required', 'date'],
-            'invoice_no' => ['required', 'string', 'max:100'],
-            'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'business_id'    => ['required', 'exists:businesses,id'],
+            'supplier_id'    => ['required', 'exists:suppliers,id'],
+            'purchase_date'  => ['required', 'date'],
+            'invoice_no'     => ['required', 'string', 'max:100'],
+            'payment_method' => ['required', 'in:cash,credit,bank'],
+            'discount_pct'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
             'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
@@ -108,19 +110,21 @@ class PurchaseController extends Controller
             'items.*.brand_id' => ['nullable', 'exists:brands,id'], // Brand for new products
             'items.*.brand_name' => ['nullable', 'string', 'max:255'], // Brand name for auto-creation
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['required', 'integer', 'min:0', 'max:9999999'],
             'items.*.expiry_date' => ['nullable', 'date'],
         ]);
 
         DB::transaction(function () use ($data) {
             // Create purchase header
             $purchase = Purchase::create([
-                'business_id' => $data['business_id'],
-                'supplier_id' => $data['supplier_id'],
-                'created_by' => auth()->id(),
-                'purchase_date' => $data['purchase_date'],
-                'invoice_no' => $data['invoice_no'] ?? null,
-                'total_cost' => 0,
+                'business_id'    => $data['business_id'],
+                'supplier_id'    => $data['supplier_id'],
+                'created_by'     => auth()->id(),
+                'purchase_date'  => $data['purchase_date'],
+                'invoice_no'     => $data['invoice_no'] ?? null,
+                'payment_method' => $data['payment_method'],
+                'discount'       => 0,
+                'total_cost'     => 0,
             ]);
 
             $purchaseBaseTotal = 0;
@@ -134,61 +138,95 @@ class PurchaseController extends Controller
                 // Get category and brand names for snapshot
                 $categoryName = null;
                 $companyName = null;
+                $productSnapshotName = $row['product_name']; // default; overridden below
 
                 // Check if product exists, if not create it
                 if (!empty($row['product_id'])) {
-                    // Existing product - get category and brand from product
                     $productId = $row['product_id'];
                     $existingProduct = Product::with(['category', 'brandRelation'])->find($productId);
                     if ($existingProduct) {
+                        $productSnapshotName = $existingProduct->name;
                         $brandId = $this->resolveBrandId($row);
 
                         if ($brandId && (int) $existingProduct->brand_id !== (int) $brandId) {
-                            $this->assertNoBusinessProductConflict(
-                                $normalizedProductName,
-                                $brandId,
-                                (int) $data['business_id'],
-                                $existingProduct->id
-                            );
-                        }
+                            // Same name + different company = separate product.
+                            // Never overwrite an existing product's brand.
+                            // Look for a sibling product (same name + new brand, same business).
+                            $sibling = Product::with(['category', 'brandRelation'])
+                                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($normalizedProductName)])
+                                ->where('brand_id', $brandId)
+                                ->where('business_id', $data['business_id'])
+                                ->first();
 
-                        $categoryName = $existingProduct->category->name ?? null;
-                        $companyName = $existingProduct->brandRelation->name ?? null;
-                        
-                        // Check if user wants to update brand for existing product
-                        $updateBrand = false;
-                        if ($brandId) {
-                            $brand = Brand::find($brandId);
-                            if ($brand) {
-                                $existingProduct->brand_id = $brand->id;
-                                $companyName = $brand->name;
-                                $updateBrand = true;
+                            if ($sibling) {
+                                $productId        = $sibling->id;
+                                $productSnapshotName = $sibling->name;
+                                $categoryName     = $sibling->category->name ?? null;
+                                $companyName      = $sibling->brandRelation->name ?? null;
+                            } else {
+                                // New name+brand combination — assert cross-business safety, then create.
+                                $this->assertNoBusinessProductConflict(
+                                    $normalizedProductName,
+                                    $brandId,
+                                    (int) $data['business_id']
+                                );
+
+                                // Inherit category from the original product unless the row overrides it.
+                                $categoryId   = $existingProduct->category_id;
+                                $categoryName = $existingProduct->category->name ?? null;
+                                if (!empty($row['category_id'])) {
+                                    $cat = Category::find($row['category_id']);
+                                    if ($cat) { $categoryId = $cat->id; $categoryName = $cat->name; }
+                                } elseif (!empty($row['category_name'])) {
+                                    $cat = Category::firstOrCreate(['name' => trim($row['category_name'])]);
+                                    $categoryId = $cat->id; $categoryName = $cat->name;
+                                }
+
+                                $brand       = Brand::find($brandId);
+                                $companyName = $brand?->name;
+
+                                $newProduct = Product::create([
+                                    'business_id'   => $data['business_id'],
+                                    'name'          => $normalizedProductName,
+                                    'unit'          => $row['product_unit'],
+                                    'category_id'   => $categoryId ?? 1,
+                                    'brand_id'      => $brandId,
+                                    'selling_price' => $unitCost * 1.2,
+                                    'is_active'     => true,
+                                ]);
+
+                                Stock::firstOrCreate(
+                                    ['product_id' => $newProduct->id],
+                                    ['quantity' => 0, 'reorder_level' => 0]
+                                );
+
+                                $productId           = $newProduct->id;
+                                $productSnapshotName = $normalizedProductName;
                             }
-                        }
-                        
-                        // Check if user wants to update category for existing product
-                        $updateCategory = false;
-                        if (!empty($row['category_id'])) {
-                            $category = Category::find($row['category_id']);
-                            if ($category) {
+                        } else {
+                            // Brand unchanged (or no brand on row) — use existing product as-is.
+                            // Never update brand here; only fill in category if the product has none.
+                            $categoryName = $existingProduct->category->name ?? null;
+                            $companyName  = $existingProduct->brandRelation->name ?? null;
+
+                            $updateCategory = false;
+                            if (!empty($row['category_id'])) {
+                                $category = Category::find($row['category_id']);
+                                if ($category) {
+                                    $existingProduct->category_id = $category->id;
+                                    $categoryName = $category->name;
+                                    $updateCategory = true;
+                                }
+                            } elseif (!empty($row['category_name']) && empty($existingProduct->category_id)) {
+                                $category = Category::firstOrCreate(['name' => trim($row['category_name'])]);
                                 $existingProduct->category_id = $category->id;
                                 $categoryName = $category->name;
                                 $updateCategory = true;
                             }
-                        } elseif (!empty($row['category_name']) && empty($existingProduct->category_id)) {
-                            // Create new category from name if product has no category
-                            $category = Category::firstOrCreate(
-                                ['name' => trim($row['category_name'])],
-                                ['name' => trim($row['category_name'])]
-                            );
-                            $existingProduct->category_id = $category->id;
-                            $categoryName = $category->name;
-                            $updateCategory = true;
-                        }
-                        
-                        // Save product if brand or category was updated
-                        if ($updateBrand || $updateCategory) {
-                            $existingProduct->save();
+
+                            if ($updateCategory) {
+                                $existingProduct->save();
+                            }
                         }
                     }
                 } else {
@@ -222,6 +260,8 @@ class PurchaseController extends Controller
                         $companyName = $brand->name ?? null;
                     }
 
+                    $productSnapshotName = $normalizedProductName; // new product uses the typed name
+
                     // Create new product with category and brand
                     $product = Product::create([
                         'business_id' => $businessId,
@@ -246,7 +286,7 @@ class PurchaseController extends Controller
                 $purchaseItem = PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $productId,
-                    'product_name' => $row['product_name'],         // snapshot
+                    'product_name' => $productSnapshotName,         // snapshot
                     'category_name' => $categoryName,               // snapshot
                     'company_name' => $companyName,                 // snapshot
                     'unit' => $row['product_unit'],  
@@ -298,10 +338,23 @@ class PurchaseController extends Controller
                 }
             }
 
-            // Update purchase total with final tax
-            $purchaseTotal = $purchaseBaseTotal + $finalTaxAmount;
-            $purchase->update(['total_cost' => $purchaseTotal]);
+            // Update purchase total: base + tax - discount (floor at 0)
+            $discountPct = (float) ($data['discount_pct'] ?? 0);
+            $discountAmount = (int) round(($purchaseBaseTotal + $finalTaxAmount) * $discountPct / 100);
+            $purchaseTotal = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
+            $purchase->update(['total_cost' => $purchaseTotal, 'discount' => $discountAmount]);
 
+            // Money movements based on payment method
+            if (in_array($data['payment_method'], ['cash', 'bank'])) {
+                // Paid immediately — deduct from business balance
+                $business = \App\Models\Business::find($data['business_id']);
+                if ($business) {
+                    $business->decrement('balance', $purchaseTotal);
+                }
+            }
+
+            // Always sync supplier due (credit purchases increase it; cash/bank do not
+            // because calculateTotalDue() now only sums credit purchases)
             $supplier = Supplier::find($data['supplier_id']);
             if ($supplier) {
                 $supplier->syncTotalDue();
@@ -357,36 +410,34 @@ public function searchProducts(Request $request)
         return response()->json([]);
     }
 
-    // Search real products so we don't hide items that were never purchased.
+    // Purchase form always searches all products regardless of stock level,
+    // because the point is to restock — including products currently at 0.
     $products = Product::query()
-        ->with(['stock', 'ecommerceProduct', 'latestPurchaseItem'])
+        ->with(['stock', 'latestPurchaseItem', 'category', 'brandRelation'])
         ->when($businessId, fn($query) => $query->where('business_id', $businessId))
         ->where('name', 'LIKE', '%' . $q . '%')
-        ->when(!$showAll, function ($query) {
-            $query->whereHas('stock', function ($stockQuery) {
-                $stockQuery->where('quantity', '>', 0);
-            });
-        })
         ->orderBy('name')
         ->limit(10)
         ->get();
 
     $results = $products->map(function (Product $product) {
         $lastPurchaseCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0);
-        $availableStock = (float) ($product->stock?->quantity ?? 0);
+        $availableStock   = (float) ($product->stock?->quantity ?? 0);
 
         return [
-            'id' => $product->id,
-            'name' => $product->name,
-            'sku' => $product->sku,
-            'unit' => $product->unit,
-            'selling_price' => (float) ($product->selling_price ?? 0),
+            'id'                 => $product->id,
+            'name'               => $product->name,
+            'sku'                => $product->sku,
+            'unit'               => $product->unit,
+            'selling_price'      => (float) ($product->selling_price ?? 0),
             'last_purchase_cost' => $lastPurchaseCost,
-            // Backward-compatible alias for existing UI bindings.
-            'last_cost' => $lastPurchaseCost,
-            'available_stock' => $availableStock,
-            'pos_available' => $product->posAvailableStock(),
-            'business_id' => $product->business_id,
+            'last_cost'          => $lastPurchaseCost,
+            'available_stock'    => $availableStock,
+            'business_id'        => $product->business_id,
+            'category_id'        => $product->category_id,
+            'category_name'      => $product->category?->name,
+            'brand_id'           => $product->brand_id,
+            'brand_name'         => $product->brandRelation?->name,
         ];
     });
 
@@ -636,18 +687,18 @@ public function exportIndividual(Purchase $purchase, $type)
  */
 public function storeCategory(Request $request)
 {
-    $data = $request->validate([
-        'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
     ]);
 
-    $category = Category::create(['name' => $data['name']]);
+    $category = Category::firstOrCreate(
+        ['name' => trim($request->input('name'))],
+        ['name' => trim($request->input('name'))]
+    );
 
     return response()->json([
         'success' => true,
-        'category' => [
-            'id' => $category->id,
-            'name' => $category->name,
-        ]
+        'category' => ['id' => $category->id, 'name' => $category->name],
     ]);
 }
 
@@ -678,18 +729,18 @@ public function searchCategories(Request $request)
  */
 public function storeBrand(Request $request)
 {
-    $data = $request->validate([
-        'name' => ['required', 'string', 'max:255', 'unique:brands,name'],
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
     ]);
 
-    $brand = Brand::create(['name' => $data['name']]);
+    $brand = Brand::firstOrCreate(
+        ['name' => trim($request->input('name'))],
+        ['name' => trim($request->input('name'))]
+    );
 
     return response()->json([
         'success' => true,
-        'brand' => [
-            'id' => $brand->id,
-            'name' => $brand->name,
-        ]
+        'brand' => ['id' => $brand->id, 'name' => $brand->name],
     ]);
 }
 

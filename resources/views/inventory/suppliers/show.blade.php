@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Supplier Details')
 @section('heading','Supplier Details')
@@ -53,7 +53,7 @@
             <div>
                 <label class="text-sm text-slate-500">Total Due</label>
                 <p class="font-semibold text-red-600">
-                    Rs {{ number_format($supplier->calculated_total_due, 2) }}
+                    Rs {{ number_format($supplier->calculated_total_due, 0) }}
                 </p>
             </div>
             <div class="md:col-span-2 lg:col-span-3">
@@ -123,7 +123,7 @@
                                     <td class="px-4 py-3">{{ date('M d, Y', strtotime($purchase->created_at)) }}</td>
                                     <td class="px-4 py-3">
                                         <span class="text-blue-600 font-semibold">
-                                            Rs {{ number_format($purchase->total_cost, 2) }}
+                                            Rs {{ number_format($purchase->total_cost, 0) }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">
@@ -188,7 +188,7 @@
                                     <td class="px-4 py-3">{{ date('M d, Y', strtotime($payment->date)) }}</td>
                                     <td class="px-4 py-3">
                                         <span class="text-green-600 font-semibold">
-                                            Rs {{ number_format($payment->amount, 2) }}
+                                            Rs {{ number_format($payment->amount, 0) }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">
@@ -255,7 +255,7 @@
                                 <td class="px-4 py-3 text-right">
                                     @if($transaction['debit'] > 0)
                                         <span class="text-green-600 font-semibold">
-                                            Rs {{ number_format($transaction['debit'], 2) }}
+                                            Rs {{ number_format($transaction['debit'], 0) }}
                                         </span>
                                     @else
                                         -
@@ -264,7 +264,7 @@
                                 <td class="px-4 py-3 text-right">
                                     @if($transaction['credit'] > 0)
                                         <span class="text-red-600 font-semibold">
-                                            Rs {{ number_format($transaction['credit'], 2) }}
+                                            Rs {{ number_format($transaction['credit'], 0) }}
                                         </span>
                                     @else
                                         -
@@ -276,7 +276,7 @@
                                         @elseif($transaction['balance'] < 0) text-green-600
                                         @else text-slate-600
                                         @endif">
-                                        Rs {{ number_format(abs($transaction['balance']), 2) }}
+                                        Rs {{ number_format(abs($transaction['balance']), 0) }}
                                         @if($transaction['balance'] > 0) (Cr)
                                         @elseif($transaction['balance'] < 0) (Dr)
                                         @endif

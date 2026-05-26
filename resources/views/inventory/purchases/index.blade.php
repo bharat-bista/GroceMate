@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Purchases')
 @section('heading', 'Purchases (Stock-In)')
@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden mb-6">
         <div class="p-6 border-b border-slate-200">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -138,6 +132,7 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Created By</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Total Cost</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Payment</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -162,7 +157,21 @@
                                 <div class="text-sm text-slate-900">{{ $purchase->creator->name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $purchase->total_cost, 2) }}</div>
+                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $purchase->total_cost, 0) }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                    $pm = $purchase->payment_method;
+                                    [$bg, $text] = match($pm) {
+                                        'cash'   => ['bg-emerald-100', 'text-emerald-800'],
+                                        'credit' => ['bg-amber-100',   'text-amber-800'],
+                                        'bank'   => ['bg-blue-100',    'text-blue-800'],
+                                        default  => ['bg-slate-100',   'text-slate-600'],
+                                    };
+                                @endphp
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $bg }} {{ $text }}">
+                                    {{ ucfirst($pm ?? '—') }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex space-x-2">
@@ -194,7 +203,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="text-slate-500">
                                     <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-4H5m14 8H9m10 4H5"></path>

@@ -22,7 +22,7 @@ class ProductController extends Controller
     $businessId = $request->input('business_id');
 
     $products = Product::query()
-      ->with(['category','stock','brandRelation','business','ecommerceProduct'])
+      ->with(['category','stock','brandRelation','business','ecommerceProduct','latestPurchaseItem'])
       ->when($q, fn($qq) => $qq->where('name','like',"%$q%"))
       ->when($businessId, fn($qq) => $qq->where('business_id', $businessId))
       ->orderBy('name')
@@ -83,7 +83,7 @@ class ProductController extends Controller
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
       'unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
-      'selling_price' => ['required','numeric','min:0'],
+      'selling_price' => ['required','integer','min:0','max:9999999'],
       'is_active' => ['nullable','boolean'],
       'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
@@ -139,9 +139,8 @@ class ProductController extends Controller
       'brand_id' => ['nullable','exists:brands,id'],
       'brand_name' => ['nullable','string','max:255'],
       'unit' => ['required','in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
-      'selling_price' => ['required','numeric','min:0'],
+      'selling_price' => ['required','integer','min:0','max:9999999'],
       'is_active' => ['nullable','boolean'],
-      'is_listed' => ['nullable','boolean'],
       'reorder_level' => ['nullable','numeric','min:0'],
     ]);
 
@@ -171,7 +170,6 @@ class ProductController extends Controller
         'unit' => $data['unit'],
         'selling_price' => $data['selling_price'],
         'is_active' => (bool)($data['is_active'] ?? false),
-        'is_listed' => (bool)($data['is_listed'] ?? false),
       ]);
 
       $product->stock()->updateOrCreate(
@@ -187,6 +185,24 @@ class ProductController extends Controller
   {
     $product->update(['is_listed' => !$product->is_listed]);
     return back()->with('success', 'E-commerce listing updated.');
+  }
+
+  public function destroy(Product $product)
+  {
+    $qty = (float) ($product->stock->quantity ?? 0);
+    if ($qty > 0) {
+      return back()->with('error', 'Cannot delete: product still has stock. Deplete all stock first.');
+    }
+
+    DB::transaction(function () use ($product) {
+      StockBatch::where('product_id', $product->id)->delete();
+      Stock::where('product_id', $product->id)->delete();
+      $product->ecommerceProduct?->delete();
+      $product->delete();
+    });
+
+    return redirect()->route('inventory.products.index')
+      ->with('success', "Product \"{$product->name}\" deleted.");
   }
 
   private function normalizeProductName(string $name): string
@@ -216,7 +232,7 @@ class ProductController extends Controller
 
     return null;
   }
-
+// checking the same brand and same name already exist or not in any bussiness account
   private function assertNoCrossBusinessConflict(
     string $normalizedName,
     ?int $brandId,

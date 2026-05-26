@@ -29,13 +29,13 @@ class TaxController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:100|unique:taxes,name',
             'type' => 'required|in:percentage,fixed',
-            'rate' => 'required|numeric|min:0|max:100',
+            'rate' => ['required', 'numeric', 'min:0', $request->type === 'percentage' ? 'max:100' : 'max:9999999'],
         ]);
 
-        Tax::create($request->all());
+        Tax::create($validated);
 
         return redirect()->route('taxes.index')
             ->with('success', 'Tax created successfully.');
@@ -54,13 +54,13 @@ class TaxController extends Controller
      */
     public function update(Request $request, Tax $tax)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:100|unique:taxes,name,' . $tax->id,
             'type' => 'required|in:percentage,fixed',
-            'rate' => 'required|numeric|min:0|max:100',
+            'rate' => ['required', 'numeric', 'min:0', $request->type === 'percentage' ? 'max:100' : 'max:9999999'],
         ]);
 
-        $tax->update($request->all());
+        $tax->update($validated);
 
         return redirect()->route('taxes.index')
             ->with('success', 'Tax updated successfully.');

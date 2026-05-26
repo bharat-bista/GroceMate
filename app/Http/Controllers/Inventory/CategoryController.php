@@ -14,6 +14,7 @@ class CategoryController extends Controller
         $q = $request->string('q')->toString();
 
         $categories = Category::query()
+            ->withCount('products')
             ->when($q, fn($qq) => $qq->where('name', 'like', "%{$q}%"))
             ->orderBy('order')
             ->orderBy('name')

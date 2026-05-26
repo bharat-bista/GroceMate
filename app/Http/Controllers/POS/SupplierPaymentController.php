@@ -103,10 +103,10 @@ class SupplierPaymentController extends Controller
             'date'              => 'required|date',
             'business_account'  => 'nullable|exists:businesses,id',
             'supplier_id'       => 'required|exists:suppliers,id',
-            'amount'            => 'required|numeric|min:0',
+            'amount'            => 'required|integer|min:0|max:9999999',
             'payment_method'    => 'required|in:cash,bank,khalti_external,khalti,esewa',
             'payment_reference' => 'nullable|string|max:255',
-            'bank_charge'       => 'nullable|numeric|min:0',
+            'bank_charge'       => 'nullable|integer|min:0|max:9999999',
             'tds_applicable'    => 'boolean',
             'note'              => 'nullable|string|max:1000',
             'payment_type'      => 'nullable|in:external,integrated',
@@ -133,7 +133,7 @@ class SupplierPaymentController extends Controller
                 'amount_received'  => -$validated['amount'],
                 'payment_method'   => $paymentMethod,
                 'reference_no'     => 'PAY-' . $supplierPayment->id,
-                'notes'            => 'Supplier payment to ' . $supplier->name . ': ' . ($validated['note'] ?? ''),
+                'notes'            => 'Supplier payment to ' . ($supplier?->name ?? 'supplier') . ': ' . ($validated['note'] ?? ''),
             ]);
         });
 
@@ -161,10 +161,10 @@ class SupplierPaymentController extends Controller
             'date'              => 'required|date',
             'business_account'  => 'nullable|exists:businesses,id',
             'supplier_id'       => 'required|exists:suppliers,id',
-            'amount'            => 'required|numeric|min:0',
+            'amount'            => 'required|integer|min:0|max:9999999',
             'payment_method'    => 'required|in:cash,bank,khalti_external,khalti,esewa',
             'payment_reference' => 'nullable|string|max:255',
-            'bank_charge'       => 'nullable|numeric|min:0',
+            'bank_charge'       => 'nullable|integer|min:0|max:9999999',
             'tds_applicable'    => 'boolean',
             'note'              => 'nullable|string|max:1000',
         ]);
@@ -198,7 +198,7 @@ class SupplierPaymentController extends Controller
                 'amount_received'  => -$validated['amount'],
                 'payment_method'   => $validated['payment_method'],
                 'reference_no'     => 'PAY-' . $supplierPayment->id,
-                'notes'            => 'Supplier payment to ' . $supplier->name . ': ' . ($validated['note'] ?? ''),
+                'notes'            => 'Supplier payment to ' . ($supplier?->name ?? 'supplier') . ': ' . ($validated['note'] ?? ''),
             ]);
         });
 
@@ -323,11 +323,11 @@ class SupplierPaymentController extends Controller
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount'      => 'required|numeric|min:1',
+            'amount'      => 'required|integer|min:1',
             'date'        => 'required|date',
         ]);
 
-        $amountPaisa = (int) ($request->amount * 100);
+        $amountPaisa = ((int) $request->amount) * 100;
 
         try {
             $response = Http::withOptions(['verify' => false, 'timeout' => 30])
@@ -467,11 +467,11 @@ class SupplierPaymentController extends Controller
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount'      => 'required|numeric|min:1',
+            'amount'      => 'required|integer|min:1',
             'date'        => 'required|date',
         ]);
 
-        $totalAmount     = number_format($request->amount, 2, '.', '');
+        $totalAmount     = (string) ((int) $request->amount);
         $transactionUuid = 'SUPPAY-' . $request->supplier_id . '-' . time();
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');

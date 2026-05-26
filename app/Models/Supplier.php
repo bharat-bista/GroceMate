@@ -22,8 +22,8 @@ class Supplier extends Model
     ];
 
     protected $casts = [
-        'opening_due' => 'decimal:2',
-        'total_due' => 'decimal:2',
+        'opening_due' => 'integer',
+        'total_due' => 'integer',
     ];
 
     public function purchases(): HasMany
@@ -46,14 +46,14 @@ class Supplier extends Model
         $openingDue = (float) ($this->opening_due ?? 0);
 
         $purchaseTotal = $this->relationLoaded('purchases')
-            ? (float) $this->purchases->sum('total_cost')
-            : (float) $this->purchases()->sum('total_cost');
+            ? (float) $this->purchases->where('payment_method', 'credit')->sum('total_cost')
+            : (float) $this->purchases()->where('payment_method', 'credit')->sum('total_cost');
 
         $paymentTotal = $this->relationLoaded('supplierPayments')
             ? (float) $this->supplierPayments->sum('amount')
             : (float) $this->supplierPayments()->sum('amount');
 
-        return $openingDue + $purchaseTotal - $paymentTotal;
+        return max(0.0, $openingDue + $purchaseTotal - $paymentTotal);
     }
 
     public function syncTotalDue(): float

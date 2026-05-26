@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-  @if(session('success'))
-    <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-      {{ session('success') }}
-    </div>
-  @endif
-
   <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
     <div class="p-6 border-b border-slate-200">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -59,6 +53,7 @@
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Image</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category Name</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Order</th>
+            <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Usage</th>
             <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -74,6 +69,17 @@
               </td>
               <td class="px-6 py-4 font-medium text-slate-900">{{ $c->name }}</td>
               <td class="px-6 py-4 text-slate-600">{{ $c->order }}</td>
+              <td class="px-6 py-4">
+                @if($c->products_count > 0)
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                    In use ({{ $c->products_count }})
+                  </span>
+                @else
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                    Unused
+                  </span>
+                @endif
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex space-x-3">
                   <a class="text-emerald-600 hover:text-emerald-900 font-medium" href="{{ route('inventory.categories.edit',$c) }}">Edit</a>
@@ -87,7 +93,7 @@
             </tr>
           @empty
             <tr>
-              <td class="px-6 py-12 text-center text-slate-500" colspan="4">No categories found.</td>
+              <td class="px-6 py-12 text-center text-slate-500" colspan="5">No categories found.</td>
             </tr>
           @endforelse
         </tbody>

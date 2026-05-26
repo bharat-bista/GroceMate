@@ -167,6 +167,105 @@ class FifoStockService
     }
 
     /**
+     * Return the POS-available quantity for a single batch, after FIFO-distributing
+     * the product's ecommerce reservation across older batches first.
+     */
+    public function batchPosAvailable(int $batchId): float
+    {
+        $batch = $this->stockBatch->newQuery()
+            ->where('id', $batchId)
+            ->where('status', 'active')
+            ->first(['id', 'product_id', 'qty_remaining']);
+
+        if (!$batch) {
+            return 0.0;
+        }
+
+        $productId = $batch->product_id;
+
+        $ecommerceReserved = (float) ($this->ecommerceProduct->newQuery()
+            ->where('product_id', $productId)
+            ->value('ecommerce_stock') ?? 0);
+
+        if ($ecommerceReserved <= 0.0) {
+            return (float) $batch->qty_remaining;
+        }
+
+        // Walk active batches in FIFO order, subtracting ecommerce reservation from each.
+        $batches = $this->stockBatch->newQuery()
+            ->where('product_id', $productId)
+            ->where('status', 'active')
+            ->orderBy('purchased_on')
+            ->orderBy('id')
+            ->get(['id', 'qty_remaining']);
+
+        $toSubtract = $ecommerceReserved;
+        foreach ($batches as $b) {
+            $rawQty  = (float) $b->qty_remaining;
+            $subtract = min($rawQty, $toSubtract);
+            $posQty  = $rawQty - $subtract;
+            $toSubtract -= $subtract;
+
+            if ($b->id === $batchId) {
+                return max(0.0, $posQty);
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Consume stock from one specific batch (user-selected, bypasses FIFO order).
+     * Returns the same shape as consume() so the reverse() path works unchanged.
+     *
+     * @return array{success: bool, consumed: float, batches_used: array<int, array{batch_id: int, qty_taken: float, unit_cost: float}>}
+     *
+     * @throws InsufficientStockException
+     */
+    public function consumeFromBatch(int $batchId, float $qty): array
+    {
+        return DB::transaction(function () use ($batchId, $qty) {
+            $batch = $this->stockBatch->newQuery()
+                ->where('id', $batchId)
+                ->where('status', 'active')
+                ->where('qty_remaining', '>', 0)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((float) $batch->qty_remaining < $qty) {
+                $productName = (string) ($this->product->newQuery()
+                    ->where('id', $batch->product_id)
+                    ->value('name') ?? 'Unknown product');
+
+                throw new InsufficientStockException($productName, $qty, (float) $batch->qty_remaining);
+            }
+
+            $batch->qty_remaining = (float) $batch->qty_remaining - $qty;
+            if ($batch->qty_remaining <= 0) {
+                $batch->qty_remaining = 0;
+                $batch->status        = 'depleted';
+            }
+            $batch->save();
+
+            $stock = $this->stock->newQuery()->firstOrCreate(
+                ['product_id' => $batch->product_id],
+                ['quantity' => 0, 'reorder_level' => 0]
+            );
+            $stock->decrement('quantity', $qty);
+
+            return [
+                'success'      => true,
+                'consumed'     => $qty,
+                'batches_used' => [[
+                    'batch_id'  => $batch->id,
+                    'qty_taken' => $qty,
+                    'unit_cost' => (float) $batch->unit_cost,
+                ]],
+            ];
+        });
+    }
+
+    /**
      * Reverse a prior consumption by restoring batches or creating a new batch.
      */
     public function reverse(int $productId, float $qty, array $batchesUsed = []): void

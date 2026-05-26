@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\User;
 use App\Models\OtpReset;
@@ -32,38 +33,30 @@ class AccountController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
 
-    // Check if email exists
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user) {
-        return back()->with('popup_error', 'Email address is incorrect.');
+        // Bug 7 fix: single generic message — prevents account enumeration
+        if (!$user || !Hash::check($request->password, $user->password ?? '')) {
+            return back()->with('popup_error', 'Invalid email or password.');
+        }
+
+        if ($user->status !== 'Y') {
+            return back()->with('popup_error', 'Your account is not verified. Please check your email for the OTP.');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate(); // Bug 1 fix: prevent session fixation
+
+        return $user->canAccessInventoryPanel()
+            ? redirect()->route('inventory.dashboard')->with('success', 'Login successful!')
+            : redirect()->route('home')->with('success', 'Login successful!');
     }
-
-    // Check if account is verified
-    if ($user->status !== 'Y') {
-        return back()->with('popup_error', 'Your account is not verified.');
-    }
-
-    // Check password
-    if (!Hash::check($request->password, $user->password)) {
-        return back()->with('popup_error', 'Password is incorrect.');
-    }
-
-    // Login user
-    Auth::login($user, $request->remember);
-
-    if ($user->canAccessInventoryPanel()) {
-        return redirect()->route('inventory.dashboard')->with('success', 'Login successful!');
-    }
-
-    return redirect()->route('home')->with('success', 'Login successful!');
-}
 
 
     // =========================
@@ -77,6 +70,16 @@ class AccountController extends Controller
     // Submit register form -> create user (inactive) -> send OTP
     public function registerPost(Request $request)
     {
+        // Bug 6 fix: if this email already has an unverified account, resend OTP instead
+        // of failing on the unique constraint and leaving the user stuck
+        $unverified = User::where('email', $request->input('email'))
+            ->where('status', 'N')
+            ->first();
+
+        if ($unverified) {
+            return $this->dispatchRegistrationOtp($unverified, 'OTP resent to your email. Please check your inbox.');
+        }
+
         $data = $request->validate([
             'full_name' => 'required|string|max:100',
             'gender'    => 'required|in:male,female,other',
@@ -84,35 +87,46 @@ class AccountController extends Controller
             'password'  => 'required|min:6|confirmed',
         ]);
 
-        // Create user but NOT verified yet
         $user = User::create([
             'full_name' => $data['full_name'],
             'gender'    => $data['gender'],
             'email'     => $data['email'],
-            'password'  => $data['password'], // auto-hashed by model casts
+            'password'  => $data['password'],
             'role_id'   => 2,
-            'status'    => 'N', // inactive until OTP verified
+            'status'    => 'N',
         ]);
 
-        // Generate OTP
+        return $this->dispatchRegistrationOtp($user, 'OTP sent to your email.');
+    }
+
+    private function dispatchRegistrationOtp(User $user, string $flash): \Illuminate\Http\RedirectResponse
+    {
         $otp = (string) random_int(100000, 999999);
 
-        // Store OTP (hashed) in otp_resets table
         OtpReset::updateOrCreate(
             ['user_id' => $user->id, 'purpose' => 'register'],
             [
-                'otp_hash' => Hash::make($otp),
+                'otp_hash'   => Hash::make($otp),
                 'expires_at' => now()->addMinutes(10),
-                'attempts' => 0,
-                'used' => 0,
+                'attempts'   => 0,
+                'used'       => 0,
             ]
         );
 
-        // Send OTP email (reusing your existing mail)
         Mail::to($user->email)->send(new PasswordOtpMail($otp, $user->full_name));
 
-        return redirect()->route('register.otpForm', $user->id)
-            ->with('success', 'OTP sent to your email.');
+        return redirect()->route('register.otpForm', $user->id)->with('success', $flash);
+    }
+
+    // Bug 6 fix: resend registration OTP for an existing unverified account
+    public function resendRegisterOtp(User $user)
+    {
+        if ($user->status === 'Y') {
+            return redirect()->route('page-login')
+                ->with('popup_error', 'This account is already verified. Please log in.');
+        }
+
+        return $this->dispatchRegistrationOtp($user, 'OTP resent to your email.');
     }
 
     // Show register OTP form
@@ -156,6 +170,7 @@ class AccountController extends Controller
         $user->update(['status' => 'Y']);
 
         Auth::login($user);
+        $request->session()->regenerate(); // Bug 1 fix: prevent session fixation
 
         return redirect()->route('home')->with('success', 'Account verified and created!');
     }
@@ -217,12 +232,70 @@ class AccountController extends Controller
         }
 
         Auth::login($user);
+        $request->session()->regenerate(); // Bug 1 fix: prevent session fixation
 
-        if ($user->canAccessInventoryPanel()) {
-            return redirect()->route('inventory.dashboard')->with('success', 'Logged in with Google!');
+        return $user->canAccessInventoryPanel()
+            ? redirect()->route('inventory.dashboard')->with('success', 'Logged in with Google!')
+            : redirect()->route('home')->with('success', 'Logged in with Google!');
+    }
+
+    // =========================
+    // ACCOUNT PROFILE
+    // =========================
+    public function profile()
+    {
+        return view('frontend.account.profile', ['user' => auth()->user()]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'full_name'    => 'required|string|max:100',
+            'phone_number' => 'nullable|string|max:20',
+            'address'      => 'nullable|string|max:255',
+            'image'        => 'nullable|image|max:2048|mimes:jpg,jpeg,png,gif',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
+            }
+            $ext = $request->file('image')->getClientOriginalExtension();
+            $path = $request->file('image')->storeAs('avatars', \Str::uuid() . '.' . $ext, 'public');
+            $validated['image'] = $path;
+        } else {
+            unset($validated['image']);
         }
 
-        return redirect()->route('home')->with('success', 'Logged in with Google!');
+        $user->update($validated);
+
+        return back()->with('profile_success', 'Profile updated successfully.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = auth()->user();
+
+        // Bug 5 fix: Google users are created with a random password string (never null),
+        // so checking !$user->password never triggers. Check google_id instead.
+        if ($user->google_id) {
+            return back()->with('password_error', 'Your account uses Google sign-in and does not have a password to change.');
+        }
+
+        $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required|min:8|confirmed',
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('password_error', 'Current password is incorrect.');
+        }
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        return back()->with('password_success', 'Password updated successfully.');
     }
 
     // =========================

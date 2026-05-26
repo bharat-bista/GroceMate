@@ -61,13 +61,6 @@
     </div>
 
     <div>
-      <label class="text-sm text-slate-600">SKU</label>
-      <input name="sku"
-             value="{{ old('sku', $product->sku) }}"
-             class="mt-1 w-full rounded-xl border-slate-200" />
-    </div>
-
-    <div>
       <label class="text-sm text-slate-600">Unit</label>
       <select name="unit" class="mt-1 w-full rounded-xl border-slate-200">
         @foreach($units as $u)
@@ -80,23 +73,13 @@
     </div>
 
     <div>
-      <label class="text-sm text-slate-600">Selling Price</label>
-      <input name="selling_price" type="number" step="0.01"
+      <label class="text-sm text-slate-600">
+        Selling Price
+        <span class="text-xs text-slate-400 font-normal ml-1">(default POS price)</span>
+      </label>
+      <input name="selling_price" type="number" step="any" data-money inputmode="numeric" max="9999999"
              value="{{ old('selling_price', $product->selling_price) }}"
              class="mt-1 w-full rounded-xl border-slate-200" />
-    </div>
-
-    <div>
-      <label class="text-sm text-slate-600">Image URL</label>
-      <input name="image_url"
-             value="{{ old('image_url', $product->image_url) }}"
-             class="mt-1 w-full rounded-xl border-slate-200" />
-    </div>
-
-    <div class="md:col-span-2">
-      <label class="text-sm text-slate-600">Description</label>
-      <textarea name="description" rows="3"
-        class="mt-1 w-full rounded-xl border-slate-200">{{ old('description', $product->description) }}</textarea>
     </div>
 
     <div>
@@ -112,12 +95,6 @@
       <input type="checkbox" name="is_active" value="1"
         @checked(old('is_active', $product->is_active))>
       Active
-    </label>
-
-    <label class="flex items-center gap-2 text-sm">
-      <input type="checkbox" name="is_listed" value="1"
-        @checked(old('is_listed', $product->is_listed))>
-      List in E-commerce
     </label>
   </div>
 

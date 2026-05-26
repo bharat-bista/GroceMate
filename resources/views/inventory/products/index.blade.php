@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Products')
 @section('heading', 'Products')
@@ -57,9 +57,11 @@
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Brand</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Business</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Category</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Purchase Price</th>
+                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">
+                            Purchase Price
+                            <div class="text-xs font-normal normal-case text-slate-400 mt-0.5">latest batch cost</div>
+                        </th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">E-commerce</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -89,30 +91,26 @@
                                 <div class="text-sm text-slate-900">{{ $product->category->name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format((float) $product->selling_price, 2) }}</div>
+                                @php $latestCost = (float) ($product->latestPurchaseItem?->unit_cost ?? 0); @endphp
+                                @if($latestCost > 0)
+                                    <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($latestCost, 0) }}</div>
+                                @else
+                                    <div class="text-sm text-slate-400">—</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-slate-900">Total: {{ number_format($quantity, 3) }}</span>
-                                    <span class="text-xs text-slate-500">Ecommerce used: {{ number_format($ecommerceStock, 3) }}</span>
-                                    <span class="text-xs text-emerald-700">Available: {{ number_format($availableStock, 3) }}</span>
+                                    <span class="text-sm font-semibold text-slate-900">Total: {{ number_format($quantity, 0) }}</span>
+                                    <span class="text-xs text-slate-500">Ecommerce used: {{ number_format($ecommerceStock, 0) }}</span>
+                                    <span class="text-xs text-emerald-700">Available: {{ number_format($availableStock, 0) }}</span>
                                     <span class="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-medium
                                         {{ $isCritical ? 'bg-red-100 text-red-700' : ($isLow ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
                                         {{ $isCritical ? 'Critical' : ($isLow ? 'Low' : 'Healthy') }}
                                     </span>
                                     <span class="text-xs text-slate-500">
-                                        {{ $reorderLevel > 0 ? 'Reorder: ' . number_format($reorderLevel, 3) : 'No reorder level set' }}
+                                        {{ $reorderLevel > 0 ? 'Reorder: ' . number_format($reorderLevel, 0) : 'No reorder level set' }}
                                     </span>
                                 </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <form method="POST" action="{{ route('inventory.products.toggle-listed', $product) }}">
-                                    @csrf
-                                    <button class="px-3 py-1.5 rounded-lg border text-sm font-medium transition
-                                        {{ $product->is_listed ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
-                                        {{ $product->is_listed ? 'Listed' : 'Hidden' }}
-                                    </button>
-                                </form>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium
@@ -130,6 +128,19 @@
                                        class="text-green-600 hover:text-green-900 font-medium">
                                         Edit
                                     </a>
+                                    @if($quantity == 0)
+                                        <form method="POST"
+                                              action="{{ route('inventory.products.destroy', $product) }}"
+                                              onsubmit="return confirm('Delete {{ addslashes($product->name) }}? This cannot be undone.');"
+                                              class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-red-600 hover:text-red-900 font-medium">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -51,13 +51,18 @@ th:nth-child(6) { width: 15%; } /* Amount */
 <body>
 
 @php
-$subTotal = $invoice->items->sum('line_total') ??
-    $invoice->items->sum(fn($i)=>$i->qty * ($i->price ?? $i->unit_cost));
-
-$taxable = $invoice->taxable_amount ?? $subTotal;
-$vat = $invoice->vat_amount ?? ($taxable * 0.13);
-$grand = $invoice->grand_total ?? ($taxable + $vat);
+$subTotal   = (float) $invoice->items->sum('line_total');
+$discount   = (int) ($invoice->discount ?? 0);
+$grand      = (float) $invoice->total_cost;  // authoritative: base + tax − discount
+$tax        = max(0, (int) round($grand - $subTotal + $discount));
 $totalUnits = $invoice->items->sum('qty');
+
+$mittiDate = '';
+try {
+    $mittiDate = \Anuzpandey\LaravelNepaliDate\LaravelNepaliDate::from(
+        $invoice->invoice_date->format('Y-m-d')
+    )->toNepaliDate('Y-m-d');
+} catch (\Exception $e) {}
 
 function numberToWords($num){
     $ones = ['', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
@@ -122,7 +127,7 @@ $words .= " Only";
 
 <td colspan="3" style="border-left: none;">
     <strong>Invoice No :</strong> {{ $invoice->invoice_no }}<br>
-    <strong>Mitti Date :</strong> {{ $invoice->mitti_date }}<br>
+    <strong>Mitti Date :</strong> {{ $mittiDate }}<br>
     <strong>Roman Date :</strong> {{ optional($invoice->created_at)->format('d/m/Y') }}
 </td>
 </tr>
@@ -147,11 +152,11 @@ $words .= " Only";
 <tr>
 <td class="center" style="border-top: none; border-bottom: none;">{{ $sn++ }}</td>
 <td style="border-top: none; border-bottom: none;">{{ $item->description ?? $item->product_name }}</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($item->qty,2) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($item->qty, 0) }}</td>
 <td class="center" style="border-top: none; border-bottom: none;">{{ $item->unit }}</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($item->price ?? $item->unit_cost,2) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($item->price ?? $item->unit_cost, 0) }}</td>
 <td class="right" style="border-top: none; border-bottom: none;">
-{{ number_format($item->line_total ?? ($item->qty*($item->price ?? $item->unit_cost)),2) }}
+{{ number_format($item->line_total ?? ($item->qty*($item->price ?? $item->unit_cost)), 0) }}
 </td>
 </tr>
 @endforeach
@@ -172,27 +177,36 @@ $words .= " Only";
 
 <!-- TOTAL -->
 <tr>
-<td colspan="3"><strong>{{ number_format($totalUnits,2) }} Units</strong></td>
+<td colspan="3"><strong>{{ number_format($totalUnits, 0) }} Units</strong></td>
 <td colspan="2" class="right"><strong>Total</strong></td>
-<td class="right"><strong>{{ number_format($subTotal,2) }}</strong></td>
+<td class="right"><strong>{{ number_format($subTotal, 0) }}</strong></td>
 </tr>
 
+@if($tax > 0)
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;">Taxable Amount</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($taxable,2) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($subTotal, 0) }}</td>
 </tr>
 
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;">VAT 13%</td>
-<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($vat,2) }}</td>
+<td class="right" style="border-top: none; border-bottom: none;">{{ number_format($tax, 0) }}</td>
 </tr>
+@endif
 
+@if($discount > 0)
+<tr>
+<td colspan="4" style="border-top: none; border-bottom: none;"></td>
+<td class="right" style="border-top: none; border-bottom: none;">Discount</td>
+<td class="right" style="border-top: none; border-bottom: none;">- {{ number_format($discount, 0) }}</td>
+</tr>
+@endif
 <tr>
 <td colspan="4" style="border-top: none; border-bottom: none;"></td>
 <td class="right" style="border-top: none; border-bottom: none;"><strong>Grand Total</strong></td>
-<td class="right" style="border-top: none; border-bottom: none;"><strong>{{ number_format($grand,2) }}</strong></td>
+<td class="right" style="border-top: none; border-bottom: none;"><strong>{{ number_format($grand, 0) }}</strong></td>
 </tr>
 
 <!-- AMOUNT IN WORDS -->

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
 use App\Models\POS\Customer;
+use App\Models\Business;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -134,6 +135,8 @@ class CustomerController extends Controller
                 FROM invoices
                 WHERE invoices.customer_id = customers.id
                   AND invoices.payment_method = 'credit'
+                  AND (invoices.cancellation_status IS NULL
+                       OR invoices.cancellation_status != 'cancelled')
             ), 0)
             - COALESCE((
                 SELECT SUM(incomes.amount_received)
@@ -168,6 +171,10 @@ class CustomerController extends Controller
 
         $sales = \App\Models\POS\Invoice::where('customer_id', $customer->id)
             ->where('payment_method', 'credit')
+            ->where(function ($q) {
+                $q->whereNull('cancellation_status')
+                  ->orWhere('cancellation_status', '!=', 'cancelled');
+            })
             ->get()
             ->map(function ($sale) {
                 $saleDateTime = $sale->invoice_date
@@ -377,12 +384,18 @@ class CustomerController extends Controller
             'vat_number' => 'nullable|string|max:50',
             'pan_number' => 'nullable|string|max:20',
             'customer_type' => 'required|in:retail,wholesale,regular',
-            'opening_due' => 'nullable|numeric|min:0',
+            'opening_due' => 'nullable|integer|min:0|max:9999999',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
-        $validated['total_due'] = $validated['opening_due'] ?? 0;
+        $validated['opening_due'] = (int) round($validated['opening_due'] ?? 0);
+        $validated['total_due'] = $validated['opening_due'];
+
+        $defaultBusinessId = Business::min('id');
+        if ($defaultBusinessId) {
+            $validated['business_id'] = $defaultBusinessId;
+        }
 
         Customer::create($validated);
 
@@ -412,12 +425,13 @@ class CustomerController extends Controller
             'vat_number' => 'nullable|string|max:50',
             'pan_number' => 'nullable|string|max:20',
             'customer_type' => 'required|in:retail,wholesale,regular',
-            'opening_due' => 'nullable|numeric|min:0',
+            'opening_due' => 'nullable|integer|min:0|max:9999999',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
         if (isset($validated['opening_due'])) {
+            $validated['opening_due'] = (int) round($validated['opening_due'] ?? 0);
             $customer->opening_due = $validated['opening_due'];
         }
 

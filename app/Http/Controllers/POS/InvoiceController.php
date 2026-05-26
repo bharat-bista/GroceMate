@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Mail\InvoiceMail;
 use App\Models\POS\Customer;
 use App\Models\Product;
+use App\Models\POS\Income;
 use App\Models\POS\Invoice;
 use App\Models\POS\InvoiceItem;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Tax;
 use App\Services\FifoStockService;
 use App\Services\InvoiceNumberService;
@@ -84,14 +86,16 @@ class InvoiceController extends Controller
             'invoice_date' => ['required', 'date'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'payment_method' => ['required', 'in:cash,credit,bank'],
-            'final_tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'discount_pct'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'final_tax_id'   => ['nullable', 'integer', 'exists:taxes,id'],
             'send_email' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['nullable', 'exists:products,id'], // Can be null for new products
-            'items.*.product_name' => ['required', 'string', 'max:255'], // Product name (existing or new)
-            'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'], // Unit for new products
-            'items.*.qty' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.product_id'   => ['nullable', 'exists:products,id'],
+            'items.*.batch_id'     => ['nullable', 'integer', 'exists:stock_batches,id'],
+            'items.*.product_name' => ['required', 'string', 'max:255'],
+            'items.*.product_unit' => ['required', 'in:kg,liter,pcs,cartoon,peti,bori,box,bottle,pack,set'],
+            'items.*.qty'          => ['required', 'numeric', 'gt:0'],
+            'items.*.unit_cost'    => ['required', 'integer', 'min:0', 'max:9999999'],
         ]);
 
         $sendEmail = $data['send_email'] ?? false;
@@ -101,13 +105,22 @@ class InvoiceController extends Controller
         $errors = [];
         $fifoService = $this->fifoService ?? app(FifoStockService::class);
         foreach ($data['items'] as $index => $row) {
-            $productId = (int) ($row['product_id'] ?? 0);
-            $qty = (float) $row['qty'];
-            $check = $fifoService->canConsume($productId, $qty, 'pos');
+            $qty   = (float) $row['qty'];
+            $label = $row['product_name'];
 
-            if (!$check['ok']) {
-                $productLabel = $row['product_name'];
-                $errors["items.{$index}.qty"] = "{$productLabel} — only {$check['available']} available, you need {$qty}";
+            if (!empty($row['batch_id'])) {
+                // Batch-specific: check the chosen batch has enough POS-available stock
+                // (raw qty minus ecommerce reservation distributed FIFO from oldest batches).
+                $batch = StockBatch::find((int) $row['batch_id']);
+                $posAvailable = $batch ? $fifoService->batchPosAvailable((int) $row['batch_id']) : 0.0;
+                if (!$batch || $batch->status !== 'active' || $posAvailable < $qty) {
+                    $errors["items.{$index}.qty"] = "{$label} — batch only has {$posAvailable} available for POS, you need {$qty}";
+                }
+            } else {
+                $check = $fifoService->canConsume((int) ($row['product_id'] ?? 0), $qty, 'pos');
+                if (!$check['ok']) {
+                    $errors["items.{$index}.qty"] = "{$label} — only {$check['available']} available, you need {$qty}";
+                }
             }
         }
 
@@ -124,6 +137,7 @@ class InvoiceController extends Controller
                 'invoice_date' => $data['invoice_date'],
                 'invoice_no' => InvoiceNumberService::generateInvoiceNumber(),
                 'total_cost' => 0,
+                'discount'   => 0,
                 'payment_method' => $data['payment_method'],
             ]);
 
@@ -177,8 +191,12 @@ class InvoiceController extends Controller
                 // Add to purchase base total
                 $purchaseBaseTotal += $baseCost;
 
-                // Consume FIFO batches for POS and store the batch breakdown on the item.
-                $result = $fifoService->consume($productId, $qty, 'pos');
+                // Consume from the user-selected batch, or fall back to FIFO order.
+                if (!empty($row['batch_id'])) {
+                    $result = $fifoService->consumeFromBatch((int) $row['batch_id'], $qty);
+                } else {
+                    $result = $fifoService->consume($productId, $qty, 'pos');
+                }
                 $invoiceItem->update([
                     'batches_consumed' => json_encode($result['batches_used']),
                 ]);
@@ -197,10 +215,29 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Update invoice total with final tax
-            $invoiceTotal = $purchaseBaseTotal + $finalTaxAmount;
-            $invoice->update(['total_cost' => $invoiceTotal]);
-            
+            // Apply percentage discount on (base + tax), then store both
+            $discountPct    = (float) ($data['discount_pct'] ?? 0);
+            $discountAmount = (int) round(($purchaseBaseTotal + $finalTaxAmount) * $discountPct / 100);
+            $invoiceTotal   = max(0, (int) round($purchaseBaseTotal + $finalTaxAmount - $discountAmount));
+            $invoice->update(['total_cost' => $invoiceTotal, 'discount' => $discountAmount]);
+
+            // Cash/bank sales are collected immediately — record income so the
+            // business account balance is updated via the Income model's created event.
+            // Credit sales only add to customer due; no money received yet.
+            if (in_array($data['payment_method'], ['cash', 'bank']) && $invoiceTotal > 0) {
+                Income::create([
+                    'reference_no'     => $invoice->invoice_no,
+                    'customer_id'      => null, // business-level income; null prevents customerDueExpression() over-subtraction
+                    'business_id'      => $data['business_id'],
+                    'created_by'       => auth()->id(),
+                    'transaction_date' => $data['invoice_date'],
+                    'amount_received'  => $invoiceTotal,
+                    'payment_method'   => $data['payment_method'],
+                    'income_type'      => 'Sale',
+                    'description'      => 'POS Sale — Invoice ' . $invoice->invoice_no,
+                ]);
+            }
+
             $customer = Customer::find($data['customer_id']);
             if ($customer) {
                 $customer->syncTotalDue();
@@ -539,16 +576,23 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice)
     {
-        DB::transaction(function () use ($invoice) {
-            // Restore stock quantities
+        $fifoService = $this->fifoService ?? app(FifoStockService::class);
+
+        DB::transaction(function () use ($invoice, $fifoService) {
+            $invoice->loadMissing('items');
+
+            // Restore stock via the same FIFO reverse path used by cancel(),
+            // so both qty_remaining and status on stock_batches stay correct.
             foreach ($invoice->items as $item) {
-                $stock = Stock::where('product_id', $item->product_id)->first();
-                if ($stock) {
-                    $stock->increment('quantity', $item->qty);
+                $batchesUsed = [];
+                if (!empty($item->batches_consumed)) {
+                    $decoded = json_decode($item->batches_consumed, true);
+                    $batchesUsed = is_array($decoded) ? $decoded : [];
                 }
+
+                $fifoService->reverse($item->product_id, (float) $item->qty, $batchesUsed);
             }
-            
-            // Delete the invoice (this will also delete related items due to foreign key constraints)
+
             $invoice->delete();
 
             $customer = Customer::find($invoice->customer_id);
@@ -556,7 +600,7 @@ class InvoiceController extends Controller
                 $customer->syncTotalDue();
             }
         });
-        
+
         return redirect()->route('pos.invoices.index')
             ->with('success', 'Invoice deleted successfully.');
     }

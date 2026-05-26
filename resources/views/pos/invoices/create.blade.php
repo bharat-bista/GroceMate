@@ -46,62 +46,10 @@
         </div>
     </div>
 
-    <!-- Payment Method Section -->
-    <div class="border-t border-slate-200 pt-5">
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold text-slate-900">Payment Method *</h3>
-            <p class="text-sm text-slate-600">Select how the customer will pay for this invoice</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="relative">
-                <input type="radio" name="payment_method" value="cash" id="payment_cash" 
-                       @checked(old('payment_method', 'cash') == 'cash') required
-                       class="peer sr-only">
-                <label for="payment_cash" 
-                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 hover:border-slate-300 border-slate-200">
-                    <div class="text-center">
-                        <svg class="w-8 h-8 mx-auto mb-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <div class="font-medium">Cash</div>
-                        <div class="text-xs opacity-75">Paid in cash</div>
-                    </div>
-                </label>
-            </div>
-
-            <div class="relative">
-                <input type="radio" name="payment_method" value="credit" id="payment_credit" 
-                       @checked(old('payment_method') == 'credit') required
-                       class="peer sr-only">
-                <label for="payment_credit" 
-                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 hover:border-slate-300 border-slate-200">
-                    <div class="text-center">
-                        <svg class="w-8 h-8 mx-auto mb-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                        <div class="font-medium">Credit</div>
-                        <div class="text-xs opacity-75">Pay later</div>
-                    </div>
-                </label>
-            </div>
-
-            <div class="relative">
-                <input type="radio" name="payment_method" value="bank" id="payment_bank" 
-                       @checked(old('payment_method') == 'bank') required
-                       class="peer sr-only">
-                <label for="payment_bank" 
-                       class="flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 hover:border-slate-300 border-slate-200">
-                    <div class="text-center">
-                        <svg class="w-8 h-8 mx-auto mb-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
-                        <div class="font-medium">Bank</div>
-                        <div class="text-xs opacity-75">Bank transfer</div>
-                    </div>
-                </label>
-            </div>
-        </div>
-    </div>
+    @include('inventory.partials.payment-method', [
+        'paymentDefault' => 'cash',
+        'paymentLabel'   => 'How the customer will pay for this invoice. Cash/Bank adds to business balance; Credit adds to customer due.',
+    ])
 
     <div class="border-t border-slate-200 pt-5">
         <div class="flex items-center justify-between mb-4">
@@ -164,6 +112,20 @@
                             0.00
                         </td>
 
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="discountInput" name="discount_pct"
+                                       step="any" min="0" max="100"
+                                       value="0"
+                                       class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
+                                <span class="text-sm text-slate-500 shrink-0">%</span>
+                            </div>
+                            <div class="text-xs text-blue-600 text-right mt-0.5" id="discountRupees"></div>
+                        </td>
                         <td></td>
                     </tr>
                     <tr class="bg-slate-100">
@@ -251,7 +213,7 @@
 // ---------- Helpers ----------
 function formatCurrency(amount) {
     const n = Number(amount);
-    return (isNaN(n) ? 0 : n).toFixed(2);
+    return (isNaN(n) ? 0 : Math.round(n)).toString();
 }
 
 // Available units
@@ -267,6 +229,7 @@ const products = [
     sku: "{{ $product['sku'] ?? '' }}",
     selling_price: {{ $product['selling_price'] ?? 0 }},
     pos_available: {{ $product['pos_available_stock'] ?? 0 }},
+    business_id: {{ $product['business_id'] ?? 0 }},
 },
 @endforeach
 ];
@@ -288,53 +251,31 @@ let rowCounter = 0;
 let activeAutocomplete = null;
 let searchTimeout = null;
 
-async function searchProductsApi(query) {
+async function searchBatchesApi(query) {
     try {
-        console.log('🔍 Searching:', query);
-        
-        // Get CSRF token
+        const businessId = document.querySelector('select[name="business_id"]')?.value || '';
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        const response = await fetch(`/pos/products/search?q=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: { 
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            credentials: 'same-origin'
-        });
-        
-        console.log('📡 Status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ API Error:', response.status, errorText);
-            throw new Error('API Error');
-        }
-        
+
+        const response = await fetch(
+            `/pos/batches/search?q=${encodeURIComponent(query)}&business_id=${encodeURIComponent(businessId)}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': token,
+                },
+                credentials: 'same-origin',
+            }
+        );
+
+        if (!response.ok) throw new Error('API ' + response.status);
+
         const data = await response.json();
-        console.log('✅ Results:', data);
-        
-        // Ensure data is an array
-        if (!Array.isArray(data)) {
-            console.error('❌ Invalid response format:', data);
-            throw new Error('Invalid response');
-        }
-        
+        if (!Array.isArray(data)) throw new Error('Invalid response');
+
         return data;
     } catch (e) {
-        console.error('🚨 API Failed, using fallback search:', e);
-        
-        // Fallback: search in the injected products array
-        const qLower = query.toLowerCase();
-        const fallbackResults = products.filter(p => 
-            p.name.toLowerCase().includes(qLower)
-        ).slice(0, 10);
-        
-        console.log('🔄 Fallback results:', fallbackResults);
-        return fallbackResults;
+        return [];
     }
 }
 
@@ -353,8 +294,8 @@ function calculateRowTotal(rowId) {
     row.querySelector('.subtotal').textContent = formatCurrency(subtotal);
 
     // Hidden inputs
-    row.querySelector('.base-cost-input').value = baseCost.toFixed(2);
-    row.querySelector('.subtotal-input').value = subtotal.toFixed(2);
+    row.querySelector('.base-cost-input').value = Math.round(baseCost);
+    row.querySelector('.subtotal-input').value = Math.round(subtotal);
 
     return { baseCost, subtotal };
 }
@@ -398,45 +339,46 @@ function applyFinalTax(totalBase) {
         }
     }
     
-    const grandTotal = totalBase + taxAmount;
-    
-    totalTaxElement.textContent = formatCurrency(taxAmount);
-    grandTotalElement.textContent = formatCurrency(grandTotal);
+    const discountPct    = parseFloat(document.getElementById('discountInput')?.value) || 0;
+    const discountAmount = Math.round((totalBase + taxAmount) * discountPct / 100);
+    const grandTotal     = Math.max(0, totalBase + taxAmount - discountAmount);
+
+    const discountRupees = document.getElementById('discountRupees');
+    if (discountRupees) {
+        discountRupees.textContent = discountPct > 0 ? `− Rs ${formatCurrency(discountAmount)}` : '';
+    }
+
+    totalTaxElement.textContent    = formatCurrency(taxAmount);
+    grandTotalElement.textContent  = formatCurrency(grandTotal);
 }
 
-// ---------- Product selection ----------
-function updateProductFromInput(rowId, payload) {
+// ---------- Row population from a batch result ----------
+function updateRowFromBatch(rowId, batch) {
     const row = document.getElementById(`row-${rowId}`);
     if (!row) return;
 
-    const productInput = row.querySelector('.product-name-input');
-    const productIdInput = row.querySelector('.product-id-input');
-    const unitSelect = row.querySelector('.unit-select');
+    row.querySelector('.product-name-input').value  = batch.product_name;
+    row.querySelector('.product-id-input').value    = batch.product_id;
+    row.querySelector('.product-name-hidden').value = batch.product_name;
+    row.querySelector('.batch-id-input').value      = batch.batch_id;
+
+    const unit = batch.unit || 'pcs';
+    const unitSelect  = row.querySelector('.unit-select');
     const unitDisplay = row.querySelector('.unit-display');
-    const costInput = row.querySelector('.cost-input');
-
-    const name = payload.name || '';
-    const id = payload.id ? Number(payload.id) : null;
-    const unit = payload.unit || 'pcs';
-    // Use selling price as the default unit price for POS.
-    const sellingPrice = payload.selling_price || 0;
-
-    productInput.value = name;
-    productIdInput.value = id || '';
     unitSelect.value = unit;
     unitDisplay.textContent = unit;
+    unitSelect.classList.add('hidden');
+    unitDisplay.classList.remove('hidden');
 
-    // Show/hide select for new/existing
-    if (id) {
-        unitSelect.classList.add('hidden');
-        unitDisplay.classList.remove('hidden');
-    } else {
-        unitSelect.classList.remove('hidden');
-        unitDisplay.classList.add('hidden');
-    }
+    row.querySelector('.cost-input').value = batch.selling_price || 0;
 
-    costInput.value = sellingPrice;
+    const qtyInput = row.querySelector('.qty-input');
+    const batchMax = Math.floor(batch.qty_remaining);
+    qtyInput.max   = batchMax;
+    qtyInput.value = Math.min(parseInt(qtyInput.value) || 1, batchMax);
 
+    validateQtyRow(row);
+    updateSaveButtonState();
     updateAllTotals();
 }
 
@@ -473,105 +415,57 @@ function createAutocompleteDropdown(rowId, inputElement, results) {
     const list = document.createElement('div');
     list.className = 'max-h-80 overflow-y-auto';
 
-    // Check exact match (ignore case)
     const qLower = query.toLowerCase();
-    const hasExact = results.some(p => (p.name || '').toLowerCase() === qLower);
 
-    // --- Existing products first ---
-    if (results.length > 0) {
-        results.slice(0, 10).forEach((p) => {
-            // Prevent selection of items that have no POS-available stock.
-            const posAvailable = Number(p.pos_available ?? 0);
-            const inStock = posAvailable > 0;
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.disabled = !inStock;
-            item.className = inStock
-                ? 'block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer truncate'
-                : 'block w-full px-3 py-2 text-sm text-slate-400 rounded-xl cursor-not-allowed opacity-60 truncate';
-            
-            // highlight matching text
-            const name = p.name || '';
-            const idx = name.toLowerCase().indexOf(qLower);
-            const highlighted =
-                idx >= 0
-                    ? name.substring(0, idx) +
-                      `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>` +
-                      name.substring(idx + query.length)
-                    : name;
-
-            item.innerHTML = `
-                <div class="flex items-center justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
-                        <div class="text-[11px] text-slate-500 leading-tight">
-                            ${p.sku ? `SKU: ${p.sku} • ` : ''}Unit: ${p.unit ?? '-'} •
-                            ${inStock ? `In stock: ${posAvailable} units` : '<span class="text-red-600">Out of stock</span>'}
-                        </div>
-                    </div>
-                    <div class="text-[11px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
-                        Price: Rs ${formatCurrency(p.selling_price ?? 0)}
-                    </div>
-                </div>
-            `;
-
-            item.addEventListener('click', () => {
-                if (!inStock) {
-                    return;
-                }
-
-                updateProductFromInput(rowId, {
-                    id: p.id,
-                    name: p.name,
-                    unit: p.unit,
-                    selling_price: p.selling_price,
-                    pos_available: p.pos_available
-                });
-
-                dropdown.remove();
-                activeAutocomplete = null;
-
-                const row = document.getElementById(`row-${rowId}`);
-                row.querySelector('.qty-input')?.focus();
-            });
-
-            list.appendChild(item);
-        });
+    if (results.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'px-3 py-4 text-sm text-slate-500 text-center';
+        empty.textContent = 'No products found for this business.';
+        list.appendChild(empty);
     }
 
-    // --- Create new: only if no exact match ---
-    if (!hasExact) {
-        const createBtn = document.createElement('button');
-        createBtn.type = 'button';
-        createBtn.className = 'w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 outline-none';
+    results.forEach((batch) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'block w-full px-3 py-2 text-left hover:bg-slate-50 border-b border-slate-100 last:border-0';
 
-        createBtn.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-white text-sm">+</span>
-                <div class="text-sm font-medium text-green-800">
-                    Create new product: <span class="font-semibold">"${query}"</span>
+        const name    = batch.product_name || '';
+        const idx     = name.toLowerCase().indexOf(qLower);
+        const highlighted = idx >= 0
+            ? name.substring(0, idx)
+              + `<span class="text-blue-700 font-semibold">${name.substring(idx, idx + query.length)}</span>`
+              + name.substring(idx + query.length)
+            : name;
+
+        const expiryHtml = batch.expiry_date
+            ? `<span class="text-orange-600">Exp: ${batch.expiry_date}</span>`
+            : '';
+
+        item.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-slate-900 truncate">${highlighted}</div>
+                    <div class="text-[11px] text-slate-500 leading-tight mt-0.5">
+                        Batch: <span class="font-medium text-slate-700">${batch.batch_no}</span>
+                        &nbsp;|&nbsp; Avail: <span class="font-medium text-green-700">${batch.qty_remaining} ${batch.unit}</span>
+                        ${expiryHtml ? `&nbsp;|&nbsp; ${expiryHtml}` : ''}
+                    </div>
+                </div>
+                <div class="text-[11px] font-bold text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0 whitespace-nowrap">
+                    Rs ${formatCurrency(batch.selling_price ?? 0)}/${batch.unit}
                 </div>
             </div>
         `;
 
-        createBtn.addEventListener('click', () => {
-            updateProductFromInput(rowId, { name: query });
-
+        item.addEventListener('click', () => {
+            updateRowFromBatch(rowId, batch);
             dropdown.remove();
             activeAutocomplete = null;
-
-            const row = document.getElementById(`row-${rowId}`);
-            row.querySelector('.unit-select')?.focus();
+            document.getElementById(`row-${rowId}`)?.querySelector('.qty-input')?.focus();
         });
 
-        // add separator if there are results
-        if (results.length > 0) {
-            const sep = document.createElement('div');
-            sep.className = 'h-px bg-slate-200';
-            list.appendChild(sep);
-        }
-        list.appendChild(createBtn);
-    }
+        list.appendChild(item);
+    });
 
     dropdown.appendChild(list);
     wrapper.appendChild(dropdown);
@@ -594,25 +488,14 @@ async function handleProductSearch(rowId, inputElement) {
     clearTimeout(searchTimeout);
 
     const query = inputElement.value.trim();
-    console.log('🎯 Search triggered for:', query, 'in row:', rowId);
-
-    // always update hidden product_name (because server needs it)
-    const row = document.getElementById(`row-${rowId}`);
-    if (row) {
-        row.querySelector('.product-name-hidden').value = query;
-    }
 
     if (query.length < 2) {
-        console.log('⏸️ Query too short, removing autocomplete');
         removeAutocomplete();
         return;
     }
 
     searchTimeout = setTimeout(async () => {
-        console.log('⏰ Searching after delay for:', query);
-        const results = await searchProductsApi(query);
-        console.log('📦 Got results:', results.length, 'items');
-        // show dropdown ALWAYS (includes Create New + results)
+        const results = await searchBatchesApi(query);
         createAutocompleteDropdown(rowId, inputElement, results);
     }, 300);
 }
@@ -635,6 +518,7 @@ function createRow() {
                        autocomplete="off" />
                 <input type="hidden" name="items[${rowId}][product_id]" class="product-id-input" />
                 <input type="hidden" name="items[${rowId}][product_name]" class="product-name-hidden" />
+                <input type="hidden" name="items[${rowId}][batch_id]" class="batch-id-input" />
             </div>
         </td>
         <td class="px-4 py-3">
@@ -647,8 +531,8 @@ function createRow() {
         <td class="px-4 py-3">
             <input name="items[${rowId}][qty]"
                    type="number"
-                   step="0.001"
-                   min="0.001"
+                   step="1" min="1"
+                   inputmode="numeric"
                    value="1"
                    required
                    class="qty-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1.5">
@@ -656,8 +540,8 @@ function createRow() {
         <td class="px-4 py-3 min-w-[100px]">
             <input name="items[${rowId}][unit_cost]"
                    type="number"
-                   step="0.01"
-                   min="0"
+                   step="any" min="0" max="9999999"
+                   inputmode="numeric" data-money
                    value="0"
                    required
                    class="cost-input w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm px-3 py-1.5 text-right">
@@ -695,10 +579,10 @@ function createRow() {
     // also trigger search on focus
     productInput.addEventListener('focus', () => handleProductSearch(rowId, productInput));
 
-    // update totals when qty or cost changes
+    // update totals when qty or cost changes; validate batch limit in real time
     row.querySelector('.qty-input').addEventListener('input', () => {
-        // Clear any previous stock errors when quantities change.
-        clearStockErrors();
+        validateQtyRow(row);
+        updateSaveButtonState();
         updateAllTotals();
     });
     row.querySelector('.cost-input').addEventListener('input', updateAllTotals);
@@ -706,13 +590,16 @@ function createRow() {
     // remove row
     row.querySelector('.remove-btn').addEventListener('click', () => removeRow(rowId));
 
+    // apply money sanitizer to dynamically created cost input
+    if (window.GroceMate) GroceMate.money.init(row);
+
     return row;
 }
 
 function removeRow(rowId) {
     const rows = document.querySelectorAll('.purchase-row');
     if (rows.length <= 1) {
-        alert('At least one item is required.');
+        GroceMate.notify.error('At least one item is required.');
         return;
     }
     const row = document.getElementById(`row-${rowId}`);
@@ -743,6 +630,38 @@ function showStockError(row, available) {
     }
 
     errorEl.textContent = `Only ${available} available`;
+}
+
+function clearRowStockError(row) {
+    row.querySelector('.qty-input')?.classList.remove('border-red-500');
+    row.querySelector('.stock-error')?.remove();
+}
+
+function validateQtyRow(row) {
+    const qtyInput = row.querySelector('.qty-input');
+    if (!qtyInput) return true;
+    const qty    = parseFloat(qtyInput.value) || 0;
+    const maxQty = parseFloat(qtyInput.max);
+    if (!isNaN(maxQty) && qty > maxQty) {
+        showStockError(row, maxQty);
+        return false;
+    }
+    clearRowStockError(row);
+    return true;
+}
+
+function updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveInvoiceBtn');
+    if (!saveBtn) return;
+    const hasError = Array.from(document.querySelectorAll('.purchase-row')).some(r => {
+        const qi = r.querySelector('.qty-input');
+        if (!qi) return false;
+        const max = parseFloat(qi.max);
+        return !isNaN(max) && (parseFloat(qi.value) || 0) > max;
+    });
+    saveBtn.disabled = hasError;
+    saveBtn.classList.toggle('opacity-50', hasError);
+    saveBtn.classList.toggle('cursor-not-allowed', hasError);
 }
 
 async function checkStock() {
@@ -816,15 +735,30 @@ document.addEventListener('DOMContentLoaded', function() {
     tbody.appendChild(createRow());
     updateAllTotals();
 
+    const gate = GroceMate.formGate.init({
+        watch:    ['select[name="business_id"]', 'select[name="customer_id"]', 'input[name="invoice_no"]'],
+        gate:     '#itemsBody',
+        rowClass: '.purchase-row',
+        addBtn:   '#addRow',
+    });
+
     document.getElementById('addRow').addEventListener('click', function() {
         tbody.appendChild(createRow());
         updateAllTotals();
+        gate.check();
         const newRowId = rowCounter - 1;
         document.querySelector(`#row-${newRowId} .product-name-input`).focus();
     });
 
     // Final tax change event
     document.getElementById('finalTaxSelect').addEventListener('change', function() {
+        const totalBaseText = document.getElementById('totalBaseCost').textContent;
+        const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
+        applyFinalTax(totalBase);
+    });
+
+    // Discount change event
+    document.getElementById('discountInput').addEventListener('input', function() {
         const totalBaseText = document.getElementById('totalBaseCost').textContent;
         const totalBase = parseFloat(totalBaseText.replace(/[^0-9.-]/g, '')) || 0;
         applyFinalTax(totalBase);
@@ -857,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
     saveInvoiceBtn.addEventListener('click', async function() {
         const customer = document.querySelector('select[name="customer_id"]').value;
         if (!customer) {
-            alert('Please select a customer');
+            GroceMate.notify.error('Please select a customer.');
             return;
         }
 
@@ -914,16 +848,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const qty = parseFloat(rows[i].querySelector('.qty-input').value);
             const cost = parseFloat(rows[i].querySelector('.cost-input').value);
 
+            const productId = rows[i].querySelector('.product-id-input').value.trim();
+            if (!productId) {
+                GroceMate.notify.error(`Row ${i + 1}: Please select a product from the list.`);
+                return;
+            }
             if (!productName) {
-                alert(`Row ${i + 1}: Please enter a product name`);
+                GroceMate.notify.error(`Row ${i + 1}: Please enter a product name.`);
                 return;
             }
             if (!(qty > 0)) {
-                alert(`Row ${i + 1}: Quantity must be greater than 0`);
+                GroceMate.notify.error(`Row ${i + 1}: Quantity must be greater than 0.`);
+                return;
+            }
+            const qtyMax = parseFloat(rows[i].querySelector('.qty-input').max);
+            if (!isNaN(qtyMax) && qty > qtyMax) {
+                GroceMate.notify.error(`Row ${i + 1}: Quantity exceeds available batch stock (${qtyMax}).`);
                 return;
             }
             if (cost < 0 || isNaN(cost)) {
-                alert(`Row ${i + 1}: Unit cost cannot be negative`);
+                GroceMate.notify.error(`Row ${i + 1}: Unit cost cannot be negative.`);
                 return;
             }
         }

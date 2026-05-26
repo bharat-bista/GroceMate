@@ -68,7 +68,13 @@
                         </div>
                         <button type="submit" class="submit-btn">Verify & Activate</button>
                     </form>
-                    <p class="footer-text"><a href="{{ route('register') }}">Back to register</a></p>
+                    <form action="{{ route('register.resendOtp', $user->id) }}" method="POST" style="margin-top:14px;text-align:center;">
+                        @csrf
+                        <button type="submit" style="background:none;border:none;color:var(--green-3);font-size:0.97rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;">
+                            Didn't receive it? Resend OTP
+                        </button>
+                    </form>
+                    <p class="footer-text" style="margin-top:10px;"><a href="{{ route('register') }}">Back to register</a></p>
                 </div>
             </section>
         </section>

@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title','Suppliers')
 @section('heading','Suppliers')
@@ -6,18 +6,6 @@
 
 @section('content')
 <div class="space-y-6">
-
-    {{-- Messages --}}
-    @if(session('success'))
-        <div class="p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
 
     {{-- ── Summary Cards ── --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -54,7 +42,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-red-100 text-sm font-medium">Total Due</p>
-                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($suppliers->sum('calculated_total_due'), 2) }}</p>
+                    <p class="text-3xl font-bold mt-2">Rs {{ number_format($suppliers->sum('calculated_total_due'), 0) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -165,7 +153,7 @@
                             <td class="px-6 py-4">
                                 @if($supplier->calculated_total_due > 0)
                                     <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">
-                                        Rs {{ number_format($supplier->calculated_total_due, 2) }}
+                                        Rs {{ number_format($supplier->calculated_total_due, 0) }}
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">

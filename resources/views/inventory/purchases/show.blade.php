@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Purchase Details')
 @section('heading', 'Purchase Details')
@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
         <div class="bg-gradient-to-r from-green-500 to-green-700 p-6 text-white">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -105,6 +99,14 @@
                         <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->purchase_date->format('M d, Y') }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
+                        <span class="text-sm text-slate-600">Payment Method:</span>
+                        @php $pm = $purchase->payment_method ?? 'credit'; @endphp
+                        <span class="text-sm font-medium text-right
+                            {{ $pm === 'cash' ? 'text-green-700' : ($pm === 'bank' ? 'text-purple-700' : 'text-yellow-700') }}">
+                            {{ ucfirst($pm) }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between gap-4">
                         <span class="text-sm text-slate-600">Created By:</span>
                         <span class="text-sm font-medium text-slate-900 text-right">{{ $purchase->creator->name ?? 'N/A' }}</span>
                     </div>
@@ -124,9 +126,11 @@
                     <thead class="text-slate-700 bg-slate-100">
                         <tr>
                             <th class="text-left px-4 py-3 font-medium">Product</th>
+                            <th class="text-left px-4 py-3 font-medium">Category</th>
+                            <th class="text-left px-4 py-3 font-medium">Company</th>
                             <th class="text-left px-4 py-3 font-medium">Batch No</th>
                             <th class="text-left px-4 py-3 font-medium">Unit</th>
-                            <th class="text-left px-4 py-3 font-medium">Quantity</th>
+                            <th class="text-left px-4 py-3 font-medium">Qty</th>
                             <th class="text-left px-4 py-3 font-medium">Unit Cost</th>
                             <th class="text-left px-4 py-3 font-medium">Expiry</th>
                             <th class="text-left px-4 py-3 font-medium">Line Total</th>
@@ -136,31 +140,46 @@
                         @foreach($purchase->items as $item)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">{{ $item->product_name ?? $item->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3 text-slate-500">{{ $item->category_name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-slate-500">{{ $item->company_name ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->batch_no ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $item->unit ?? $item->product->unit ?? 'N/A' }}</td>
-                                <td class="px-4 py-3">{{ number_format($item->qty, 3) }}</td>
-                                <td class="px-4 py-3">Rs {{ number_format((float) $item->unit_cost, 2) }}</td>
+                                <td class="px-4 py-3">{{ number_format($item->qty, 0) }}</td>
+                                <td class="px-4 py-3">Rs {{ number_format((float) $item->unit_cost, 0) }}</td>
                                 <td class="px-4 py-3">{{ $item->expiry_date?->format('M d, Y') ?? 'N/A' }}</td>
-                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $item->line_total, 2) }}</td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $item->line_total, 0) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-300">
                         <tr>
-                            <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
-                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 2) }}</td>
+                            <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Subtotal:</td>
+                            <td class="px-4 py-3 font-semibold text-slate-900">Rs {{ number_format((float) $purchase->items->sum('line_total'), 0) }}</td>
                         </tr>
-                        @if($purchase->total_cost > $purchase->items->sum('line_total'))
+                        @php
+                            $subtotal = $purchase->items->sum('line_total');
+                            $discount = (int) ($purchase->discount ?? 0);
+                            $tax = $purchase->total_cost - $subtotal + $discount;
+                        @endphp
+                        @if($tax > 0)
                             <tr>
-                                <td colspan="6" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
+                                <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Tax Applied:</td>
                                 <td class="px-4 py-3 font-semibold text-red-600">
-                                    Rs {{ number_format((float) ($purchase->total_cost - $purchase->items->sum('line_total')), 2) }}
+                                    Rs {{ number_format((float) $tax, 0) }}
+                                </td>
+                            </tr>
+                        @endif
+                        @if($discount > 0)
+                            <tr>
+                                <td colspan="8" class="px-4 py-3 text-right font-semibold text-slate-700">Discount:</td>
+                                <td class="px-4 py-3 font-semibold text-blue-600">
+                                    &minus; Rs {{ number_format((float) $discount, 0) }}
                                 </td>
                             </tr>
                         @endif
                         <tr class="bg-slate-100">
-                            <td colspan="6" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
-                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format((float) $purchase->total_cost, 2) }}</td>
+                            <td colspan="8" class="px-4 py-4 text-right font-bold text-lg text-slate-900">Total Amount:</td>
+                            <td class="px-4 py-4 font-bold text-lg text-green-700">Rs {{ number_format((float) $purchase->total_cost, 0) }}</td>
                         </tr>
                     </tfoot>
                 </table>

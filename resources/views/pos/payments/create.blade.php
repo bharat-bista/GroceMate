@@ -7,20 +7,6 @@
 @section('content')
 <div class="max-w-5xl mx-auto">
 
-    <!-- Success Message -->
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <!-- Error Message -->
-    @if(session('error'))
-        <div class="mb-4 p-4 rounded-xl bg-red-100 text-red-700 border border-red-200 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
 
         <!-- Header -->
@@ -81,8 +67,9 @@
                     <label class="block text-sm font-medium text-slate-600">
                         Payment Amount (NPR) <span class="text-red-500">*</span>
                     </label>
-                    <input type="number" step="0.01" name="amount" id="payment-amount"
-                           value="{{ old('amount') }}" placeholder="0.00"
+                    <input type="number" step="any" name="amount" id="payment-amount"
+                           data-money inputmode="numeric" max="9999999"
+                           value="{{ old('amount') }}" placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5"
                            required>
                 </div>
@@ -200,8 +187,9 @@
                 <!-- Bank Charge -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Bank Charge</label>
-                    <input type="number" step="0.01" name="bank_charge" value="{{ old('bank_charge', 0) }}"
-                           placeholder="0.00"
+                    <input type="number" step="any" name="bank_charge" value="{{ old('bank_charge', 0) }}"
+                           data-money inputmode="numeric" max="9999999"
+                           placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5">
                 </div>
 
@@ -310,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const supplierId = getFieldValue('select[name="supplier_id"]');
         const amount     = getFieldValue('#payment-amount');
 
-        if (!supplierId) { alert('⚠️ Please select a supplier.'); return; }
-        if (!amount || parseFloat(amount) <= 0) { alert('⚠️ Please enter a valid amount.'); return; }
+        if (!supplierId) { GroceMate.notify.error('Please select a supplier.'); return; }
+        if (!amount || parseFloat(amount) <= 0) { GroceMate.notify.error('Please enter a valid amount.'); return; }
 
         // Build fresh form
         const form = document.createElement('form');

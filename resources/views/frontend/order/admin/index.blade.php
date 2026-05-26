@@ -192,7 +192,14 @@
                                 {{ $order->created_at->format('M d, Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <a href="{{ route('inventory.orders.show', $order) }}" class="text-emerald-600 hover:text-emerald-900 font-medium">View</a>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <a href="{{ route('inventory.orders.show', $order) }}" class="text-emerald-600 hover:text-emerald-900 font-medium">View</a>
+                                    @if($order->cancellation_request_status === 'pending')
+                                        <a href="{{ route('inventory.orders.show', $order) }}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200">
+                                            <i class="fas fa-bell mr-1"></i> Cancel Req.
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -52,25 +52,29 @@ class IncomeController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(15);
 
-    // ── Dashboard Statistics (all transactions) ──────────────────────────────
-    $totalIncome = Income::sum('amount_received');
+    // ── Dashboard Statistics (excludes Capital Injection — balance top-ups are not operational income) ──
+    $totalIncome = Income::where('income_type', '!=', 'Capital Injection')->sum('amount_received');
 
     $thisMonthIncome = Income::where('amount_received', '>', 0)
+        ->where('income_type', '!=', 'Capital Injection')
         ->whereMonth('transaction_date', now()->month)
         ->whereYear('transaction_date', now()->year)
         ->sum('amount_received');
 
     $todayIncome = Income::where('amount_received', '>', 0)
+        ->where('income_type', '!=', 'Capital Injection')
         ->whereDate('transaction_date', today())
         ->sum('amount_received');
 
     // ── Business Stats ───────────────────────────────────────────────────
     $businessIncomeStats = Business::withCount(['incomes' => function ($query) {
-            $query->whereMonth('transaction_date', now()->month)
+            $query->where('income_type', '!=', 'Capital Injection')
+                  ->whereMonth('transaction_date', now()->month)
                   ->whereYear('transaction_date', now()->year);
         }])
         ->withSum(['incomes' => function ($query) {
-            $query->whereMonth('transaction_date', now()->month)
+            $query->where('income_type', '!=', 'Capital Injection')
+                  ->whereMonth('transaction_date', now()->month)
                   ->whereYear('transaction_date', now()->year);
         }], 'amount_received')
         ->whereHas('incomes')
@@ -126,13 +130,18 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no'     => 'nullable|string|max:100',
             'customer_id'      => 'nullable|exists:customers,id',
-            'business_id'      => 'nullable|exists:businesses,id',
+            'business_id'      => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
-            'amount_received'  => 'required|numeric|min:0',
+            'amount_received'  => 'required|integer|min:0|max:9999999',
             'payment_method'   => 'required|in:cash,bank,Esewa,Khalti',
-            'income_type'      => 'required|in:Sale,Due Collection,Other',
+            'income_type'      => 'required|in:Sale,Due Collection,Other,Capital Injection',
             'description'      => 'nullable|string|max:500',
         ]);
+
+        if ($validated['income_type'] === 'Capital Injection') {
+            $validated['customer_id']  = null;
+            $validated['reference_no'] = 'Balance Added';
+        }
 
         $validated['created_by'] = auth()->id();
 
@@ -186,6 +195,7 @@ class IncomeController extends Controller
                     $invoice = \App\Models\POS\Invoice::where('invoice_no', $invoiceNo)->first();
                     if ($invoice) {
                         $invoice->updateStatus();
+                        $invoice->save();
                     }
                 }
             }
@@ -217,13 +227,18 @@ class IncomeController extends Controller
         $validated = $request->validate([
             'reference_no'     => 'nullable|string|max:100',
             'customer_id'      => 'nullable|exists:customers,id',
-            'business_id'      => 'nullable|exists:businesses,id',
+            'business_id'      => 'required|exists:businesses,id',
             'transaction_date' => 'required|date',
-            'amount_received'  => 'required|numeric|min:0',
+            'amount_received'  => 'required|integer|min:0|max:9999999',
             'payment_method'   => 'required|in:cash,bank,Esewa,Khalti',
-            'income_type'      => 'required|in:Sale,Due Collection,Other',
+            'income_type'      => 'required|in:Sale,Due Collection,Other,Capital Injection',
             'description'      => 'nullable|string|max:500',
         ]);
+
+        if ($validated['income_type'] === 'Capital Injection') {
+            $validated['customer_id']  = null;
+            $validated['reference_no'] = 'Balance Added';
+        }
 
         $oldIncomeType = $income->income_type;
         $oldAmount     = $income->amount_received;

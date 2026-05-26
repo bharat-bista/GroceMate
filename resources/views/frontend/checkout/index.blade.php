@@ -868,44 +868,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showOrderConfirmation(details) {
     const orderUrl = orderShowUrlTemplate.replace(':id', details.orderId);
-    const deliveryLabel = getDeliveryLabel(details.deliveryType);
-    const paymentLabel = getPaymentMethodLabel(details.paymentMethod);
-    const deliveryChargeLabel = formatCurrency(details.deliveryCharge);
-    const totalLabel = formatCurrency(details.totalAmount);
 
-    const summaryHtml = `
-      <div style="text-align: left; font-size: 0.95rem; line-height: 1.55;">
-        <div><strong>Order #:</strong> ${escapeHtml(details.orderNumber)}</div>
-        <div><strong>Payment:</strong> ${escapeHtml(paymentLabel)}</div>
-        <div><strong>Delivery:</strong> ${escapeHtml(deliveryLabel)}</div>
-        <div><strong>Delivery Charge:</strong> ${escapeHtml(deliveryChargeLabel)}</div>
-        <div><strong>Total:</strong> ${escapeHtml(totalLabel)}</div>
-      </div>
-    `;
-
-    if (window.Swal && typeof window.Swal.fire === 'function') {
-      return window.Swal.fire({
-        icon: 'success',
-        title: 'Order confirmed!',
-        html: summaryHtml,
-        showCancelButton: true,
-        confirmButtonText: 'View Order',
-        cancelButtonText: 'Continue Shopping',
-        reverseButtons: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.href = orderUrl;
-          return;
-        }
-
-        window.location.href = continueShoppingUrl;
-      });
-    }
-
-    alert(
-      `Order confirmed!\nOrder #: ${details.orderNumber}\nPayment: ${paymentLabel}\nDelivery: ${deliveryLabel}\nDelivery Charge: ${deliveryChargeLabel}\nTotal: ${totalLabel}`
-    );
-    window.location.href = orderUrl;
+    Swal.fire({
+      icon: 'success',
+      title: '<span style="color:#16a34a;font-size:1.25rem;font-weight:700;">Order Placed Successfully!</span>',
+      html: `
+        <div style="text-align:center;margin-bottom:14px;">
+          <span style="display:inline-block;background:#f0fdf4;color:#16a34a;font-weight:700;font-size:1rem;padding:5px 18px;border-radius:999px;border:1.5px solid #bbf7d0;letter-spacing:0.02em;">
+            Order #${escapeHtml(details.orderNumber)}
+          </span>
+        </div>
+        <div style="text-align:left;font-size:0.88rem;color:#374151;line-height:1.8;background:#f8fafc;border-radius:10px;padding:11px 14px;border:1px solid #e2e8f0;">
+          <div><span style="color:#6b7280;">Payment:</span>&nbsp;<strong>${escapeHtml(getPaymentMethodLabel(details.paymentMethod))}</strong></div>
+          <div><span style="color:#6b7280;">Delivery:</span>&nbsp;<strong>${escapeHtml(getDeliveryLabel(details.deliveryType))}</strong></div>
+          <div><span style="color:#6b7280;">Delivery Charge:</span>&nbsp;<strong>${formatCurrency(details.deliveryCharge)}</strong></div>
+          <div><span style="color:#6b7280;">Total:</span>&nbsp;<strong style="color:#16a34a;">${formatCurrency(details.totalAmount)}</strong></div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '📦 View My Orders',
+      cancelButtonText: 'Continue Shopping',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#1e293b',
+      reverseButtons: true,
+      allowOutsideClick: false,
+    }).then((result) => {
+      window.location.href = result.isConfirmed ? orderUrl : continueShoppingUrl;
+    });
   }
 
   function readCartItems() {
@@ -1156,14 +1145,14 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validate file type
       var validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid image (JPG, PNG) or PDF file.');
+        Swal.fire({ icon: 'error', title: 'Invalid File', text: 'Please upload a valid image (JPG, PNG) or PDF file.', confirmButtonColor: '#2e7d32' });
         paymentSlipInput.value = '';
         return;
       }
 
       // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB.');
+        Swal.fire({ icon: 'error', title: 'File Too Large', text: 'File size must be less than 5MB.', confirmButtonColor: '#2e7d32' });
         paymentSlipInput.value = '';
         return;
       }
@@ -1209,12 +1198,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const isStorePickup = selectedDelivery && selectedDelivery.value === 'pickup';
     
     if (!name || !phone || (!address && !isStorePickup)) {
-      alert('Please fill all required fields.');
+      Swal.fire({ icon: 'warning', title: 'Missing Information', text: 'Please fill all required fields.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
     if (!selectedPaymentMethod) {
-      alert('Please select a payment method.');
+      Swal.fire({ icon: 'warning', title: 'Payment Method Required', text: 'Please select a payment method.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
@@ -1222,22 +1211,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedPaymentMethod === 'connectips') {
       var paymentSlipData = document.getElementById('payment-slip-data');
       if (!paymentSlipData || !paymentSlipData.value) {
-        alert('Please upload your payment slip before placing the order.');
+        Swal.fire({ icon: 'warning', title: 'Payment Slip Required', text: 'Please upload your payment slip before placing the order.', confirmButtonColor: '#2e7d32' });
         return;
       }
     }
 
     if (!document.getElementById('termsCheck').checked) {
-      alert('Please agree to terms and conditions.');
+      Swal.fire({ icon: 'warning', title: 'Terms Required', text: 'Please agree to terms and conditions before placing your order.', confirmButtonColor: '#2e7d32' });
       return;
     }
 
     if (checkoutItems.length === 0) {
-      alert(
-        isBuyNowMode
-          ? 'No product selected for direct checkout.'
-          : 'Your cart is empty. Please add products before checkout.'
-      );
+      Swal.fire({
+        icon: 'warning',
+        title: 'Cart Empty',
+        text: isBuyNowMode ? 'No product selected for direct checkout.' : 'Your cart is empty. Please add products before checkout.',
+        confirmButtonColor: '#2e7d32',
+      });
       return;
     }
 
@@ -1286,6 +1276,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newWindow) {
           newWindow.document.write(html);
           newWindow.document.close();
+          // Poll until the eSewa window closes, then re-enable the button.
+          var _esewaPoller = setInterval(function () {
+            if (newWindow.closed) {
+              clearInterval(_esewaPoller);
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.innerHTML = 'Place Order';
+            }
+          }, 600);
         } else {
           // Popup blocked: continue in same tab
           document.open();
@@ -1296,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => {
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
-        alert('Error initiating payment. Please try again.');
+        Swal.fire({ icon: 'error', title: 'Payment Error', text: 'Error initiating payment. Please try again.', confirmButtonColor: '#2e7d32' });
       });
     } else {
       // Handle other payment methods (COD, Connect IPS)
@@ -1388,14 +1386,25 @@ document.addEventListener('DOMContentLoaded', function() {
             totalAmount: totalValue,
             paymentMethod: paymentMethod,
           });
+        } else if (data.admin_staff_error) {
+          Swal.fire({
+            icon: 'warning',
+            title: '<span style="color:#1e293b;font-size:1.1rem;font-weight:700;">Admin &amp; Staff Cannot Order</span>',
+            text: 'Please use a customer account to place orders on the storefront.',
+            confirmButtonText: 'Got it',
+            confirmButtonColor: '#16a34a',
+            allowOutsideClick: false,
+          });
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.innerHTML = 'Place Order';
         } else {
-          alert('Error: ' + resolveOrderErrorMessage(data, 'Something went wrong'));
+          Swal.fire({ icon: 'error', title: 'Order Failed', text: resolveOrderErrorMessage(data, 'Something went wrong'), confirmButtonColor: '#16a34a' });
           placeOrderBtn.disabled = false;
           placeOrderBtn.innerHTML = 'Place Order';
         }
       })
       .catch(function(error) {
-        alert(error.message || 'Error placing order. Please try again.');
+        Swal.fire({ icon: 'error', title: 'Order Failed', text: error.message || 'Error placing order. Please try again.', confirmButtonColor: '#16a34a' });
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
       });

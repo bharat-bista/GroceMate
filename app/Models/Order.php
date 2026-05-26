@@ -10,6 +10,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_number',
+        'business_id',
         'customer_name',
         'customer_phone',
         'customer_email',
@@ -24,12 +25,16 @@ class Order extends Model
         'transaction_id',
         'delivery_status',
         'notes',
+        'cancellation_request_status',
+        'cancellation_request_reason',
+        'cancellation_requested_at',
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'delivery_charge' => 'decimal:2',
-        'total_amount' => 'decimal:2',
+        'subtotal' => 'integer',
+        'delivery_charge' => 'integer',
+        'total_amount' => 'integer',
+        'cancellation_requested_at' => 'datetime',
     ];
 
     public function items(): HasMany
@@ -55,6 +60,13 @@ class Order extends Model
     public function isPaid(): bool
     {
         return $this->payment_status === 'verified';
+    }
+
+    public function canRequestCancellation(): bool
+    {
+        return $this->cancellation_request_status === null
+            && !in_array($this->delivery_status, ['cancelled', 'delivered'])
+            && $this->created_at->diffInMinutes(now()) <= 30;
     }
 
     public static function generateOrderNumber(): string

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\DeliveryFeeSetting;
 use App\Models\EcommerceProduct;
 use App\Models\Order;
@@ -73,7 +74,7 @@ class CheckoutController extends Controller
         $deliveryCharge = $deliveryCharges[$request->delivery] ?? 0;
         $subtotal = round(collect($items)->sum(fn (array $item) => $item['price'] * $item['qty']), 2);
         $computedTotal = round($subtotal + $deliveryCharge, 2);
-        $totalAmount = number_format($computedTotal, 2, '.', '');
+        $totalAmount = (string) intval(round($computedTotal));
         $transactionUuid = 'ECOM-' . time() . '-' . Str::random(6);
         $productCode     = config('services.esewa.product_code');
         $secretKey       = config('services.esewa.secret_key');
@@ -184,11 +185,19 @@ class CheckoutController extends Controller
         $deliveryCharge = round((float) ($orderInfo['delivery_charge'] ?? 0), 2);
         $total = round((float) ($orderInfo['total_amount'] ?? ($subtotal + $deliveryCharge)), 2);
 
-        $order = DB::transaction(function () use ($orderInfo, $subtotal, $deliveryCharge, $total, $decoded) {
+        $firstItemId = $orderInfo['items'][0]['id'] ?? null;
+        $businessId = EcommerceProduct::with('product')
+            ->find($firstItemId)
+            ?->product
+            ?->business_id
+            ?? Business::min('id');
+
+        $order = DB::transaction(function () use ($orderInfo, $subtotal, $deliveryCharge, $total, $decoded, $businessId) {
             $batchesByProduct = $this->deductEcommerceStock(collect($orderInfo['items'] ?? []));
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
+                'business_id' => $businessId,
                 'customer_name' => $orderInfo['full_name'],
                 'customer_phone' => $orderInfo['phone'],
                 'customer_email' => $orderInfo['email'] ?? null,

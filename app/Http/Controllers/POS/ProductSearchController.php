@@ -4,6 +4,7 @@ namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\StockBatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -49,5 +50,79 @@ class ProductSearchController extends Controller
         });
 
         return response()->json($results);
+    }
+
+    public function searchBatchesForPOS(Request $request): JsonResponse
+    {
+        $q               = trim($request->get('q', ''));
+        $businessId      = $request->get('business_id');
+        $excludeEcommerce = $request->boolean('exclude_ecommerce');
+
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $batches = StockBatch::active()
+            ->with(['product.category', 'product.brandRelation', 'product.ecommerceProduct'])
+            ->whereHas('product', function ($query) use ($q, $businessId) {
+                $query->where('name', 'LIKE', '%' . $q . '%');
+                if ($businessId) {
+                    $query->where('business_id', $businessId);
+                }
+            })
+            ->when($excludeEcommerce, function ($query) {
+                $query->whereHas('product', function ($q2) {
+                    $q2->whereDoesntHave('ecommerceProduct', function ($q3) {
+                        $q3->where('ecommerce_stock', '>', 0);
+                    });
+                });
+            })
+            ->orderBy('purchased_on')
+            ->orderBy('id')
+            ->limit(20)
+            ->get();
+
+        // Subtract each product's ecommerce reservation from the oldest batches first
+        // so operators see POS-available qty, not raw batch qty.
+        $batchesByProduct = $batches->groupBy('product_id');
+        $adjusted = collect();
+
+        foreach ($batchesByProduct as $productBatches) {
+            $ecommerceReserved = (float) ($productBatches->first()?->product?->ecommerceProduct?->ecommerce_stock ?? 0);
+            $toSubtract = $ecommerceReserved;
+
+            foreach ($productBatches as $batch) {
+                $rawQty   = (float) $batch->qty_remaining;
+                $subtract = min($rawQty, $toSubtract);
+                $posQty   = $rawQty - $subtract;
+                $toSubtract -= $subtract;
+
+                if ($posQty > 0) {
+                    $batch->pos_qty_remaining = $posQty;
+                    $adjusted->push($batch);
+                }
+            }
+        }
+
+        $results = $adjusted->map(function (StockBatch $batch) {
+            $product = $batch->product;
+
+            return [
+                'batch_id'      => $batch->id,
+                'batch_no'      => $batch->batch_no,
+                'product_id'    => $batch->product_id,
+                'product_name'  => $product?->name ?? '',
+                'unit'          => $product?->unit ?? 'pcs',
+                'selling_price' => (float) ($product?->selling_price ?? 0),
+                'unit_cost'     => (float) $batch->unit_cost,
+                'qty_remaining' => $batch->pos_qty_remaining,
+                'expiry_date'   => $batch->expiry_date?->format('Y-m-d'),
+                'business_id'   => $product?->business_id,
+                'category'      => $product?->category?->name ?? 'N/A',
+                'brand'         => $product?->brandRelation?->name ?? 'N/A',
+            ];
+        });
+
+        return response()->json($results->values());
     }
 }

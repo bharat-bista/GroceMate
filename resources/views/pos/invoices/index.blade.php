@@ -1,4 +1,4 @@
-@extends('inventory.layouts.inventory')
+﻿@extends('inventory.layouts.inventory')
 
 @section('title', 'Invoices')
 @section('heading', 'Sales Invoices')
@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    @if(session('success'))
-        <div id="success-message" class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Header with Actions -->
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden mb-6">
         <div class="p-6 border-b border-slate-200">
@@ -132,13 +126,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($invoice->payment_method === 'credit')
-                                    <div class="text-sm font-semibold text-red-600">Rs {{ number_format($invoice->customer_total_due, 2) }}</div>
+                                    <div class="text-sm font-semibold text-red-600">Rs {{ number_format($invoice->customer_total_due, 0) }}</div>
                                 @else
                                     <div class="text-sm text-slate-500">-</div>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($invoice->total_cost, 2) }}</div>
+                                <div class="text-sm font-semibold text-slate-900">Rs {{ number_format($invoice->total_cost, 0) }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex space-x-2">

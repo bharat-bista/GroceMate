@@ -7,14 +7,8 @@
 @section('content')
 <div class="max-w-5xl mx-auto">
 
-    @if(session('success'))
-        <div class="mb-4 p-4 rounded-xl bg-green-100 text-green-700 border border-green-200 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white shadow-xl rounded-3xl border border-slate-200 overflow-hidden">
-        
+
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-emerald-500 to-emerald-700 p-6 text-white">
             <h2 class="text-2xl font-bold">Edit Supplier Payment</h2>
@@ -64,8 +58,9 @@
                 <!-- Amount -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Payment Amount <span class="text-red-500">*</span></label>
-                    <input type="number" step="0.01" name="amount" value="{{ old('amount', $supplierPayment->amount) }}"
-                           placeholder="0.00"
+                    <input type="number" step="any" name="amount" value="{{ old('amount', $supplierPayment->amount) }}"
+                           data-money inputmode="numeric" max="9999999"
+                           placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5"
                            required />
                 </div>
@@ -94,8 +89,9 @@
                 <!-- Bank Charge -->
                 <div>
                     <label class="block text-sm font-medium text-slate-600">Bank Charge</label>
-                    <input type="number" step="0.01" name="bank_charge" value="{{ old('bank_charge', $supplierPayment->bank_charge) }}"
-                           placeholder="0.00"
+                    <input type="number" step="any" name="bank_charge" value="{{ old('bank_charge', $supplierPayment->bank_charge) }}"
+                           data-money inputmode="numeric" max="9999999"
+                           placeholder="0"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm px-4 py-2.5" />
                 </div>
 

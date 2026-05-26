@@ -22,3 +22,12 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Claude AI files
+.claude/
+CLAUDE.md
+*.claude
+GroceMate_Viva_Prep.md
+GroceMate_Viva_Script.md
+GroceMate_Real_Gantt.gantt
+docs/

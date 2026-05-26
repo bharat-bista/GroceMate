@@ -50,16 +50,21 @@
 				<input name="primary_button_text" value="{{ old('primary_button_text', 'Shop Now') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
 			</div>
 			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Primary Button Link</label>
-				<input name="primary_button_link" value="{{ old('primary_button_link', '#') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Secondary Button Text</label>
-				<input name="secondary_button_text" value="{{ old('secondary_button_text', 'View Deals') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-2">Secondary Button Link</label>
-				<input name="secondary_button_link" value="{{ old('secondary_button_link', '#') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+				<label class="block text-sm font-medium text-slate-700 mb-2">Primary Button — Link to Category</label>
+				@php
+					$oldLink = old('primary_button_link', '');
+					$oldCatId = null;
+					if ($oldLink && preg_match('/categories(?:\[\]|\[0\])?=(\d+)/', $oldLink, $m)) {
+						$oldCatId = (int) $m[1];
+					}
+				@endphp
+				<select name="primary_button_link" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+					<option value="">— No category link —</option>
+					@foreach($categories as $cat)
+						@php $url = url('/advanced') . '?categories[]=' . $cat->id; @endphp
+						<option value="{{ $url }}" @selected($oldCatId === $cat->id)>{{ $cat->name }}</option>
+					@endforeach
+				</select>
 			</div>
 			<div id="sort_order_wrap">
 				<label class="block text-sm font-medium text-slate-700 mb-2">Sort Order</label>

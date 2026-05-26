@@ -36,6 +36,15 @@ GroceMate.money = {
 
             const cap = parseInt(el.getAttribute('max'), 10) || 9999999;
 
+            // Clamp any pre-existing value (e.g. old() flash after validation error)
+            if (el.value !== '') {
+                const parsed = parseFloat(el.value);
+                let n = isFinite(parsed) ? Math.trunc(parsed) : 0;
+                if (n < 0) n = 0;
+                if (n > cap) n = cap;
+                el.value = String(n);
+            }
+
             // Block decimal key entry
             el.addEventListener('keydown', e => {
                 if (e.key === '.' || e.key === ',') e.preventDefault();

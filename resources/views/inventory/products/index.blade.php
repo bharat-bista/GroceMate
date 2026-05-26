@@ -62,7 +62,6 @@
                             <div class="text-xs font-normal normal-case text-slate-400 mt-0.5">latest batch cost</div>
                         </th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Stock</th>
-                        <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">E-commerce</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Status</th>
                         <th class="text-left px-6 py-4 text-xs font-medium text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -112,15 +111,6 @@
                                         {{ $reorderLevel > 0 ? 'Reorder: ' . number_format($reorderLevel, 0) : 'No reorder level set' }}
                                     </span>
                                 </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <form method="POST" action="{{ route('inventory.products.toggle-listed', $product) }}">
-                                    @csrf
-                                    <button class="px-3 py-1.5 rounded-lg border text-sm font-medium transition
-                                        {{ $product->is_listed ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
-                                        {{ $product->is_listed ? 'Listed' : 'Hidden' }}
-                                    </button>
-                                </form>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium

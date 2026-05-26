@@ -983,9 +983,6 @@
                                 @if($slide->primary_button_text)
                                     <a href="{{ $slide->primary_button_link ?: '#' }}" class="gm-btn gm-btn-primary"><i class="fas fa-shopping-cart"></i> {{ $slide->primary_button_text }}</a>
                                 @endif
-                                @if($slide->secondary_button_text)
-                                    <a href="{{ $slide->secondary_button_link ?: '#' }}" class="gm-btn gm-btn-outline"><i class="fas fa-tag"></i> {{ $slide->secondary_button_text }}</a>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -1164,9 +1161,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
                 <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
-                    @if($promoSlide->secondary_button_text)
-                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
-                    @endif
                     <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
                     @if($promoSlide->subtitle)
                         <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>
@@ -1299,9 +1293,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gm-promo-ribbon"><i class="fas fa-bolt"></i> {{ $promoSlide->badge ?: 'Promo' }}</div>
                 <img src="{{ $promoImageUrl }}" alt="{{ $promoSlide->title }}" loading="lazy" decoding="async">
                 <div class="gm-promo-overlay">
-                    @if($promoSlide->secondary_button_text)
-                        <span class="gm-promo-tag">{{ $promoSlide->secondary_button_text }}</span>
-                    @endif
                     <h3 class="gm-promo-title">{{ $promoSlide->title }}</h3>
                     @if($promoSlide->subtitle)
                         <p class="gm-promo-text">{{ $promoSlide->subtitle }}</p>

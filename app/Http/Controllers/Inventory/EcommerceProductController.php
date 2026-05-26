@@ -103,9 +103,9 @@ class EcommerceProductController extends Controller
 
         $discountPercent = $data['discount_percent'] ?? 0;
         $mrp             = $data['mrp'];
-        $displayPrice    = $mrp - ($mrp * $discountPercent / 100);
+        $displayPrice    = round($mrp - ($mrp * $discountPercent / 100), 2);
         $purchasePrice   = $product->latestPurchaseItem->unit_cost ?? 0;
-        $profit          = $displayPrice - $purchasePrice;
+        $profit          = round($displayPrice - $purchasePrice, 2);
 
         $thumbnailPaths = [];
         if ($request->hasFile('thumbnails')) {
@@ -172,14 +172,11 @@ class EcommerceProductController extends Controller
             'thumbnails.*' => ['image', 'max:2048'],
         ]);
 
-        // Calculate display price
         $discountPercent = $data['discount_percent'] ?? 0;
         $mrp = $data['mrp'];
-        $displayPrice = $mrp - ($mrp * $discountPercent / 100);
-
-        // Get purchase price for profit calculation
+        $displayPrice = round($mrp - ($mrp * $discountPercent / 100), 2);
         $purchasePrice = $ecommerceProduct->product->latestPurchaseItem->unit_cost ?? 0;
-        $profit = $displayPrice - $purchasePrice;
+        $profit = round($displayPrice - $purchasePrice, 2);
 
         $totalStock = (float) ($ecommerceProduct->product->stock->quantity ?? 0);
         $reservedStock = (float) $data['ecommerce_stock'];
@@ -248,6 +245,36 @@ class EcommerceProductController extends Controller
 
         return redirect()->route('inventory.ecommerce-products.index')
             ->with('success', 'E-commerce product deleted successfully.');
+    }
+
+    public function deleteThumbnail(EcommerceProduct $ecommerceProduct)
+    {
+        if ($ecommerceProduct->thumbnail) {
+            Storage::disk('public')->delete($ecommerceProduct->thumbnail);
+            $ecommerceProduct->update(['thumbnail' => null]);
+        }
+
+        return back()->with('success', 'Main thumbnail removed.');
+    }
+
+    public function deleteImage(EcommerceProduct $ecommerceProduct, EcommerceProductImage $image)
+    {
+        if ($image->ecommerce_product_id !== $ecommerceProduct->id) {
+            abort(403);
+        }
+
+        if ($image->image_path) {
+            Storage::disk('public')->delete($image->image_path);
+        }
+
+        $wasPrimary = $image->is_primary;
+        $image->delete();
+
+        if ($wasPrimary) {
+            $ecommerceProduct->images()->orderBy('sort_order')->first()?->update(['is_primary' => true]);
+        }
+
+        return back()->with('success', 'Image removed.');
     }
 
     private function saveEcommerceImages(EcommerceProduct $ecommerceProduct, array $imagePaths): void

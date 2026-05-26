@@ -216,6 +216,7 @@ Route::middleware(['auth', 'admin_or_staff'])
         Route::resource('ecommerce-products', EcommerceProductController::class);
         Route::resource('sliders', SliderController::class);
         Route::delete('ecommerce-products/{ecommerce_product}/images/{image}', [EcommerceProductController::class, 'deleteImage'])->name('ecommerce-products.delete-image');
+        Route::delete('ecommerce-products/{ecommerce_product}/thumbnail', [EcommerceProductController::class, 'deleteThumbnail'])->name('ecommerce-products.delete-thumbnail');
         Route::post('ecommerce-products/{ecommerce_product}/images/{image}/primary', [EcommerceProductController::class, 'setPrimaryImage'])->name('ecommerce-products.set-primary-image');
 
         // E-commerce Brands routes
@@ -285,7 +286,7 @@ Route::middleware(['auth', 'admin'])
         // Supplier Payment export routes (bulk only)
         Route::get('/supplier-payments/export/{type}', [SupplierPaymentController::class, 'export'])->name('supplier-payments.export');
 
-        // ✅ ADD THESE HERE
+        //  ADD THESE HERE
         Route::post('/khalti/initiate', [SupplierPaymentController::class, 'initiateKhalti'])
             ->name('khalti.initiate');
 
@@ -334,9 +335,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 Route::get('/pos/khalti/callback', [SupplierPaymentController::class, 'khaltiCallback'])
-    ->name('pos.khalti.callback');  // ✅ added 'pos.' prefix
+    ->name('pos.khalti.callback');  //  added 'pos.' prefix
     Route::post('/pos/khalti/verify', [SupplierPaymentController::class, 'verifyKhalti']);
 
-// ✅ ADD HERE — outside auth middleware
+//  ADD HERE — outside auth middleware
 Route::get('/pos/esewa/callback', [SupplierPaymentController::class, 'esewaCallback'])
     ->name('pos.esewa.callback');

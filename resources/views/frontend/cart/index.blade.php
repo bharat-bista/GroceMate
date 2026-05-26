@@ -184,15 +184,16 @@
 .cart-item {
     display: grid;
     grid-template-areas: "check image details";
-    grid-template-columns: 26px 110px minmax(0, 1fr);
-    gap: 16px;
-    padding: 14px;
+    grid-template-columns: 26px 140px 1fr;
+    gap: 20px;
+    padding: 20px 24px;
     border: 1px solid rgba(46, 125, 50, 0.16);
-    border-radius: 14px;
+    border-radius: 16px;
     background: linear-gradient(135deg, #ffffff 0%, #f8fbf8 100%);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     transition: opacity 0.3s, transform 0.3s;
+    align-items: center;
 }
 
 .cart-item:last-child {
@@ -207,18 +208,18 @@
 .item-checkbox {
     grid-area: check;
     display: flex;
-    align-items: flex-start;
-    padding-top: 8px;
+    align-items: center;
 }
 
 .item-image {
     grid-area: image;
-    width: 110px;
-    height: 110px;
-    border-radius: 12px;
+    width: 140px;
+    height: 140px;
+    border-radius: 14px;
     overflow: hidden;
     border: 1px solid rgba(46, 125, 50, 0.15);
     background: #f9fafb;
+    flex-shrink: 0;
 }
 
 .item-image img {
@@ -230,9 +231,48 @@
 .item-details {
     grid-area: details;
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+}
+
+.item-info {
+    flex: 1;
+    display: flex;
     flex-direction: column;
     gap: 10px;
     min-width: 0;
+}
+
+.item-controls {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    min-width: 155px;
+}
+
+.item-quantity-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.qty-stock-msg {
+    font-size: 0.78rem;
+    color: #c44b10;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 107, 53, 0.09);
+    border: 1px solid rgba(255, 107, 53, 0.28);
+    border-radius: 8px;
+    padding: 3px 9px;
+    white-space: nowrap;
 }
 
 .item-brand {
@@ -245,7 +285,7 @@
 
 .item-title {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1.08rem;
     color: var(--gm-dark);
     font-weight: 700;
     line-height: 1.35;
@@ -256,40 +296,12 @@
     cursor: pointer;
 }
 
-.item-rating {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.item-rating .stars {
-    display: inline-flex;
-    gap: 2px;
-}
-
-.item-rating .stars i {
-    color: var(--gm-star);
-    font-size: 0.82rem;
-}
-
-.item-rating .count {
-    color: var(--gm-gray);
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.item-price-section {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
 .item-price {
-    font-size: 1.35rem;
-    color: var(--gm-accent);
-    font-weight: 800;
+    font-size: 1.45rem;
+    color: var(--gm-primary-dark);
+    font-weight: 900;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .item-original-price {
@@ -307,30 +319,23 @@
     border-radius: 999px;
 }
 
-.item-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
 .item-quantity {
     display: inline-flex;
     align-items: center;
-    border: 1px solid rgba(46, 125, 50, 0.22);
+    border: 1.5px solid rgba(46, 125, 50, 0.28);
     border-radius: 10px;
     overflow: hidden;
     background: #fff;
 }
 
 .qty-btn {
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     border: none;
     background: #fff;
     color: var(--gm-dark);
     cursor: pointer;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 700;
 }
 
@@ -341,31 +346,36 @@
 
 .qty-input {
     width: 52px;
-    height: 34px;
+    height: 38px;
     border: none;
     border-left: 1px solid rgba(46, 125, 50, 0.18);
     border-right: 1px solid rgba(46, 125, 50, 0.18);
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--gm-dark);
 }
 
 .item-remove {
     background: transparent;
-    border: none;
+    border: 1px solid rgba(46, 125, 50, 0.28);
     color: var(--gm-gray);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 2px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
 }
 
 .item-remove:hover {
-    color: var(--gm-accent);
+    background: rgba(46, 125, 50, 0.07);
+    border-color: var(--gm-primary);
+    color: var(--gm-primary-dark);
 }
 
 /* Cart item inline stock badge */
@@ -647,17 +657,36 @@
     }
 
     .cart-item {
-        grid-template-areas: "check image details";
-        grid-template-columns: 20px 70px minmax(0, 1fr);
-        gap: 8px;
-        padding: 8px;
-        margin-bottom: 8px;
+        grid-template-columns: 20px 90px 1fr;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
     }
 
     .item-image {
-        width: 70px;
-        height: 70px;
-        border-radius: 8px;
+        width: 90px;
+        height: 90px;
+        border-radius: 10px;
+    }
+
+    .item-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .item-controls {
+        align-items: flex-start;
+        min-width: 0;
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .item-quantity-wrap {
+        align-items: flex-start;
     }
 
     .item-brand {
@@ -665,20 +694,18 @@
     }
 
     .item-title {
-        font-size: 0.78rem;
-        line-height: 1.25;
+        font-size: 0.88rem;
+        line-height: 1.3;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    .item-rating {
-        display: none;
-    }
-
     .item-price {
-        font-size: 0.98rem;
+        font-size: 1.05rem;
+        white-space: nowrap;
+        color: var(--gm-primary-dark);
     }
 
     .item-original-price {
@@ -690,31 +717,26 @@
         padding: 2px 6px;
     }
 
-    .item-actions {
-        justify-content: space-between;
-        gap: 6px;
-    }
-
     .item-quantity {
         border-radius: 8px;
     }
 
     .qty-btn {
-        width: 24px;
-        height: 24px;
-        font-size: 0.86rem;
+        width: 30px;
+        height: 30px;
+        font-size: 0.92rem;
     }
 
     .qty-input {
-        width: 34px;
-        height: 24px;
-        font-size: 0.76rem;
+        width: 38px;
+        height: 30px;
+        font-size: 0.84rem;
     }
 
     .item-remove {
-        font-size: 0.72rem;
+        font-size: 0.78rem;
+        padding: 5px 10px;
         gap: 4px;
-        white-space: nowrap;
     }
 
     .order-summary h3 {
@@ -782,27 +804,22 @@
     }
 
     .cart-item {
-        grid-template-areas: "check image details";
-        grid-template-columns: 16px 56px minmax(0, 1fr);
-        gap: 7px;
-        padding: 7px;
-    }
-
-    .item-checkbox {
-        padding-top: 2px;
+        grid-template-columns: 16px 72px 1fr;
+        gap: 8px;
+        padding: 10px;
     }
 
     .item-image {
-        width: 56px;
-        height: 56px;
+        width: 72px;
+        height: 72px;
     }
 
     .item-title {
-        font-size: 0.7rem;
+        font-size: 0.78rem;
     }
 
     .item-price {
-        font-size: 0.84rem;
+        font-size: 0.9rem;
     }
 
     .item-original-price,
@@ -810,26 +827,21 @@
         font-size: 0.64rem;
     }
 
-    .item-actions {
-        flex-direction: row;
-        align-items: center;
-        gap: 6px;
-    }
-
     .qty-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 0.74rem;
+        width: 26px;
+        height: 26px;
+        font-size: 0.78rem;
     }
 
     .qty-input {
-        width: 28px;
-        height: 20px;
-        font-size: 0.66rem;
+        width: 32px;
+        height: 26px;
+        font-size: 0.72rem;
     }
 
     .item-remove {
-        font-size: 0.64rem;
+        font-size: 0.72rem;
+        padding: 4px 8px;
     }
 
     .order-summary {
@@ -1328,24 +1340,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     '<input type="checkbox" class="item-check" data-price="' + price + '" data-qty="' + qty + '"' + checkedAttr + '>' +
                 '</div>' +
                 '<div class="item-image">' +
-                    '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'\'>' +
+                    '<img src="' + safeImage + '" alt="' + safeName + '" onerror="this.src=\'' + fallbackImage + '\'">' +
                 '</div>' +
                 '<div class="item-details">' +
-                    '<div>' +
+                    '<div class="item-info">' +
                         '<h3 class="item-title">' + safeName + '</h3>' +
-                    '</div>' +
-                    '<div class="item-price-section">' +
-                        '<span class="item-price">Rs.' + price + '</span>' +
                         '<span class="cart-stock-badge cart-stock-loading" id="stock-badge-' + id + '">' +
                             '<span class="cart-stock-dot"></span>' +
                             '<span class="cart-stock-text">Checking stock...</span>' +
                         '</span>' +
                     '</div>' +
-                    '<div class="item-actions">' +
-                        '<div class="item-quantity">' +
-                            '<button class="qty-btn qty-minus" data-item-id="' + id + '">-</button>' +
-                            '<input type="text" class="qty-input" value="' + qty + '" readonly>' +
-                            '<button class="qty-btn qty-plus" data-item-id="' + id + '">+</button>' +
+                    '<div class="item-controls">' +
+                        '<span class="item-price">Rs.' + price + '</span>' +
+                        '<div class="item-quantity-wrap">' +
+                            '<div class="item-quantity">' +
+                                '<button class="qty-btn qty-minus" data-item-id="' + id + '">−</button>' +
+                                '<input type="text" class="qty-input" value="' + qty + '" readonly>' +
+                                '<button class="qty-btn qty-plus" data-item-id="' + id + '">+</button>' +
+                            '</div>' +
+                            '<div class="qty-stock-msg" id="qty-msg-' + id + '"></div>' +
                         '</div>' +
                         '<button class="item-remove" data-item-id="' + id + '">' +
                             '<i class="fas fa-trash-alt"></i> Remove' +
@@ -1455,11 +1468,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 value--;
                 input.value = value;
                 if (checkbox) checkbox.dataset.qty = value;
-                // Update in storage
                 var items = getCartItems();
                 var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
                 if (target) { target.qty = value; saveCartItems(items); }
                 calculateTotals();
+                var msgEl = row.querySelector('.qty-stock-msg');
+                if (msgEl) msgEl.style.display = 'none';
             }
             return;
         }
@@ -1470,6 +1484,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var row = plusBtn.closest('.cart-item');
             var input = row.querySelector('.qty-input');
             var checkbox = row.querySelector('.item-check');
+            var msgEl = row.querySelector('.qty-stock-msg');
             var value = parseInt(input.value);
             var maxStock = row.dataset.maxStock != null && row.dataset.maxStock !== '' && row.dataset.maxStock !== '99'
                 ? parseInt(row.dataset.maxStock)
@@ -1481,6 +1496,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     title: 'Out of Stock',
                     btnText: 'OK'
                 });
+                if (msgEl) {
+                    msgEl.innerHTML = '<i class="fas fa-times-circle"></i> Out of stock';
+                    msgEl.style.display = 'flex';
+                }
                 return;
             }
 
@@ -1494,6 +1513,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         btnText: 'Got it'
                     }
                 );
+                if (msgEl) {
+                    msgEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Max available: ' + maxStock;
+                    msgEl.style.display = 'flex';
+                }
                 return;
             }
 
@@ -1504,6 +1527,14 @@ document.addEventListener('DOMContentLoaded', function() {
             var target = items.find(function(i) { return String(i.id) === String(row.dataset.itemId); });
             if (target) { target.qty = value; saveCartItems(items); }
             calculateTotals();
+            if (msgEl) {
+                if (value >= maxStock && maxStock < 99) {
+                    msgEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Max available: ' + maxStock;
+                    msgEl.style.display = 'flex';
+                } else {
+                    msgEl.style.display = 'none';
+                }
+            }
             return;
         }
 

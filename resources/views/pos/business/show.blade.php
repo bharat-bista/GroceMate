@@ -80,7 +80,7 @@
                         </button>
 
                         <div id="businessExportMenu"
-                             class="hidden origin-top-right absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 p-3 space-y-3">
+                             class="hidden origin-top-right fixed w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 p-3 space-y-3">
                             <div class="flex gap-2">
                                 <button type="button" id="businessExportModeAll"
                                         class="flex-1 px-3 py-1.5 rounded-lg text-sm bg-blue-600 text-white">
@@ -780,7 +780,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (exportDropdown && exportMenu) {
         exportDropdown.addEventListener('click', function () {
+            const isHidden = exportMenu.classList.contains('hidden');
             exportMenu.classList.toggle('hidden');
+            if (isHidden) {
+                const rect = exportDropdown.getBoundingClientRect();
+                exportMenu.style.top = (rect.bottom + 8) + 'px';
+                exportMenu.style.right = (window.innerWidth - rect.right) + 'px';
+            }
         });
     }
 

@@ -53,6 +53,15 @@ Route::get('/pos/batches/search', [ProductSearchController::class, 'searchBatche
 // Redirect root URL to login page
 Route::get('/', [AccountController::class, 'login'])->name('root');
 
+// TEMP DEBUG - remove after fixing OAuth
+Route::get('/debug-oauth', function () {
+    return response()->json([
+        'config_google_redirect' => config('services.google.redirect'),
+        'env_GOOGLE_REDIRECT_URI' => env('GOOGLE_REDIRECT_URI'),
+        'env_APP_URL'             => env('APP_URL'),
+    ]);
+});
+
 // Login routes
 Route::get('/login', [AccountController::class, 'login'])->name('page-login');
 Route::get('/auth/login', [AccountController::class, 'login'])->name('login');

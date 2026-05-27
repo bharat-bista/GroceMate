@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ecommerce_products', function (Blueprint $table) {
-            $table->decimal('ecommerce_stock', 10, 3)->default(0)->after('status');
+            $table->decimal('ecommerce_stock', 10, 3)->default(0)->after('image_url');
         });
     }
 

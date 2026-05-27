@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ecommerce_products', function (Blueprint $table) {
-            $table->string('display_section')->default('product_grid')->after('status');
+            $table->string('display_section')->default('product_grid')->after('image_url');
         });
     }
 

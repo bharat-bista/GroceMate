@@ -64,12 +64,12 @@
           </td>
           <td class="px-6 py-4 text-right">
             @if($account->id !== auth()->id())
-              <form action="{{ route('admin.accounts.destroy', $account) }}" method="POST"
-                    onsubmit="return confirm('Are you sure you want to remove this account?');">
+              <form action="{{ route('admin.accounts.destroy', $account) }}" method="POST" class="remove-account-form">
                 @csrf
                 @method('DELETE')
-                <button type="submit"
-                        class="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                <button type="button"
+                        data-name="{{ $account->full_name }}"
+                        class="remove-account-btn px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
                   Remove
                 </button>
               </form>
@@ -97,3 +97,29 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.querySelectorAll('.remove-account-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        const name = btn.dataset.name;
+        const form = btn.closest('.remove-account-form');
+        Swal.fire({
+            title: 'Remove Account?',
+            text: 'Are you sure you want to remove ' + name + '? This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Remove',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#1e293b',
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+@endpush

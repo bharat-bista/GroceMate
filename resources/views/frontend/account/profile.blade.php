@@ -273,7 +273,7 @@
                 </div>
             @endif
 
-            @if(!$user->password)
+            @if($user->google_id)
                 <div class="alert-error" style="margin-bottom:0;">
                     <i class="fas fa-info-circle"></i> Your account uses Google sign-in and does not have a password.
                 </div>

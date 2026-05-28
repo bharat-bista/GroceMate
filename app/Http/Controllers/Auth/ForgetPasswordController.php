@@ -48,15 +48,16 @@ class ForgetPasswordController extends Controller
             'updated_at' => now(),
         ]);
 
-        // send OTP email (could be queued)
+        session(['password_reset_email' => $user->email]);
 
-        Mail::to($user->email)->send(new PasswordOtpMail($rawOtp, $user->name));
+        try {
+            Mail::to($user->email)->send(new PasswordOtpMail($rawOtp, $user->name));
+        } catch (\Exception $e) {
+            return back()->withErrors(['email' => 'Could not send OTP email. Please check mail configuration or try again later.']);
+        }
 
-// ADD THIS LINE 
-session(['password_reset_email' => $user->email]);
-
-return redirect()->route('password.otpForm')
-       ->with('status','OTP sent to your email (check spam folder).');
+        return redirect()->route('password.otpForm')
+            ->with('status', 'OTP sent to your email (check spam folder).');
 
 
     }
